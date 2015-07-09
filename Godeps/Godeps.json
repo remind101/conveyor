@@ -16,6 +16,10 @@
 			"Rev": "467d9d55c2d2c17248441a8fc661561161f40d5e"
 		},
 		{
+			"ImportPath": "github.com/codegangsta/negroni",
+			"Rev": "c18469c22a9a334acf9b168b6e56375d83364d23"
+		},
+		{
 			"ImportPath": "github.com/docker/docker/pkg/archive",
 			"Comment": "v1.4.1-3107-g5221fd2",
 			"Rev": "5221fd2ba5fbf78ad7a5d4edf039d54ae32141ef"
@@ -46,9 +50,18 @@
 			"Rev": "5221fd2ba5fbf78ad7a5d4edf039d54ae32141ef"
 		},
 		{
+			"ImportPath": "github.com/docker/docker/pkg/units",
+			"Comment": "v1.4.1-3107-g5221fd2",
+			"Rev": "5221fd2ba5fbf78ad7a5d4edf039d54ae32141ef"
+		},
+		{
 			"ImportPath": "github.com/docker/docker/vendor/src/code.google.com/p/go/src/pkg/archive/tar",
 			"Comment": "v1.4.1-3107-g5221fd2",
 			"Rev": "5221fd2ba5fbf78ad7a5d4edf039d54ae32141ef"
+		},
+		{
+			"ImportPath": "github.com/ejholmes/hookshot",
+			"Rev": "a37e081f0c1182305786466ecfa4df2317bc3903"
 		},
 		{
 			"ImportPath": "github.com/fsouza/go-dockerclient",

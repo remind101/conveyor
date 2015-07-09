@@ -2,6 +2,7 @@ package conveyor
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -25,6 +26,8 @@ type BuildOptions struct {
 	Commit string
 	// Branch is the name of the branch that this build relates to.
 	Branch string
+	// An io.Writer where output will be written to.
+	OutputStream io.Writer
 }
 
 type Conveyor struct {
@@ -102,7 +105,7 @@ func (c *Conveyor) Build(opts BuildOptions) (err error) {
 		return fmt.Errorf("tag: %v", err)
 	}
 
-	if err = c.push(opts.Repository, append([]string{"latest"}, tags...)...); err != nil {
+	if err = c.push(opts.Repository, opts.OutputStream, append([]string{"latest"}, tags...)...); err != nil {
 		return fmt.Errorf("push: %v", err)
 	}
 
@@ -111,13 +114,13 @@ func (c *Conveyor) Build(opts BuildOptions) (err error) {
 
 // checkout clones the repo and checks out the given commit.
 func (c *Conveyor) checkout(dir string, opts BuildOptions) error {
-	cmd := newCommand("git", "clone", "--depth=50", fmt.Sprintf("--branch=%s", opts.Branch), fmt.Sprintf("git://github.com/%s.git", opts.Repository), dir)
+	cmd := newCommand(opts.OutputStream, "git", "clone", "--depth=50", fmt.Sprintf("--branch=%s", opts.Branch), fmt.Sprintf("git://github.com/%s.git", opts.Repository), dir)
 	cmd.Dir = c.BuildDir
 	if err := cmd.Run(); err != nil {
 		return err
 	}
 
-	cmd = newCommand("git", "checkout", "-qf", opts.Commit)
+	cmd = newCommand(opts.OutputStream, "git", "checkout", "-qf", opts.Commit)
 	cmd.Dir = dir
 	return cmd.Run()
 }
@@ -125,30 +128,30 @@ func (c *Conveyor) checkout(dir string, opts BuildOptions) error {
 // pull pulls the last docker image for the branch.
 // TODO: try: branch -> latest
 func (c *Conveyor) pull(opts BuildOptions) error {
-	return c.pullTags(opts.Repository, opts.Branch, "latest")
+	return c.pullTags(opts.Repository, opts.OutputStream, opts.Branch, "latest")
 }
 
 // pullTags attempts to pull each tag. It will return when the first pull
 // succeeds or when none of the pulls succeed.
-func (c *Conveyor) pullTags(repo string, tags ...string) (err error) {
+func (c *Conveyor) pullTags(repo string, w io.Writer, tags ...string) (err error) {
 	for _, t := range tags {
-		if err = c.pullTag(repo, t); err != nil {
+		if err = c.pullTag(repo, t, w); err != nil {
 			if tagNotFound(err) {
 				// Try next tag.
 				continue
 			}
-			return
 		}
+		return
 	}
 
 	return
 }
 
-func (c *Conveyor) pullTag(repo, tag string) error {
+func (c *Conveyor) pullTag(repo, tag string, w io.Writer) error {
 	return c.docker.PullImage(docker.PullImageOptions{
 		Repository:   repo,
 		Tag:          tag,
-		OutputStream: os.Stdout,
+		OutputStream: w,
 	}, c.AuthConfiguration)
 }
 
@@ -156,7 +159,7 @@ func (c *Conveyor) pullTag(repo, tag string) error {
 // TODO: Build using the docker client. We build this by shelling out because
 // the docker CLI handles .dockerignore.
 func (c *Conveyor) build(dir string, opts BuildOptions) (*docker.Image, error) {
-	cmd := newCommand("docker", "build", "-t", opts.Repository, ".")
+	cmd := newCommand(opts.OutputStream, "docker", "build", "-t", opts.Repository, ".")
 	cmd.Dir = dir
 	if err := cmd.Run(); err != nil {
 		return nil, err
@@ -166,12 +169,12 @@ func (c *Conveyor) build(dir string, opts BuildOptions) (*docker.Image, error) {
 }
 
 // push pushes the image to the docker registry.
-func (c *Conveyor) push(image string, tags ...string) error {
+func (c *Conveyor) push(image string, w io.Writer, tags ...string) error {
 	for _, t := range tags {
 		if err := c.docker.PushImage(docker.PushImageOptions{
 			Name:         image,
 			Tag:          t,
-			OutputStream: os.Stdout,
+			OutputStream: w,
 		}, c.AuthConfiguration); err != nil {
 			return err
 		}
@@ -207,10 +210,10 @@ func (c *Conveyor) updateStatus(repo, commit, status string) error {
 }
 
 // newCommand returns an exec.Cmd that writes to Stdout and Stderr.
-func newCommand(name string, arg ...string) *exec.Cmd {
+func newCommand(w io.Writer, name string, arg ...string) *exec.Cmd {
 	cmd := exec.Command(name, arg...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	cmd.Stdout = w
+	cmd.Stderr = w
 	return cmd
 }
 

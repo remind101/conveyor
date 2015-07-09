@@ -55,9 +55,10 @@ func (s *Server) Push(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := s.Build(BuildOptions{
-		Repository: f.Repository.FullName,
-		Branch:     strings.Replace(f.Ref, "refs/heads/", "", -1),
-		Commit:     f.HeadCommit.ID,
+		Repository:   f.Repository.FullName,
+		Branch:       strings.Replace(f.Ref, "refs/heads/", "", -1),
+		Commit:       f.HeadCommit.ID,
+		OutputStream: os.Stdout,
 	}); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

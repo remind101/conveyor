@@ -2,6 +2,7 @@ package conveyor_test
 
 import (
 	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/remind101/conveyor"
@@ -10,9 +11,10 @@ import (
 func TestConveyor_Build(t *testing.T) {
 	c := newTestConveyor(t)
 	opts := conveyor.BuildOptions{
-		Repository: "remind101/acme-inc",
-		Commit:     "72493cc5266a89774dbfe8875790b66cdba15c2e",
-		Branch:     "conveyor",
+		Repository:   "remind101/acme-inc",
+		Commit:       "72493cc5266a89774dbfe8875790b66cdba15c2e",
+		Branch:       "conveyor",
+		OutputStream: os.Stdout,
 	}
 
 	if err := c.Build(opts); err != nil {
