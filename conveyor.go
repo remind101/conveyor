@@ -12,6 +12,7 @@ import (
 
 	"github.com/fsouza/go-dockerclient"
 	"github.com/google/go-github/github"
+	"github.com/remind101/conveyor/pkg/registry"
 	"github.com/remind101/empire/pkg/dockerutil"
 )
 
@@ -33,9 +34,6 @@ type Conveyor struct {
 	// AuthConfiguration is the docker authentication credentials for
 	// pushing and pulling images from the registry.
 	AuthConfiguration docker.AuthConfiguration
-	// GitHubToken is the github auth token that will be used to create
-	// commit statuses.
-	GitHubToken string
 	// docker client for interacting with the docker daemon api.
 	docker *docker.Client
 	// registry client for creating tags for an image.
@@ -52,10 +50,18 @@ func NewFromEnv() (*Conveyor, error) {
 		return nil, err
 	}
 
+	u, p := os.Getenv("DOCKER_USERNAME"), os.Getenv("DOCKER_PASSWORD")
+	auth := docker.AuthConfiguration{
+		Username: u,
+		Password: p,
+	}
+
 	return &Conveyor{
-		BuildDir:    os.Getenv("BUILD_DIR"),
-		GitHubToken: os.Getenv("GITHUB_TOKEN"),
-		docker:      c,
+		BuildDir:          os.Getenv("BUILD_DIR"),
+		AuthConfiguration: auth,
+		github:            newGitHubClient(os.Getenv("GITHUB_TOKEN")),
+		registry:          newRegistryClient(u, p),
+		docker:            c,
 	}, nil
 }
 
@@ -159,10 +165,6 @@ func (c *Conveyor) push(image string) error {
 
 // tag tags the image id with the given tags.
 func (c *Conveyor) tag(repo, imageID string, tags ...string) error {
-	if c.registry == nil {
-		c.registry = &nullRegistryClient{}
-	}
-
 	for _, t := range tags {
 		if err := c.registry.Tag(repo, imageID, t); err != nil {
 			return err
@@ -174,10 +176,6 @@ func (c *Conveyor) tag(repo, imageID string, tags ...string) error {
 
 // updateStatus updates the given commit with a new status.
 func (c *Conveyor) updateStatus(repo, commit, status string) error {
-	if c.github == nil {
-		c.github = newGitHubClient(c.GitHubToken)
-	}
-
 	context := Context
 	parts := strings.SplitN(repo, "/", 2)
 	_, _, err := c.github.CreateStatus(parts[0], parts[1], commit, &github.RepoStatus{
@@ -201,10 +199,27 @@ func tagNotFound(err error) bool {
 	return tagNotFoundRegex.MatchString(err.Error())
 }
 
+// registryClient represents a client for tagging an image in the docker
+// registry.
 type registryClient interface {
 	Tag(repo, imageID, tag string) error
 }
 
+// newRegistryClient returns a registryClient instance. If the username and
+// password aren't provided, a null implementation is returned.
+func newRegistryClient(username, password string) registryClient {
+	if username == "" && password == "" {
+		return &nullRegistryClient{}
+	}
+
+	c := registry.New(nil)
+	c.Username = username
+	c.Password = password
+	return c
+}
+
+// nullRegistryClient is an implementation of the registryClient interface tht
+// does nothing.
 type nullRegistryClient struct{}
 
 func (c *nullRegistryClient) Tag(repo, imageID, tag string) error {
