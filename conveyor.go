@@ -147,6 +147,8 @@ func (c *Conveyor) pullTag(repo, tag string) error {
 }
 
 // build builds the docker image.
+// TODO: Build using the docker client. We build this by shelling out because
+// the docker CLI handles .dockerignore.
 func (c *Conveyor) build(opts BuildOptions) (*docker.Image, error) {
 	cmd := newCommand("docker", "build", "-t", opts.Repository, ".")
 	cmd.Dir = filepath.Join(c.BuildDir, opts.Repository)
@@ -160,8 +162,11 @@ func (c *Conveyor) build(opts BuildOptions) (*docker.Image, error) {
 // push pushes the image to the docker registry.
 func (c *Conveyor) push(image string, tags ...string) error {
 	for _, t := range tags {
-		cmd := newCommand("docker", "push", fmt.Sprintf("%s:%s", image, t))
-		if err := cmd.Run(); err != nil {
+		if err := c.docker.PushImage(docker.PushImageOptions{
+			Name:         image,
+			Tag:          t,
+			OutputStream: os.Stdout,
+		}, c.AuthConfiguration); err != nil {
 			return err
 		}
 	}
@@ -170,10 +175,13 @@ func (c *Conveyor) push(image string, tags ...string) error {
 }
 
 // tag tags the image id with the given tags.
-func (c *Conveyor) tag(repo string, tags ...string) error {
+func (c *Conveyor) tag(image string, tags ...string) error {
 	for _, t := range tags {
-		cmd := newCommand("docker", "tag", fmt.Sprintf("%s:latest", repo), fmt.Sprintf("%s:%s", repo, t))
-		if err := cmd.Run(); err != nil {
+		if err := c.docker.TagImage(image, docker.TagImageOptions{
+			Repo:  image,
+			Tag:   t,
+			Force: true,
+		}); err != nil {
 			return err
 		}
 	}
