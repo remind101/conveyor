@@ -226,7 +226,7 @@ func (eventState *eventMonitoringState) sendEvent(event *APIEvents) {
 	defer eventState.RUnlock()
 	eventState.Add(1)
 	defer eventState.Done()
-	if eventState.enabled {
+	if eventState.isEnabled() {
 		if len(eventState.listeners) == 0 {
 			eventState.errC <- ErrNoListeners
 			return

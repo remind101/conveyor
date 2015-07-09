@@ -11,8 +11,8 @@ func TestConveyor_Build(t *testing.T) {
 	c := newTestConveyor(t)
 	opts := conveyor.BuildOptions{
 		Repository: "remind101/acme-inc",
-		Commit:     "827fecd2d36ebeaa2fd05aa8ef3eed1e56a8cd57",
-		Branch:     "master",
+		Commit:     "72493cc5266a89774dbfe8875790b66cdba15c2e",
+		Branch:     "conveyor",
 	}
 
 	if err := c.Build(opts); err != nil {

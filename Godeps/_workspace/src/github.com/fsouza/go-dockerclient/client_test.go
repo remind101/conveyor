@@ -136,15 +136,14 @@ func TestNewClientInvalidEndpoint(t *testing.T) {
 	}
 }
 
-func TestNewTLSClient(t *testing.T) {
+func TestNewTLSClient2376(t *testing.T) {
 	var tests = []struct {
 		endpoint string
 		expected string
 	}{
 		{"tcp://localhost:2376", "https"},
-		{"tcp://localhost:2375", "https"},
-		{"tcp://localhost:4000", "https"},
-		{"http://localhost:4000", "https"},
+		{"tcp://localhost:2375", "http"},
+		{"tcp://localhost:4000", "http"},
 	}
 
 	for _, tt := range tests {

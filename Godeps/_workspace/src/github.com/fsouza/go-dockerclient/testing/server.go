@@ -22,11 +22,8 @@ import (
 	"time"
 
 	"github.com/fsouza/go-dockerclient"
-	"github.com/fsouza/go-dockerclient/vendor/github.com/docker/docker/pkg/stdcopy"
-	"github.com/fsouza/go-dockerclient/vendor/github.com/gorilla/mux"
+	"github.com/gorilla/mux"
 )
-
-var nameRegexp = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_.-]+$`)
 
 // DockerServer represents a programmable, concurrent (not much), HTTP server
 // implementing a fake version of the Docker remote API.
@@ -47,7 +44,6 @@ type DockerServer struct {
 	mux            *mux.Router
 	hook           func(*http.Request)
 	failures       map[string]string
-	multiFailures  []map[string]string
 	execCallbacks  map[string]func()
 	customHandlers map[string]http.Handler
 	handlerMutex   sync.RWMutex
@@ -96,7 +92,6 @@ func (s *DockerServer) buildMuxer() {
 	s.mux.Path("/containers/json").Methods("GET").HandlerFunc(s.handlerWrapper(s.listContainers))
 	s.mux.Path("/containers/create").Methods("POST").HandlerFunc(s.handlerWrapper(s.createContainer))
 	s.mux.Path("/containers/{id:.*}/json").Methods("GET").HandlerFunc(s.handlerWrapper(s.inspectContainer))
-	s.mux.Path("/containers/{id:.*}/rename").Methods("POST").HandlerFunc(s.handlerWrapper(s.renameContainer))
 	s.mux.Path("/containers/{id:.*}/top").Methods("GET").HandlerFunc(s.handlerWrapper(s.topContainer))
 	s.mux.Path("/containers/{id:.*}/start").Methods("POST").HandlerFunc(s.handlerWrapper(s.startContainer))
 	s.mux.Path("/containers/{id:.*}/kill").Methods("POST").HandlerFunc(s.handlerWrapper(s.stopContainer))
@@ -160,20 +155,9 @@ func (s *DockerServer) PrepareFailure(id string, urlRegexp string) {
 	s.failures[id] = urlRegexp
 }
 
-// PrepareMultiFailures enqueues a new expected failure based on a URL regexp
-// it receives an id for the failure.
-func (s *DockerServer) PrepareMultiFailures(id string, urlRegexp string) {
-	s.multiFailures = append(s.multiFailures, map[string]string{"error": id, "url": urlRegexp})
-}
-
 // ResetFailure removes an expected failure identified by the given id.
 func (s *DockerServer) ResetFailure(id string) {
 	delete(s.failures, id)
-}
-
-// ResetMultiFailures removes all enqueued failures.
-func (s *DockerServer) ResetMultiFailures() {
-	s.multiFailures = []map[string]string{}
 }
 
 // CustomHandler registers a custom handler for a specific path.
@@ -252,19 +236,6 @@ func (s *DockerServer) handlerWrapper(f func(http.ResponseWriter, *http.Request)
 			http.Error(w, errorID, http.StatusBadRequest)
 			return
 		}
-		for i, failure := range s.multiFailures {
-			matched, err := regexp.MatchString(failure["url"], r.URL.Path)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
-				return
-			}
-			if !matched {
-				continue
-			}
-			http.Error(w, failure["error"], http.StatusBadRequest)
-			s.multiFailures = append(s.multiFailures[:i], s.multiFailures[i+1:]...)
-			return
-		}
 		f(w, r)
 	}
 }
@@ -335,25 +306,18 @@ func (s *DockerServer) findImageByID(id string) (string, int, error) {
 }
 
 func (s *DockerServer) createContainer(w http.ResponseWriter, r *http.Request) {
-	var config struct {
-		*docker.Config
-		HostConfig *docker.HostConfig
-	}
+	var config docker.Config
 	defer r.Body.Close()
 	err := json.NewDecoder(r.Body).Decode(&config)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	name := r.URL.Query().Get("name")
-	if name != "" && !nameRegexp.MatchString(name) {
-		http.Error(w, "Invalid container name", http.StatusInternalServerError)
-		return
-	}
 	if _, err := s.findImage(config.Image); err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
+	w.WriteHeader(http.StatusCreated)
 	ports := map[docker.Port][]docker.PortBinding{}
 	for port := range config.ExposedPorts {
 		ports[port] = []docker.PortBinding{{
@@ -373,13 +337,12 @@ func (s *DockerServer) createContainer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	container := docker.Container{
-		Name:       name,
-		ID:         s.generateID(),
-		Created:    time.Now(),
-		Path:       path,
-		Args:       args,
-		Config:     config.Config,
-		HostConfig: config.HostConfig,
+		Name:    r.URL.Query().Get("name"),
+		ID:      s.generateID(),
+		Created: time.Now(),
+		Path:    path,
+		Args:    args,
+		Config:  &config,
 		State: docker.State{
 			Running:   false,
 			Pid:       mathrand.Int() % 50000,
@@ -396,18 +359,8 @@ func (s *DockerServer) createContainer(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 	s.cMut.Lock()
-	if container.Name != "" {
-		for _, c := range s.containers {
-			if c.Name == container.Name {
-				defer s.cMut.Unlock()
-				http.Error(w, "there's already a container with this name", http.StatusConflict)
-				return
-			}
-		}
-	}
 	s.containers = append(s.containers, &container)
 	s.cMut.Unlock()
-	w.WriteHeader(http.StatusCreated)
 	s.notify(&container)
 	var c = struct{ ID string }{ID: container.ID}
 	json.NewEncoder(w).Encode(c)
@@ -417,23 +370,6 @@ func (s *DockerServer) generateID() string {
 	var buf [16]byte
 	rand.Read(buf[:])
 	return fmt.Sprintf("%x", buf)
-}
-
-func (s *DockerServer) renameContainer(w http.ResponseWriter, r *http.Request) {
-	id := mux.Vars(r)["id"]
-	container, index, err := s.findContainer(id)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
-		return
-	}
-	copy := *container
-	copy.Name = r.URL.Query().Get("name")
-	s.cMut.Lock()
-	defer s.cMut.Unlock()
-	if s.containers[index].ID == copy.ID {
-		s.containers[index] = &copy
-	}
-	w.WriteHeader(http.StatusNoContent)
 }
 
 func (s *DockerServer) inspectContainer(w http.ResponseWriter, r *http.Request) {
@@ -480,14 +416,6 @@ func (s *DockerServer) startContainer(w http.ResponseWriter, r *http.Request) {
 	}
 	s.cMut.Lock()
 	defer s.cMut.Unlock()
-	defer r.Body.Close()
-	var hostConfig docker.HostConfig
-	err = json.NewDecoder(r.Body).Decode(&hostConfig)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	container.HostConfig = &hostConfig
 	if container.State.Running {
 		http.Error(w, "Container already running", http.StatusBadRequest)
 		return
@@ -555,19 +483,8 @@ func (s *DockerServer) attachContainer(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
-	hijacker, ok := w.(http.Hijacker)
-	if !ok {
-		http.Error(w, "cannot hijack connection", http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "application/vnd.docker.raw-stream")
-	w.WriteHeader(http.StatusOK)
-	conn, _, err := hijacker.Hijack()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	outStream := stdcopy.NewStdWriter(conn, stdcopy.Stdout)
+	outStream := newStdWriter(w, stdout)
+	fmt.Fprintf(outStream, "HTTP/1.1 200 OK\r\nContent-Type: application/vnd.docker.raw-stream\r\n\r\n")
 	if container.State.Running {
 		fmt.Fprintf(outStream, "Container %q is running\n", container.ID)
 	} else {
@@ -575,7 +492,6 @@ func (s *DockerServer) attachContainer(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Fprintln(outStream, "What happened?")
 	fmt.Fprintln(outStream, "Something happened")
-	conn.Close()
 }
 
 func (s *DockerServer) waitContainer(w http.ResponseWriter, r *http.Request) {
@@ -600,13 +516,12 @@ func (s *DockerServer) waitContainer(w http.ResponseWriter, r *http.Request) {
 
 func (s *DockerServer) removeContainer(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
-	force := r.URL.Query().Get("force")
 	_, index, err := s.findContainer(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
-	if s.containers[index].State.Running && force != "1" {
+	if s.containers[index].State.Running {
 		msg := "Error: API error (406): Impossible to remove a running container, please stop it first"
 		http.Error(w, msg, http.StatusInternalServerError)
 		return
@@ -658,11 +573,11 @@ func (s *DockerServer) commitContainer(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, `{"ID":%q}`, image.ID)
 }
 
-func (s *DockerServer) findContainer(idOrName string) (*docker.Container, int, error) {
+func (s *DockerServer) findContainer(id string) (*docker.Container, int, error) {
 	s.cMut.RLock()
 	defer s.cMut.RUnlock()
 	for i, container := range s.containers {
-		if container.ID == idOrName || container.Name == idOrName {
+		if container.ID == id {
 			return container, i, nil
 		}
 	}
@@ -708,16 +623,12 @@ func (s *DockerServer) buildImage(w http.ResponseWriter, r *http.Request) {
 
 func (s *DockerServer) pullImage(w http.ResponseWriter, r *http.Request) {
 	fromImageName := r.URL.Query().Get("fromImage")
-	tag := r.URL.Query().Get("tag")
 	image := docker.Image{
 		ID: s.generateID(),
 	}
 	s.iMut.Lock()
 	s.images = append(s.images, image)
 	if fromImageName != "" {
-		if tag != "" {
-			fromImageName = fmt.Sprintf("%s:%s", fromImageName, tag)
-		}
 		s.imgIDs[fromImageName] = image.ID
 	}
 	s.iMut.Unlock()
@@ -793,9 +704,10 @@ func (s *DockerServer) removeImage(w http.ResponseWriter, r *http.Request) {
 
 func (s *DockerServer) inspectImage(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]
-	s.iMut.RLock()
-	defer s.iMut.RUnlock()
 	if id, ok := s.imgIDs[name]; ok {
+		s.iMut.Lock()
+		defer s.iMut.Unlock()
+
 		for _, img := range s.images {
 			if img.ID == id {
 				w.Header().Set("Content-Type", "application/json")
