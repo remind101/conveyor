@@ -6,7 +6,9 @@ Conveyor is a build system for Docker containers as fast as possible.
 
 1. Conveyor receives a build request via a GitHub commit webhook.
 2. Conveyor builds and tags the resulting image with 3 tags: `latest`, the git commit sha and the git branch.
-3. It then pushes the image to the Docker registry.
+3. It then pushes the image to the Docker registry and adds a commit status to the GitHub commit.
+
+![](https://camo.githubusercontent.com/ef1699d11369ebaad557699528f254cf89f2525d/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f656a686f6c6d65732e6769746875622e636f6d2f4137324e6a2e706e67)
 
 ## Performance
 
