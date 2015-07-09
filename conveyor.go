@@ -2,9 +2,9 @@ package conveyor
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -71,19 +71,25 @@ func (c *Conveyor) Build(opts BuildOptions) (err error) {
 		c.updateStatus(opts.Repository, opts.Commit, status)
 	}()
 
-	if err := c.updateStatus(opts.Repository, opts.Commit, "pending"); err != nil {
+	var dir string
+	dir, err = ioutil.TempDir(c.BuildDir, opts.Commit)
+	if err != nil {
+		return fmt.Errorf("tempdir: %v", err)
+	}
+
+	if err = c.updateStatus(opts.Repository, opts.Commit, "pending"); err != nil {
 		return fmt.Errorf("status: %v", err)
 	}
 
-	if err := c.checkout(opts); err != nil {
+	if err = c.checkout(dir, opts); err != nil {
 		return fmt.Errorf("checkout: %v", err)
 	}
 
-	if err := c.pull(opts); err != nil {
+	if err = c.pull(opts); err != nil {
 		return fmt.Errorf("pull: %v", err)
 	}
 
-	if _, err := c.build(opts); err != nil {
+	if _, err = c.build(dir, opts); err != nil {
 		return fmt.Errorf("build: %v", err)
 	}
 
@@ -92,11 +98,11 @@ func (c *Conveyor) Build(opts BuildOptions) (err error) {
 		opts.Commit,
 	}
 
-	if err := c.tag(opts.Repository, tags...); err != nil {
+	if err = c.tag(opts.Repository, tags...); err != nil {
 		return fmt.Errorf("tag: %v", err)
 	}
 
-	if err := c.push(opts.Repository, append([]string{"latest"}, tags...)...); err != nil {
+	if err = c.push(opts.Repository, append([]string{"latest"}, tags...)...); err != nil {
 		return fmt.Errorf("push: %v", err)
 	}
 
@@ -104,15 +110,15 @@ func (c *Conveyor) Build(opts BuildOptions) (err error) {
 }
 
 // checkout clones the repo and checks out the given commit.
-func (c *Conveyor) checkout(opts BuildOptions) error {
-	cmd := newCommand("git", "clone", "--depth=50", fmt.Sprintf("--branch=%s", opts.Branch), fmt.Sprintf("git://github.com/%s.git", opts.Repository), opts.Repository)
+func (c *Conveyor) checkout(dir string, opts BuildOptions) error {
+	cmd := newCommand("git", "clone", "--depth=50", fmt.Sprintf("--branch=%s", opts.Branch), fmt.Sprintf("git://github.com/%s.git", opts.Repository), dir)
 	cmd.Dir = c.BuildDir
 	if err := cmd.Run(); err != nil {
 		return err
 	}
 
 	cmd = newCommand("git", "checkout", "-qf", opts.Commit)
-	cmd.Dir = filepath.Join(c.BuildDir, opts.Repository)
+	cmd.Dir = dir
 	return cmd.Run()
 }
 
@@ -149,9 +155,9 @@ func (c *Conveyor) pullTag(repo, tag string) error {
 // build builds the docker image.
 // TODO: Build using the docker client. We build this by shelling out because
 // the docker CLI handles .dockerignore.
-func (c *Conveyor) build(opts BuildOptions) (*docker.Image, error) {
+func (c *Conveyor) build(dir string, opts BuildOptions) (*docker.Image, error) {
 	cmd := newCommand("docker", "build", "-t", opts.Repository, ".")
-	cmd.Dir = filepath.Join(c.BuildDir, opts.Repository)
+	cmd.Dir = dir
 	if err := cmd.Run(); err != nil {
 		return nil, err
 	}
