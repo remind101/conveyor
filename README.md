@@ -1,6 +1,6 @@
 # Conveyor
 
-Conveyor is a build system for Docker containers as fast as possible.
+Conveyor builds Docker images. Fast.
 
 ## How it works
 
