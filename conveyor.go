@@ -12,7 +12,6 @@ import (
 
 	"github.com/fsouza/go-dockerclient"
 	"github.com/google/go-github/github"
-	"github.com/remind101/conveyor/pkg/registry"
 	"github.com/remind101/empire/pkg/dockerutil"
 )
 
@@ -36,8 +35,6 @@ type Conveyor struct {
 	AuthConfiguration docker.AuthConfiguration
 	// docker client for interacting with the docker daemon api.
 	docker *docker.Client
-	// registry client for creating tags for an image.
-	registry registryClient
 	// github client for creating commit statuses.
 	github githubClient
 }
@@ -60,7 +57,6 @@ func NewFromEnv() (*Conveyor, error) {
 		BuildDir:          os.Getenv("BUILD_DIR"),
 		AuthConfiguration: auth,
 		github:            newGitHubClient(os.Getenv("GITHUB_TOKEN")),
-		registry:          newRegistryClient(u, p),
 		docker:            c,
 	}, nil
 }
@@ -87,17 +83,21 @@ func (c *Conveyor) Build(opts BuildOptions) (err error) {
 		return fmt.Errorf("pull: %v", err)
 	}
 
-	image, err := c.build(opts)
-	if err != nil {
+	if _, err := c.build(opts); err != nil {
 		return fmt.Errorf("build: %v", err)
 	}
 
-	if err := c.push(opts.Repository); err != nil {
-		return fmt.Errorf("push: %v", err)
+	tags := []string{
+		opts.Branch,
+		opts.Commit,
 	}
 
-	if err := c.tag(opts.Repository, image.ID, opts.Branch, opts.Commit); err != nil {
+	if err := c.tag(opts.Repository, tags...); err != nil {
 		return fmt.Errorf("tag: %v", err)
+	}
+
+	if err := c.push(opts.Repository, append([]string{"latest"}, tags...)...); err != nil {
+		return fmt.Errorf("push: %v", err)
 	}
 
 	return nil
@@ -158,15 +158,22 @@ func (c *Conveyor) build(opts BuildOptions) (*docker.Image, error) {
 }
 
 // push pushes the image to the docker registry.
-func (c *Conveyor) push(image string) error {
-	cmd := newCommand("docker", "push", image)
-	return cmd.Run()
+func (c *Conveyor) push(image string, tags ...string) error {
+	for _, t := range tags {
+		cmd := newCommand("docker", "push", fmt.Sprintf("%s:%s", image, t))
+		if err := cmd.Run(); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // tag tags the image id with the given tags.
-func (c *Conveyor) tag(repo, imageID string, tags ...string) error {
+func (c *Conveyor) tag(repo string, tags ...string) error {
 	for _, t := range tags {
-		if err := c.registry.Tag(repo, imageID, t); err != nil {
+		cmd := newCommand("docker", "tag", fmt.Sprintf("%s:latest", repo), fmt.Sprintf("%s:%s", repo, t))
+		if err := cmd.Run(); err != nil {
 			return err
 		}
 	}
@@ -197,34 +204,6 @@ var tagNotFoundRegex = regexp.MustCompile(`.*Tag (\S+) not found in repository (
 
 func tagNotFound(err error) bool {
 	return tagNotFoundRegex.MatchString(err.Error())
-}
-
-// registryClient represents a client for tagging an image in the docker
-// registry.
-type registryClient interface {
-	Tag(repo, imageID, tag string) error
-}
-
-// newRegistryClient returns a registryClient instance. If the username and
-// password aren't provided, a null implementation is returned.
-func newRegistryClient(username, password string) registryClient {
-	if username == "" && password == "" {
-		return &nullRegistryClient{}
-	}
-
-	c := registry.New(nil)
-	c.Username = username
-	c.Password = password
-	return c
-}
-
-// nullRegistryClient is an implementation of the registryClient interface tht
-// does nothing.
-type nullRegistryClient struct{}
-
-func (c *nullRegistryClient) Tag(repo, imageID, tag string) error {
-	fmt.Sprintf("Tagging %s on %s with %s\n", imageID, repo, tag)
-	return nil
 }
 
 // githubClient represents a client that can create github commit statuses.
