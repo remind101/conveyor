@@ -6,10 +6,17 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strings"
+
+	"golang.org/x/oauth2"
 
 	"github.com/fsouza/go-dockerclient"
+	"github.com/google/go-github/github"
 	"github.com/remind101/empire/pkg/dockerutil"
 )
+
+// Context is used for the commit status context.
+const Context = "container/docker"
 
 type BuildOptions struct {
 	// Repository is the repo to build.
@@ -26,19 +33,29 @@ type Conveyor struct {
 	// AuthConfiguration is the docker authentication credentials for
 	// pushing and pulling images from the registry.
 	AuthConfiguration docker.AuthConfiguration
+	// GitHubToken is the github auth token that will be used to create
+	// commit statuses.
+	GitHubToken string
 	// docker client for interacting with the docker daemon api.
 	docker *docker.Client
+	// registry client for creating tags for an image.
+	registry registryClient
+	// github client for creating commit statuses.
+	github githubClient
 }
 
-// New returns a new Conveyor instance.
-func New() (*Conveyor, error) {
+// NewFromEnv returns a new Conveyor instance with options configured from the
+// environment variables.
+func NewFromEnv() (*Conveyor, error) {
 	c, err := dockerutil.NewDockerClientFromEnv()
 	if err != nil {
 		return nil, err
 	}
 
 	return &Conveyor{
-		docker: c,
+		BuildDir:    os.Getenv("BUILD_DIR"),
+		GitHubToken: os.Getenv("GITHUB_TOKEN"),
+		docker:      c,
 	}, nil
 }
 
@@ -73,7 +90,7 @@ func (c *Conveyor) Build(opts BuildOptions) (err error) {
 		return fmt.Errorf("push: %v", err)
 	}
 
-	if err := c.tag(image.ID, opts.Branch, opts.Commit); err != nil {
+	if err := c.tag(opts.Repository, image.ID, opts.Branch, opts.Commit); err != nil {
 		return fmt.Errorf("tag: %v", err)
 	}
 
@@ -141,14 +158,33 @@ func (c *Conveyor) push(image string) error {
 }
 
 // tag tags the image id with the given tags.
-func (c *Conveyor) tag(id string, tags ...string) error {
-	// TODO
+func (c *Conveyor) tag(repo, imageID string, tags ...string) error {
+	if c.registry == nil {
+		c.registry = &nullRegistryClient{}
+	}
+
+	for _, t := range tags {
+		if err := c.registry.Tag(repo, imageID, t); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
 // updateStatus updates the given commit with a new status.
 func (c *Conveyor) updateStatus(repo, commit, status string) error {
-	return nil
+	if c.github == nil {
+		c.github = newGitHubClient(c.GitHubToken)
+	}
+
+	context := Context
+	parts := strings.SplitN(repo, "/", 2)
+	_, _, err := c.github.CreateStatus(parts[0], parts[1], commit, &github.RepoStatus{
+		State:   &status,
+		Context: &context,
+	})
+	return err
 }
 
 // newCommand returns an exec.Cmd that writes to Stdout and Stderr.
@@ -163,4 +199,41 @@ var tagNotFoundRegex = regexp.MustCompile(`.*Tag (\S+) not found in repository (
 
 func tagNotFound(err error) bool {
 	return tagNotFoundRegex.MatchString(err.Error())
+}
+
+type registryClient interface {
+	Tag(repo, imageID, tag string) error
+}
+
+type nullRegistryClient struct{}
+
+func (c *nullRegistryClient) Tag(repo, imageID, tag string) error {
+	fmt.Sprintf("Tagging %s on %s with %s\n", imageID, repo, tag)
+	return nil
+}
+
+// githubClient represents a client that can create github commit statuses.
+type githubClient interface {
+	CreateStatus(owner, repo, ref string, status *github.RepoStatus) (*github.RepoStatus, *github.Response, error)
+}
+
+// newGitHubClient returns a new githubClient instance. If token is an empty
+// string, then a fake client will be returned.
+func newGitHubClient(token string) githubClient {
+	if token == "" {
+		return &nullGitHubClient{}
+	}
+
+	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
+	tc := oauth2.NewClient(oauth2.NoContext, ts)
+	return github.NewClient(tc).Repositories
+}
+
+// nullGitHubClient is an implementation of the githubClient interface that does
+// nothing.
+type nullGitHubClient struct{}
+
+func (c *nullGitHubClient) CreateStatus(owner, repo, ref string, status *github.RepoStatus) (*github.RepoStatus, *github.Response, error) {
+	fmt.Printf("Updating status of %s on %s/%s to %s\n", ref, owner, repo, *status.State)
+	return nil, nil, nil
 }

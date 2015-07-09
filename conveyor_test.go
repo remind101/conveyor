@@ -21,7 +21,7 @@ func TestConveyor_Build(t *testing.T) {
 }
 
 func newTestConveyor(t testing.TB) *conveyor.Conveyor {
-	c, err := conveyor.New()
+	c, err := conveyor.NewFromEnv()
 	if err != nil {
 		t.Fatal(err)
 	}
