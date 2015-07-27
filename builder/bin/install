@@ -6,3 +6,8 @@ set -e
 echo " ---> Installing captain"
 curl -Ls https://github.com/harbur/captain/releases/download/v0.5.0/captain > /bin/captain
 chmod +x /bin/captain
+
+# Install a more recent version of docker
+echo " ---> Upgrading to docker 1.8 "
+curl -Ls https://master.dockerproject.org/linux/amd64/docker-1.8.0-dev > /usr/bin/docker
+chmod +x /usr/bin/docker
