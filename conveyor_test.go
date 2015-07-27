@@ -1,9 +1,10 @@
 package conveyor_test
 
 import (
-	"io/ioutil"
 	"os"
 	"testing"
+
+	"golang.org/x/net/context"
 
 	"github.com/remind101/conveyor"
 )
@@ -17,7 +18,7 @@ func TestConveyor_Build(t *testing.T) {
 		OutputStream: os.Stdout,
 	}
 
-	if err := c.Build(opts); err != nil {
+	if _, err := c.Build(context.Background(), opts); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -27,11 +28,5 @@ func newTestConveyor(t testing.TB) *conveyor.Conveyor {
 	if err != nil {
 		t.Fatal(err)
 	}
-	d, err := ioutil.TempDir("", "")
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Logf("BuildDir: %s", d)
-	c.BuildDir = d
 	return c
 }

@@ -1,0 +1,6 @@
+FROM ubuntu:14.04
+
+COPY .ssh /data/.ssh
+COPY .dockercfg /data/.dockercfg
+
+VOLUME /data

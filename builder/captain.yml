@@ -1,0 +1,6 @@
+builder:
+  build: Dockerfile
+  image: remind101/conveyor-builder
+data:
+  build: Dockerfile.data
+  image: captain-builder-data
