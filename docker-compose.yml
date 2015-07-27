@@ -1,7 +1,5 @@
 conveyor:
   build: ./
-  environment:
-    DOCKER_HOST: unix:///tmp/docker.sock
   env_file: .env
   volumes:
     - "/var/run/docker.sock:/tmp/docker.sock"
