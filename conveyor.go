@@ -22,8 +22,8 @@ const (
 type BuildOptions struct {
 	// Repository is the repo to build.
 	Repository string
-	// Commit is the git commit to build.
-	Commit string
+	// Sha is the git commit to build.
+	Sha string
 	// Branch is the name of the branch that this build relates to.
 	Branch string
 	// An io.Writer where output will be written to.

@@ -68,7 +68,7 @@ func (s *Server) Push(w http.ResponseWriter, r *http.Request) {
 	opts := BuildOptions{
 		Repository: event.Repository.FullName,
 		Branch:     strings.Replace(event.Ref, "refs/heads/", "", -1),
-		Commit:     event.HeadCommit.ID,
+		Sha:        event.HeadCommit.ID,
 	}
 
 	log, err := s.newLogger(opts)

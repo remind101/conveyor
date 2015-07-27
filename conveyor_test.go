@@ -12,9 +12,9 @@ import (
 func TestConveyor_Build(t *testing.T) {
 	c := newTestConveyor(t)
 	opts := conveyor.BuildOptions{
-		Repository:   "remind101/acme-inc",
-		Commit:       "72493cc5266a89774dbfe8875790b66cdba15c2e",
-		Branch:       "conveyor",
+		Repository:   "ejholmes/captain-test",
+		Sha:          "2e4edf57db00d55051c64d1568e2214858a0897d",
+		Branch:       "master",
 		OutputStream: os.Stdout,
 	}
 

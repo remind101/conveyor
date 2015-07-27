@@ -20,6 +20,9 @@ type Builder interface {
 
 // dockerBuilder is a Builder implementation that shells out to the docker CLI.
 type dockerBuilder struct {
+	// dataVolume is the name of the volume that contains ssh keys and
+	// configuration data.
+	dataVolume string
 	// Name of the image to use to build the docker image. Defaults to
 	// DefaultBuilderImage.
 	builder string
@@ -27,7 +30,14 @@ type dockerBuilder struct {
 
 // Build executes the docker image.
 func (b *dockerBuilder) Build(ctx context.Context, opts BuildOptions) (string, error) {
-	cmd := exec.Command("docker", "run")
+	cmd := exec.Command("docker", "run",
+		"--privileged=true",
+		fmt.Sprintf("--volumes-from=%s", b.data()),
+		"-e", fmt.Sprintf("REPOSITORY=%s", opts.Repository),
+		"-e", fmt.Sprintf("BRANCH=%s", opts.Branch),
+		"-e", fmt.Sprintf("SHA=%s", opts.Sha),
+		b.builderImage(),
+	)
 	cmd.Stdout = opts.OutputStream
 	cmd.Stderr = opts.OutputStream
 
@@ -46,6 +56,13 @@ func (b *dockerBuilder) builderImage() string {
 	return b.builder
 }
 
+func (b *dockerBuilder) data() string {
+	if b.dataVolume == "" {
+		return "data"
+	}
+	return b.dataVolume
+}
+
 // statusUpdaterBuilder is a Builder implementation that updates the commit
 // status in github.
 type statusUpdaterBuilder struct {
@@ -59,10 +76,10 @@ func (b *statusUpdaterBuilder) Build(ctx context.Context, opts BuildOptions) (id
 		if err != nil {
 			status = "error"
 		}
-		b.updateStatus(opts.Repository, opts.Commit, status)
+		b.updateStatus(opts.Repository, opts.Sha, status)
 	}()
 
-	if err = b.updateStatus(opts.Repository, opts.Commit, "pending"); err != nil {
+	if err = b.updateStatus(opts.Repository, opts.Sha, "pending"); err != nil {
 		err = fmt.Errorf("status: %v", err)
 		return
 	}
