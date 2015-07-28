@@ -14,9 +14,12 @@ Conveyor builds Docker images. Fast.
 
 Conveyor is designed to be faster than alternative build systems like the Docker Hub or Quay. It does this by making the following tradeoffs.
 
-1. It _should_ run on a single machine so that it can keep most of the Docker images in cache.
-2. It uses the latest version of Docker 1.8, which has a number of performance improvements when building and pushing images.
-3. It pulls the last built image for the branch to maximize the number of layers that can be used from the cache.
+1. It uses the latest version of Docker 1.8, which has a number of performance improvements when building and pushing images.
+2. It pulls the last built image for the branch to maximize the number of layers that can be used from the cache.
+
+## Scale Out
+
+Conveyor only needs to talk to the docker daemon API. The easiest way to scale out is to scale Docker out using [Docker Swarm](https://github.com/docker/swarm).
 
 ## Development
 
@@ -26,13 +29,11 @@ First, cp `.env.sample` to `.env` and add values in the environment variables. T
 cp .env.sample .env
 ```
 
-The easiest way to test it is to spin up vagrant and docker-compose:
+Then start it up with docker-compose:
 
 ```console
-$ ./bin/up
+$ docker-compose up
 ```
-
-The vagrant box brings up a Docker 1.8 environment, and docker-compose starts conveyor within it.
 
 If you want to test external GitHub webhooks, the easiest way to do that is using ngrok:
 
