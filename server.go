@@ -37,8 +37,8 @@ func NewServer(b Builder, newLogger LogFactory) http.Handler {
 	return n
 }
 
-func NewServerWithSecret(c *Conveyor, secret string) http.Handler {
-	return hookshot.Authorize(NewServer(c, nil), secret)
+func NewServerWithSecret(b Builder, secret string) http.Handler {
+	return hookshot.Authorize(NewServer(b, nil), secret)
 }
 
 func NewServerFromEnv() (http.Handler, error) {
@@ -46,7 +46,7 @@ func NewServerFromEnv() (http.Handler, error) {
 	if err != nil {
 		return nil, err
 	}
-	return NewServerWithSecret(c, os.Getenv("GITHUB_SECRET")), nil
+	return NewServerWithSecret(newAsyncBuilder(c), os.Getenv("GITHUB_SECRET")), nil
 }
 
 // Ping is an http.HandlerFunc that will handle the `ping` event from GitHub.

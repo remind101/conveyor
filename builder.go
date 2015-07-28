@@ -111,9 +111,9 @@ func newAsyncBuilder(b Builder) *asyncBuilder {
 	}
 }
 
-func (b *asyncBuilder) Build(ctx context.Context, opts BuildOptions) error {
+func (b *asyncBuilder) Build(ctx context.Context, opts BuildOptions) (string, error) {
 	go b.build(ctx, opts)
-	return nil
+	return "", nil
 }
 
 func (b *asyncBuilder) build(ctx context.Context, opts BuildOptions) {
