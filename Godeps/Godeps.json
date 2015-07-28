@@ -11,7 +11,7 @@
 		},
 		{
 			"ImportPath": "github.com/ejholmes/hookshot",
-			"Rev": "a37e081f0c1182305786466ecfa4df2317bc3903"
+			"Rev": "4802bea385193a8f3268b38a2918d46049931d6b"
 		},
 		{
 			"ImportPath": "github.com/google/go-github/github",
