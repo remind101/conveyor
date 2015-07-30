@@ -21,6 +21,24 @@ Conveyor is designed to be faster than alternative build systems like the Docker
 
 Conveyor only needs to talk to the docker daemon API. The easiest way to scale out is to scale Docker out using [Docker Swarm](https://github.com/docker/swarm).
 
+## API
+
+Conveyor also sports a restful API for triggering builds. You can use this this with tooling to, say for example, trigger a build before you deploy.
+
+### POST /builds
+
+This endpoint will create a build and stream it's output back to the client.
+
+**Example Request**
+
+```json
+{
+  "Repository": "remind101/acme-inc",
+  "Sha": "827fecd2d36ebeaa2fd05aa8ef3eed1e56a8cd57",
+  "Branch": "master"
+}
+```
+
 ## Development
 
 First, cp `.env.sample` to `.env` and add values in the environment variables. The `GITHUB_TOKEN` needs the `repo:status` scope.
