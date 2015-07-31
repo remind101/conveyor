@@ -11,8 +11,15 @@ import (
 	"github.com/remind101/conveyor"
 )
 
-func TestConveyor_Build(t *testing.T) {
+func TestMain(m *testing.M) {
+	// Set PATH to include a mocked out docker binary.
 	os.Setenv("PATH", fmt.Sprintf("%s:%s", "./bin", os.Getenv("PATH")))
+	os.Exit(m.Run())
+}
+
+// Performs a full integration level test of a build with the docker client
+// mocked out.
+func TestConveyor_Build(t *testing.T) {
 	c := newTestConveyor(t)
 
 	b := new(bytes.Buffer)
