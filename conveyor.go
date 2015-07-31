@@ -1,7 +1,6 @@
 package conveyor
 
 import (
-	"fmt"
 	"io"
 	"os"
 
@@ -73,6 +72,5 @@ func newGitHubClient(token string) githubClient {
 type nullGitHubClient struct{}
 
 func (c *nullGitHubClient) CreateStatus(owner, repo, ref string, status *github.RepoStatus) (*github.RepoStatus, *github.Response, error) {
-	fmt.Printf("Updating status of %s on %s/%s to %s\n", ref, owner, repo, *status.State)
 	return nil, nil, nil
 }
