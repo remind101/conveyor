@@ -2,4 +2,4 @@
 
 # A mock implementation of docker run for functional testing.
 
-echo "Built"
+echo "running: docker" $@
