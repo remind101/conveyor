@@ -51,11 +51,13 @@ pull() {
 }
 
 build() {
-  captain build
+  docker build -t "$REPOSITORY" .
+  docker tag "$REPOSITORY" "$REPOSITORY:$SHA"
+  docker tag -f "$REPOSITORY" "$REPOSITORY:$BRANCH" # Force tag because we pulled the last build for this branch.
 }
 
 push() {
-  captain push
+  docker push "$REPOSITORY"
 }
 
 run() {
