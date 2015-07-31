@@ -19,33 +19,49 @@ if [ -z "$SHA" ]; then
   error "SHA env var is required"
 fi
 
-# Copy ssh keys from the data volume.
-cp -r /data/.ssh /root/.ssh
-chown -R root:root ~/.ssh
-chmod -R 0600 ~/.ssh
-ssh-keyscan -t rsa github.com > ~/.ssh/known_hosts
-
-# Copy .dockercfg from the data volume.
-cp -r /data/.dockercfg /root/.dockercfg
-
-# Start docker daemon.
-service docker start
-
-sleep 5
-
-docker version
-
-# Clone the given branch and checkout the sha.
-git clone --depth 50 --branch="$BRANCH" "git@github.com:${REPOSITORY}.git" "$REPOSITORY"
-cd "$REPOSITORY"
-git checkout -qf "$SHA"
-
-# Attempt to pull the last build image for this branch.
-docker pull "$REPOSITORY:$BRANCH" || docker pull "$REPOSITORY:master" || docker pull "$REPOSITORY:latest"
-
 # Captain namespace. https://github.com/harbur/captain/blob/32fb0d765cae2c15fb2fa15b5b989fb527704715/captain/cmd.go#L115-L117
 export USER=`echo "${REPOSITORY}" | cut -f 1 -d '/'`
 
-# Build and push
-captain build
-captain push
+setup() {
+  # Copy ssh keys from the data volume.
+  cp -r /data/.ssh /root/.ssh
+  chown -R root:root ~/.ssh
+  chmod -R 0600 ~/.ssh
+  ssh-keyscan -t rsa github.com > ~/.ssh/known_hosts
+
+  # Copy .dockercfg from the data volume.
+  cp -r /data/.dockercfg /root/.dockercfg
+
+  # Start docker daemon.
+  service docker start
+
+  sleep 5
+}
+
+clone() {
+  # Clone the given branch and checkout the sha.
+  git clone --depth 50 --branch="$BRANCH" "git@github.com:${REPOSITORY}.git" "$REPOSITORY"
+  cd "$REPOSITORY"
+  git checkout -qf "$SHA"
+}
+
+pull() {
+  # Attempt to pull the last build image for this branch.
+  docker pull "$REPOSITORY:$BRANCH" || docker pull "$REPOSITORY:master" || docker pull "$REPOSITORY:latest"
+}
+
+build() {
+  captain build
+}
+
+push() {
+  captain push
+}
+
+run() {
+  setup
+  docker version
+  clone && pull && build && push
+}
+
+run
