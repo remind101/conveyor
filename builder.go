@@ -3,9 +3,11 @@ package conveyor
 import (
 	"fmt"
 	"log"
-	"os/exec"
 	"strings"
 
+	"code.google.com/p/go-uuid/uuid"
+
+	"github.com/fsouza/go-dockerclient"
 	"github.com/google/go-github/github"
 
 	"golang.org/x/net/context"
@@ -18,30 +20,66 @@ type Builder interface {
 	Build(context.Context, BuildOptions) (string, error)
 }
 
-// dockerBuilder is a Builder implementation that shells out to the docker CLI.
-type dockerBuilder struct {
+// DockerBuilder is a Builder implementation that runs the build in a docker
+// container.
+type DockerBuilder struct {
 	// dataVolume is the name of the volume that contains ssh keys and
 	// configuration data.
-	dataVolume string
+	DataVolume string
 	// Name of the image to use to build the docker image. Defaults to
 	// DefaultBuilderImage.
-	builder string
+	Image string
+
+	client *docker.Client
+}
+
+func NewDockerBuilder(c *docker.Client) *DockerBuilder {
+	return &DockerBuilder{client: c}
 }
 
 // Build executes the docker image.
-func (b *dockerBuilder) Build(ctx context.Context, opts BuildOptions) (string, error) {
-	cmd := exec.Command("docker", "run",
-		"--privileged=true",
-		fmt.Sprintf("--volumes-from=%s", b.data()),
-		"-e", fmt.Sprintf("REPOSITORY=%s", opts.Repository),
-		"-e", fmt.Sprintf("BRANCH=%s", opts.Branch),
-		"-e", fmt.Sprintf("SHA=%s", opts.Sha),
-		b.builderImage(),
-	)
-	cmd.Stdout = opts.OutputStream
-	cmd.Stderr = opts.OutputStream
+func (b *DockerBuilder) Build(ctx context.Context, opts BuildOptions) (string, error) {
+	c, err := b.client.CreateContainer(docker.CreateContainerOptions{
+		Name: uuid.New(),
+		Config: &docker.Config{
+			Tty:          true,
+			AttachStdout: true,
+			AttachStderr: true,
+			OpenStdin:    true,
+			Image:        b.image(),
+			Env: []string{
+				fmt.Sprintf("REPOSITORY=%s", opts.Repository),
+				fmt.Sprintf("BRANCH=%s", opts.Branch),
+				fmt.Sprintf("SHA=%s", opts.Sha),
+			},
+		},
+	})
+	if err != nil {
+		return "", err
+	}
+	defer b.client.RemoveContainer(docker.RemoveContainerOptions{
+		ID:            c.ID,
+		RemoveVolumes: true,
+		Force:         true,
+	})
 
-	if err := cmd.Run(); err != nil {
+	if err := b.client.StartContainer(c.ID, &docker.HostConfig{
+		Privileged:  true,
+		VolumesFrom: []string{b.dataVolume()},
+	}); err != nil {
+		return "", err
+	}
+
+	if err := b.client.AttachToContainer(docker.AttachToContainerOptions{
+		Container:    c.ID,
+		OutputStream: opts.OutputStream,
+		ErrorStream:  opts.OutputStream,
+		Logs:         true,
+		Stream:       true,
+		Stdout:       true,
+		Stderr:       true,
+		RawTerminal:  true,
+	}); err != nil {
 		return "", err
 	}
 
@@ -49,18 +87,18 @@ func (b *dockerBuilder) Build(ctx context.Context, opts BuildOptions) (string, e
 	return "", nil
 }
 
-func (b *dockerBuilder) builderImage() string {
-	if b.builder == "" {
+func (b *DockerBuilder) image() string {
+	if b.Image == "" {
 		return DefaultBuilderImage
 	}
-	return b.builder
+	return b.Image
 }
 
-func (b *dockerBuilder) data() string {
-	if b.dataVolume == "" {
+func (b *DockerBuilder) dataVolume() string {
+	if b.DataVolume == "" {
 		return "data"
 	}
-	return b.dataVolume
+	return b.DataVolume
 }
 
 // statusUpdaterBuilder is a Builder implementation that updates the commit

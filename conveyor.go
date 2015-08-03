@@ -7,6 +7,7 @@ import (
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 
+	"github.com/fsouza/go-dockerclient"
 	"github.com/google/go-github/github"
 )
 
@@ -33,16 +34,26 @@ type Conveyor struct {
 	Builder
 }
 
+// New returns a new Conveyor instance.
+func New(docker *docker.Client, github githubClient) *Conveyor {
+	// Wrap the docker builder to create github commit statuses.
+	b := &statusUpdaterBuilder{
+		Builder: NewDockerBuilder(docker),
+		github:  github,
+	}
+	return &Conveyor{Builder: b}
+}
+
 // NewFromEnv returns a new Conveyor instance with options configured from the
 // environment variables.
 func NewFromEnv() (*Conveyor, error) {
-	b := &statusUpdaterBuilder{
-		Builder: &dockerBuilder{},
-		github:  newGitHubClient(os.Getenv("GITHUB_TOKEN")),
+	docker, err := docker.NewClientFromEnv()
+	if err != nil {
+		return nil, err
 	}
-	return &Conveyor{
-		Builder: b,
-	}, nil
+
+	github := newGitHubClient(os.Getenv("GITHUB_TOKEN"))
+	return New(docker, github), nil
 }
 
 // Build builds a docker image for the

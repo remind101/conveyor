@@ -1,5 +1,0 @@
-#!/bin/bash
-
-# A mock implementation of docker run for functional testing.
-
-echo "running: docker" $@
