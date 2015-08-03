@@ -6,12 +6,21 @@
 	],
 	"Deps": [
 		{
+			"ImportPath": "code.google.com/p/go-uuid/uuid",
+			"Comment": "null-12",
+			"Rev": "7dda39b2e7d5e265014674c5af696ba4186679e9"
+		},
+		{
 			"ImportPath": "github.com/codegangsta/negroni",
 			"Rev": "c18469c22a9a334acf9b168b6e56375d83364d23"
 		},
 		{
 			"ImportPath": "github.com/ejholmes/hookshot",
 			"Rev": "4802bea385193a8f3268b38a2918d46049931d6b"
+		},
+		{
+			"ImportPath": "github.com/fsouza/go-dockerclient",
+			"Rev": "933433faa3e1c0bbc825b251143f8e77affbf797"
 		},
 		{
 			"ImportPath": "github.com/google/go-github/github",
