@@ -43,25 +43,9 @@
       "Type": "AWS::EC2::KeyPair::KeyName",
       "Description": "The name of the key pair to use to allow SSH access."
     },
-    "DockerRegistry": {
+    "DockerCfg": {
       "Type": "String",
-      "Description": "Docker private registry url",
-      "Default": "https://index.docker.io/v1/"
-    },
-    "DockerUser": {
-      "Type": "String",
-      "Description": "Docker username for private registry",
-      "Default": ""
-    },
-    "DockerPass": {
-      "Type": "String",
-      "Description": "Docker password for private registry",
-      "Default": "",
-      "NoEcho": true
-    },
-    "DockerEmail": {
-      "Type": "String",
-      "Description": "Docker registry email",
+      "Description": "Contents of a .dockercfg file.",
       "Default": ""
     },
     "MaxCapacity": {
@@ -171,6 +155,10 @@
             "CidrIp": "173.247.203.14/32"
           },
           {
+            "IpProtocol": "tcp", "FromPort": "22", "ToPort": "22",
+            "CidrIp": "50.247.91.161/32"
+          },
+          {
             "IpProtocol": "tcp", "FromPort": "8080", "ToPort": "8080",
             "SourceSecurityGroupId": { "Ref": "LoadBalancerSecurityGroup" }
           }
@@ -191,6 +179,10 @@
           {
             "IpProtocol": "tcp", "FromPort": "80", "ToPort": "80",
             "CidrIp": "173.247.203.14/32"
+          },
+          {
+            "IpProtocol": "tcp", "FromPort": "80", "ToPort": "80",
+            "CidrIp": "50.247.91.161/32"
           }
         ]
       }
@@ -332,6 +324,54 @@
     "LaunchConfiguration": {
       "Type": "AWS::AutoScaling::LaunchConfiguration",
       "DependsOn": "Cluster",
+      "Metadata": {
+        "AWS::CloudFormation::Init": {
+          "config": {
+            "files": {
+              "/etc/ecs/ecs.config": {
+                "content": { "Fn::Join": ["", [
+                  "ECS_CLUSTER=", { "Ref": "Cluster" }, "\n",
+                  "ECS_ENGINE_AUTH_TYPE=dockercfg\n",
+                  "ECS_ENGINE_AUTH_DATA=", { "Ref": "DockerCfg" }, "\n"
+                ]] },
+                "mode": "000644",
+                "owner": "root",
+                "group": "root"
+              },
+              "/home/ec2-user/.dockercfg": {
+                "content": { "Ref": "DockerCfg" },
+                "mode": "000600",
+                "owner": "ec2-user",
+                "group": "ec2-user"
+              },
+              "/root/.dockercfg": {
+                "content": { "Ref": "DockerCfg" },
+                "mode": "000600",
+                "owner": "root",
+                "group": "root"
+              },
+              "/var/run/conveyor/.dockercfg": {
+                "content": { "Ref": "DockerCfg" },
+                "mode": "000600",
+                "owner": "root",
+                "group": "root"
+              },
+              "/var/run/conveyor/.ssh/id_rsa": {
+                "content": { "Ref": "PrivateKey" },
+                "mode": "000600",
+                "owner": "root",
+                "group": "root"
+              },
+              "/var/run/conveyor/.ssh/id_rsa.pub": {
+                "content": { "Ref": "PublicKey" },
+                "mode": "000600",
+                "owner": "root",
+                "group": "root"
+              }
+            }
+          }
+        }
+      },
       "Properties": {
         "ImageId": { "Ref": "AmiId" },
         "InstanceType": { "Ref": "InstanceType" },
@@ -348,15 +388,9 @@
               [
                 "#!/bin/bash\n",
                 "mkdir -p /var/run/conveyor/.ssh\n",
-                "echo ECS_CLUSTER=", { "Ref": "Cluster" }, " >> /etc/ecs/ecs.config\n",
-                "echo ECS_ENGINE_AUTH_TYPE=dockercfg >> /etc/ecs/ecs.config\n",
-                "echo ECS_ENGINE_AUTH_DATA=\"{\\\"", { "Ref": "DockerRegistry" }, "\\\":{\\\"auth\\\":\\\"", { "Fn::Base64": { "Fn::Join": [ ":", [ { "Ref": "DockerUser" }, { "Ref": "DockerPass" } ] ] } }, "\\\",\\\"email\\\":\\\"", { "Ref": "DockerEmail" }, "\\\"}}\" >> /etc/ecs/ecs.config\n",
-                "echo \"{\\\"", { "Ref": "DockerRegistry" }, "\\\":{\\\"auth\\\":\\\"", { "Fn::Base64": { "Fn::Join": [ ":", [ { "Ref": "DockerUser" }, { "Ref": "DockerPass" } ] ] } }, "\\\",\\\"email\\\":\\\"", { "Ref": "DockerEmail" }, "\\\"}}\" >> /home/ec2-user/.dockercfg\n",
-                "echo \"{\\\"", { "Ref": "DockerRegistry" }, "\\\":{\\\"auth\\\":\\\"", { "Fn::Base64": { "Fn::Join": [ ":", [ { "Ref": "DockerUser" }, { "Ref": "DockerPass" } ] ] } }, "\\\",\\\"email\\\":\\\"", { "Ref": "DockerEmail" }, "\\\"}}\" >> /root/.dockercfg\n",
-                "echo \"{\\\"", { "Ref": "DockerRegistry" }, "\\\":{\\\"auth\\\":\\\"", { "Fn::Base64": { "Fn::Join": [ ":", [ { "Ref": "DockerUser" }, { "Ref": "DockerPass" } ] ] } }, "\\\",\\\"email\\\":\\\"", { "Ref": "DockerEmail" }, "\\\"}}\" >> /var/run/conveyor/.dockercfg\n",
+                "yum install -y aws-cfn-bootstrap\n",
+                "/opt/aws/bin/cfn-init -s ", { "Ref": "AWS::StackName" }, " -r LaunchConfiguration --region ", { "Ref": "AWS::Region" }, "\n",
                 "docker pull ", { "Ref": "BuilderImage" }, "\n",
-                "echo '", { "Ref": "PublicKey" }, "' >> /var/run/conveyor/.ssh/id_rsa.pub\n",
-                "echo '", { "Ref": "PrivateKey" }, "' >> /var/run/conveyor/.ssh/id_rsa\n",
                 "docker create --name data -v /var/run/conveyor:/var/run/conveyor:ro ubuntu:14.04\n"
               ]
             ]
