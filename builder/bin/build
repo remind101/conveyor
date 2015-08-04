@@ -3,6 +3,10 @@
 # Fail fast.
 set -e
 
+status() {
+  echo "\033[0;32m$@\033[0m"
+}
+
 error() {
   >&2 echo $@
 }
@@ -39,6 +43,7 @@ setup() {
 }
 
 clone() {
+  status "Cloning..."
   # Clone the given branch and checkout the sha.
   git clone --depth 50 --branch="$BRANCH" "git@github.com:${REPOSITORY}.git" "$REPOSITORY"
   cd "$REPOSITORY"
@@ -46,17 +51,20 @@ clone() {
 }
 
 pull() {
+  status "Pulling..."
   # Attempt to pull the last build image for this branch.
   docker pull "$REPOSITORY:$BRANCH" || docker pull "$REPOSITORY:master" || docker pull "$REPOSITORY:latest" || true
 }
 
 build() {
+  status "Building..."
   docker build -t "$REPOSITORY" .
   docker tag "$REPOSITORY" "$REPOSITORY:$SHA"
   docker tag -f "$REPOSITORY" "$REPOSITORY:$BRANCH" # Force tag because we pulled the last build for this branch.
 }
 
 push() {
+  status "Pushing..."
   docker push "$REPOSITORY:latest"
   docker push "$REPOSITORY:$SHA"
   docker push "$REPOSITORY:$BRANCH"
