@@ -55,7 +55,7 @@ func (b *DockerBuilder) Build(ctx context.Context, opts BuildOptions) (string, e
 		},
 	})
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("create container: %v", err)
 	}
 	defer b.client.RemoveContainer(docker.RemoveContainerOptions{
 		ID:            c.ID,
@@ -67,7 +67,7 @@ func (b *DockerBuilder) Build(ctx context.Context, opts BuildOptions) (string, e
 		Privileged:  true,
 		VolumesFrom: []string{b.dataVolume()},
 	}); err != nil {
-		return "", err
+		return "", fmt.Errorf("start container: %v", err)
 	}
 
 	if err := b.client.AttachToContainer(docker.AttachToContainerOptions{
@@ -80,7 +80,7 @@ func (b *DockerBuilder) Build(ctx context.Context, opts BuildOptions) (string, e
 		Stderr:       true,
 		RawTerminal:  true,
 	}); err != nil {
-		return "", err
+		return "", fmt.Errorf("attach: %v", err)
 	}
 
 	// TODO: Return sha256

@@ -16,9 +16,11 @@ build:
 	docker build -t ${IMAGE} .
 
 data: data/.dockercfg data/.ssh
-	docker build -f Dockerfile.data -t ${DATA_IMAGE} .
-	docker rm data
-	docker create --name data ${DATA_IMAGE}
+	docker rm data || true
+	docker create --name data \
+		-v ${PWD}/data/.ssh:/var/run/conveyor/.ssh \
+		-v ${PWD}/data/.dockercfg:/var/run/conveyor/.dockercfg \
+		ubuntu:14.04
 
 data/.dockercfg:
 	cp ${HOME}/.dockercfg data/.dockercfg

@@ -24,13 +24,13 @@ export USER=`echo "${REPOSITORY}" | cut -f 1 -d '/'`
 
 setup() {
   # Copy ssh keys from the data volume.
-  cp -r /data/.ssh /root/.ssh
+  cp -r /var/run/conveyor/.ssh /root/.ssh
   chown -R root:root ~/.ssh
   chmod -R 0600 ~/.ssh
   ssh-keyscan -t rsa github.com > ~/.ssh/known_hosts
 
   # Copy .dockercfg from the data volume.
-  cp -r /data/.dockercfg /root/.dockercfg
+  cp -r /var/run/conveyor/.dockercfg /root/.dockercfg
 
   # Start docker daemon.
   service docker start
@@ -47,7 +47,7 @@ clone() {
 
 pull() {
   # Attempt to pull the last build image for this branch.
-  docker pull "$REPOSITORY:$BRANCH" || docker pull "$REPOSITORY:master" || docker pull "$REPOSITORY:latest"
+  docker pull "$REPOSITORY:$BRANCH" || docker pull "$REPOSITORY:master" || docker pull "$REPOSITORY:latest" || true
 }
 
 build() {

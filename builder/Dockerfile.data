@@ -1,6 +1,0 @@
-FROM ubuntu:14.04
-
-COPY data/.ssh /data/.ssh
-COPY data/.dockercfg /data/.dockercfg
-
-VOLUME /data

@@ -13,6 +13,21 @@
       "Default": "",
       "Description": "GitHub API token to use when creating commit statuses."
     },
+    "PublicKey": {
+      "Type": "String",
+      "Default": "",
+      "Description": "Public key for pulling GitHub repos."
+    },
+    "PrivateKey": {
+      "Type": "String",
+      "Default": "",
+      "Description": "Private key for pulling GitHub repos."
+    },
+    "BuilderImage": {
+      "Type": "String",
+      "Default": "remind101/conveyor-builder",
+      "Description": "Docker image to use to perform the build."
+    },
     "InstanceType": {
       "Type": "String",
       "Default": "t2.small",
@@ -332,10 +347,17 @@
               "",
               [
                 "#!/bin/bash\n",
+                "mkdir -p /var/run/conveyor/.ssh\n",
                 "echo ECS_CLUSTER=", { "Ref": "Cluster" }, " >> /etc/ecs/ecs.config\n",
                 "echo ECS_ENGINE_AUTH_TYPE=dockercfg >> /etc/ecs/ecs.config\n",
                 "echo ECS_ENGINE_AUTH_DATA=\"{\\\"", { "Ref": "DockerRegistry" }, "\\\":{\\\"auth\\\":\\\"", { "Fn::Base64": { "Fn::Join": [ ":", [ { "Ref": "DockerUser" }, { "Ref": "DockerPass" } ] ] } }, "\\\",\\\"email\\\":\\\"", { "Ref": "DockerEmail" }, "\\\"}}\" >> /etc/ecs/ecs.config\n",
-                "echo \"{\\\"", { "Ref": "DockerRegistry" }, "\\\":{\\\"auth\\\":\\\"", { "Fn::Base64": { "Fn::Join": [ ":", [ { "Ref": "DockerUser" }, { "Ref": "DockerPass" } ] ] } }, "\\\",\\\"email\\\":\\\"", { "Ref": "DockerEmail" }, "\\\"}}\" >> /home/ec2-user/.dockercfg\n"
+                "echo \"{\\\"", { "Ref": "DockerRegistry" }, "\\\":{\\\"auth\\\":\\\"", { "Fn::Base64": { "Fn::Join": [ ":", [ { "Ref": "DockerUser" }, { "Ref": "DockerPass" } ] ] } }, "\\\",\\\"email\\\":\\\"", { "Ref": "DockerEmail" }, "\\\"}}\" >> /home/ec2-user/.dockercfg\n",
+                "echo \"{\\\"", { "Ref": "DockerRegistry" }, "\\\":{\\\"auth\\\":\\\"", { "Fn::Base64": { "Fn::Join": [ ":", [ { "Ref": "DockerUser" }, { "Ref": "DockerPass" } ] ] } }, "\\\",\\\"email\\\":\\\"", { "Ref": "DockerEmail" }, "\\\"}}\" >> /root/.dockercfg\n",
+                "echo \"{\\\"", { "Ref": "DockerRegistry" }, "\\\":{\\\"auth\\\":\\\"", { "Fn::Base64": { "Fn::Join": [ ":", [ { "Ref": "DockerUser" }, { "Ref": "DockerPass" } ] ] } }, "\\\",\\\"email\\\":\\\"", { "Ref": "DockerEmail" }, "\\\"}}\" >> /var/run/conveyor/.dockercfg\n",
+                "docker pull ", { "Ref": "BuilderImage" }, "\n",
+                "echo '", { "Ref": "PublicKey" }, "' >> /var/run/conveyor/.ssh/id_rsa.pub\n",
+                "echo '", { "Ref": "PrivateKey" }, "' >> /var/run/conveyor/.ssh/id_rsa\n",
+                "docker create --name data -v /var/run/conveyor:/var/run/conveyor:ro ubuntu:14.04\n"
               ]
             ]
           }
@@ -377,6 +399,10 @@
               {
                 "Name": "GITHUB_SECRET",
                 "Value": { "Ref": "GitHubSecret" }
+              },
+              {
+                "Name": "CLOUDWATCH_LOGS_GROUP",
+                "Value": { "Ref": "LogGroup" }
               }
             ],
             "PortMappings": [
@@ -422,6 +448,13 @@
         ],
         "Role" : { "Ref": "ServiceRole" },
         "TaskDefinition" : { "Ref": "TaskDefinition" }
+      }
+    },
+
+    "LogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "RetentionInDays": 1
       }
     }
   }
