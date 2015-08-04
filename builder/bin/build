@@ -57,7 +57,9 @@ build() {
 }
 
 push() {
-  docker push "$REPOSITORY"
+  docker push "$REPOSITORY:latest"
+  docker push "$REPOSITORY:$SHA"
+  docker push "$REPOSITORY:$BRANCH"
 }
 
 run() {
