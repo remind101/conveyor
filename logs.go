@@ -60,7 +60,7 @@ func S3Logger(bucket string, keys func() (s3gof3r.Keys, error)) (LogFactory, err
 		h.Add("x-amz-acl", "public-read")
 		w, err := b.PutWriter(name, h, nil)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("could not create s3 log file: %v", err)
 		}
 		return &logger{
 			WriteCloser: w,

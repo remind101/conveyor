@@ -257,7 +257,8 @@
               "Effect": "Allow",
               "Action": [
                 "s3:GetObject",
-                "s3:PutObject"
+                "s3:PutObject",
+                "s3:PutObjectAcl"
               ],
               "Resource": { "Fn::Join": ["", ["arn:aws:s3:::", { "Ref": "Bucket" }, "/*"]] }
             }
