@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/codegangsta/cli"
+	"github.com/remind101/conveyor"
 )
 
 var cmdServer = cli.Command{
@@ -34,6 +35,12 @@ var cmdServer = cli.Command{
 			Name:   "dry",
 			Usage:  "Enable dry run mode.",
 			EnvVar: "DRY",
+		},
+		cli.StringFlag{
+			Name:   "builder.image",
+			Value:  conveyor.DefaultBuilderImage,
+			Usage:  "A docker image to use to perform the build.",
+			EnvVar: "BUILDER_IMAGE",
 		},
 	},
 }

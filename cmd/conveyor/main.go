@@ -28,6 +28,7 @@ func newBuilder(c *cli.Context) (conveyor.Builder, error) {
 		return nil, err
 	}
 	b.DryRun = c.Bool("dry")
+	b.Image = c.String("builder.image")
 
 	g := conveyor.NewGitHubClient(c.String("github.token"))
 	return conveyor.UpdateGitHubCommitStatus(b, g), nil

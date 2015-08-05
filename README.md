@@ -15,6 +15,26 @@ Conveyor builds Docker images. Fast.
 1. Conveyor needs access to pull GitHub repositories. The easiest way to do this is to add a bot user to your organization and generate an ssh key for them. Once you've done that, create a new S3 bucket and upload `id_rsa` and `id_rsa.pub` to the root of the bucket.
 2. Create a new CloudFormation stack using [cloudformation.json](./cloudformation.json) in this repo.
 
+## Configuration
+
+The server command has the following available options:
+
+```
+NAME:
+   server - Run an http server to build Docker images whenever a push event happens on GitHub
+
+USAGE:
+   command server [command options] [arguments...]
+
+OPTIONS:
+   --port '8080'        Port to run the server on [$PORT]
+   --github.token         GitHub API token to use when updating commit statuses on repositories. [$GITHUB_TOKEN]
+   --github.secret        Shared secret used by GitHub to sign webhook payloads. This secret will be used to verify that the request came from GitHub. [$GITHUB_SECRET]
+   --dry          Enable dry run mode. [$DRY]
+   --builder.image 'remind101/conveyor-builder' A docker image to use to perform the build. [$BUILDER_IMAGE]
+   
+```
+
 ## Performance
 
 Conveyor is designed to be faster than alternative build systems like the Docker Hub or Quay. It does this by making the following tradeoffs.

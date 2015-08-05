@@ -20,6 +20,11 @@ const (
 
 	// DefaultBuilderImage is the docker image used to build docker images.
 	DefaultBuilderImage = "remind101/conveyor-builder"
+
+	// DefaultDataVolume is the default name of a container serving as a
+	// data volume for ssh keys and docker credentials. In general, you
+	// shouldn't need to change this.
+	DefaultDataVolume = "data"
 )
 
 type BuildOptions struct {
@@ -148,7 +153,7 @@ func (b *DockerBuilder) image() string {
 
 func (b *DockerBuilder) dataVolume() string {
 	if b.DataVolume == "" {
-		return "data"
+		return DefaultDataVolume
 	}
 	return b.DataVolume
 }
