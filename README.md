@@ -39,12 +39,12 @@ OPTIONS:
 
 Conveyor is designed to be faster than alternative build systems like the Docker Hub or Quay. It does this by making the following tradeoffs.
 
-1. It uses the latest version of Docker 1.8, which has a number of performance improvements when building and pushing images.
+1. It uses the latest version of Docker (1.8), which has a number of performance improvements when building and pushing images.
 2. It pulls the last built image for the branch to maximize the number of layers that can be used from the cache.
 
 ## Cache
 
-By default, conveyor will pull the last built image for the branch. This isn't always desireable, so you can disable the initial `docker pull` by adding the following to the git commit description:
+By default, conveyor will pull the last built image for the branch. This isn't always desirable, so you can disable the initial `docker pull` by adding the following to the git commit description:
 
 ```
 [docker nocache]
@@ -52,11 +52,11 @@ By default, conveyor will pull the last built image for the branch. This isn't a
 
 ## Scale Out
 
-Conveyor only needs to talk to the docker daemon API. The easiest way to scale out is to scale Docker out using [Docker Swarm](https://github.com/docker/swarm).
+Conveyor only needs to talk to the docker daemon API. The easiest way to scale out is to scale out Docker using [Docker Swarm](https://github.com/docker/swarm).
 
 ## API (Soon)
 
-Conveyor also sports a restful API for triggering builds. You can use this this with tooling to, say for example, trigger a build before you deploy.
+Conveyor also sports a restful API for triggering builds. You can use this with tooling to, say for example, trigger a build before you deploy.
 
 ### POST /builds
 
