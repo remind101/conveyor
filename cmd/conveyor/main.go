@@ -59,10 +59,12 @@ func logFactory(uri string) (f conveyor.LogFactory, err error) {
 
 	switch u.Scheme {
 	case "s3":
-		f, err = conveyor.S3Logger(u.Host, s3gof3r.EnvKeys)
-		if err != nil {
-			return
+		keys := s3gof3r.InstanceKeys
+		if len(os.Getenv("AWS_ACCESS_KEY_ID")) > 0 {
+			keys = s3gof3r.EnvKeys
 		}
+
+		f, err = conveyor.S3Logger(u.Host, keys)
 	}
 
 	// f = conveyor.MultiLogger(conveyor.StdoutLogger, f)
