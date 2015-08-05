@@ -57,6 +57,7 @@ func S3Logger(bucket string, keys func() (s3gof3r.Keys, error)) (LogFactory, err
 		name := filepath.Join("logs", opts.Repository, fmt.Sprintf("%s-%s.txt", opts.Sha, uuid.New()))
 		h := make(http.Header)
 		h.Add("Content-Type", "text/plain")
+		h.Add("x-amz-acl", "public-read")
 		w, err := b.PutWriter(name, h, nil)
 		if err != nil {
 			return nil, err

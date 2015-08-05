@@ -256,7 +256,8 @@
             {
               "Effect": "Allow",
               "Action": [
-                "s3:GetObject"
+                "s3:GetObject",
+                "s3:PutObject"
               ],
               "Resource": { "Fn::Join": ["", ["arn:aws:s3:::", { "Ref": "Bucket" }, "/*"]] }
             }
@@ -439,6 +440,10 @@
               {
                 "Name": "GITHUB_SECRET",
                 "Value": { "Ref": "GitHubSecret" }
+              },
+              {
+                "Name": "LOGGER",
+                "Value": { "Fn::Join": ["", ["s3://", { "Ref": "Bucket" }]] }
               },
               {
                 "Name": "DRY",

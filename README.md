@@ -32,6 +32,7 @@ OPTIONS:
    --github.secret        Shared secret used by GitHub to sign webhook payloads. This secret will be used to verify that the request came from GitHub. [$GITHUB_SECRET]
    --dry          Enable dry run mode. [$DRY]
    --builder.image 'remind101/conveyor-builder' A docker image to use to perform the build. [$BUILDER_IMAGE]
+   --logger 'stdout://'       The logger to use. Available options are `stdout://`, or `s3://bucket`. [$LOGGER]
    
 ```
 
