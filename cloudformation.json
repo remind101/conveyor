@@ -13,6 +13,11 @@
       "Default": "",
       "Description": "GitHub API token to use when creating commit statuses."
     },
+    "AllowedCIDR": {
+      "Type": "String",
+      "Default": "",
+      "Description": "CIDR address to allow SSH access into hosts."
+    },
     "Bucket": {
       "Type": "String",
       "Default": "",
@@ -147,11 +152,7 @@
         "SecurityGroupIngress": [
           {
             "IpProtocol": "tcp", "FromPort": "22", "ToPort": "22",
-            "CidrIp": "173.247.203.14/32"
-          },
-          {
-            "IpProtocol": "tcp", "FromPort": "22", "ToPort": "22",
-            "CidrIp": "50.247.91.161/32"
+            "CidrIp": { "Ref": "AllowedCIDR" }
           },
           {
             "IpProtocol": "tcp", "FromPort": "8080", "ToPort": "8080",
@@ -173,11 +174,7 @@
           },
           {
             "IpProtocol": "tcp", "FromPort": "80", "ToPort": "80",
-            "CidrIp": "173.247.203.14/32"
-          },
-          {
-            "IpProtocol": "tcp", "FromPort": "80", "ToPort": "80",
-            "CidrIp": "50.247.91.161/32"
+            "CidrIp": { "Ref": "AllowedCIDR" }
           }
         ]
       }

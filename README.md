@@ -10,6 +10,11 @@ Conveyor builds Docker images. Fast.
 
 ![](https://camo.githubusercontent.com/ef1699d11369ebaad557699528f254cf89f2525d/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f656a686f6c6d65732e6769746875622e636f6d2f4137324e6a2e706e67)
 
+## Installation
+
+1. Conveyor needs access to pull GitHub repositories. The easiest way to do this is to add a bot user to your organization and generate an ssh key for them. Once you've done that, create a new S3 bucket and upload `id_rsa` and `id_rsa.pub` to the root of the bucket.
+2. Create a new CloudFormation stack using [cloudformation.json](./cloudformation.json) in this repo.
+
 ## Performance
 
 Conveyor is designed to be faster than alternative build systems like the Docker Hub or Quay. It does this by making the following tradeoffs.
@@ -17,11 +22,19 @@ Conveyor is designed to be faster than alternative build systems like the Docker
 1. It uses the latest version of Docker 1.8, which has a number of performance improvements when building and pushing images.
 2. It pulls the last built image for the branch to maximize the number of layers that can be used from the cache.
 
+## Cache
+
+By default, conveyor will pull the last built image for the branch. This isn't always desireable, so you can disable the initial `docker pull` by adding the following to the git commit description:
+
+```
+[docker nocache]
+```
+
 ## Scale Out
 
 Conveyor only needs to talk to the docker daemon API. The easiest way to scale out is to scale Docker out using [Docker Swarm](https://github.com/docker/swarm).
 
-## API
+## API (Soon)
 
 Conveyor also sports a restful API for triggering builds. You can use this this with tooling to, say for example, trigger a build before you deploy.
 

@@ -64,7 +64,7 @@ build() {
 }
 
 push() {
-  if [ ! -z "$DRY" ]; then
+  if [ -z "$DRY" ]; then
     status "Pushing..."
     docker push "$REPOSITORY:latest"
     docker push "$REPOSITORY:$SHA"

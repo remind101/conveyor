@@ -10,6 +10,7 @@ test: build data
 		-e REPOSITORY=ejholmes/captain-test \
 		-e BRANCH=master \
 		-e SHA=2e4edf57db00d55051c64d1568e2214858a0897d \
+		-e DRY=true \
 		${IMAGE}
 
 build:
