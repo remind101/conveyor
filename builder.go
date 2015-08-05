@@ -20,6 +20,13 @@ type Builder interface {
 	Build(context.Context, BuildOptions) (string, error)
 }
 
+// BuilderFunc is a function that implements the Builder interface.
+type BuilderFunc func(context.Context, BuildOptions) (string, error)
+
+func (fn BuilderFunc) Build(ctx context.Context, opts BuildOptions) (string, error) {
+	return fn(ctx, opts)
+}
+
 // DockerBuilder is a Builder implementation that runs the build in a docker
 // container.
 type DockerBuilder struct {
@@ -29,12 +36,29 @@ type DockerBuilder struct {
 	// Name of the image to use to build the docker image. Defaults to
 	// DefaultBuilderImage.
 	Image string
+	// Set to true to enable dry runs. This sets the `DRY` environment
+	// variable within the builder container to `true`. The behavior of this
+	// flag depends on how the builder image handles the `DRY` environment
+	// variable.
+	DryRun bool
 
 	client *docker.Client
 }
 
+// NewDockerBuilder returns a new DockerBuilder backed by the docker client.
 func NewDockerBuilder(c *docker.Client) *DockerBuilder {
 	return &DockerBuilder{client: c}
+}
+
+// NewDockerBuilderFromEnv returns a new DockerBuilder with a docker client
+// configured from the standard Docker environment variables.
+func NewDockerBuilderFromEnv() (*DockerBuilder, error) {
+	c, err := docker.NewClientFromEnv()
+	if err != nil {
+		return nil, err
+	}
+
+	return NewDockerBuilder(c), nil
 }
 
 // Build executes the docker image.
@@ -51,6 +75,7 @@ func (b *DockerBuilder) Build(ctx context.Context, opts BuildOptions) (string, e
 				fmt.Sprintf("REPOSITORY=%s", opts.Repository),
 				fmt.Sprintf("BRANCH=%s", opts.Branch),
 				fmt.Sprintf("SHA=%s", opts.Sha),
+				fmt.Sprintf("DRY=%s", b.dryRun()),
 			},
 		},
 	})
@@ -87,6 +112,13 @@ func (b *DockerBuilder) Build(ctx context.Context, opts BuildOptions) (string, e
 	return "", nil
 }
 
+func (b *DockerBuilder) dryRun() string {
+	if b.DryRun {
+		return "true"
+	}
+	return ""
+}
+
 func (b *DockerBuilder) image() string {
 	if b.Image == "" {
 		return DefaultBuilderImage
@@ -101,11 +133,20 @@ func (b *DockerBuilder) dataVolume() string {
 	return b.DataVolume
 }
 
+// UpdateGitHubCommitStatus wraps b to update the GitHub commit status when a
+// build starts, and stops.
+func UpdateGitHubCommitStatus(b Builder, g GitHubClient) Builder {
+	return &statusUpdaterBuilder{
+		Builder: b,
+		github:  g,
+	}
+}
+
 // statusUpdaterBuilder is a Builder implementation that updates the commit
 // status in github.
 type statusUpdaterBuilder struct {
 	Builder
-	github githubClient
+	github GitHubClient
 }
 
 func (b *statusUpdaterBuilder) Build(ctx context.Context, opts BuildOptions) (id string, err error) {
@@ -137,25 +178,16 @@ func (b *statusUpdaterBuilder) updateStatus(repo, commit, status string) error {
 	return err
 }
 
-// asyncBuilder is an implementation of the Builder interface that builds in a
-// goroutine.
-type asyncBuilder struct {
-	Builder
-}
-
-func newAsyncBuilder(b Builder) *asyncBuilder {
-	return &asyncBuilder{
-		Builder: b,
+// BuildAsync wraps a Builder to run the build in a goroutine.
+func BuildAsync(b Builder) Builder {
+	build := func(ctx context.Context, opts BuildOptions) {
+		if _, err := b.Build(ctx, opts); err != nil {
+			log.Printf("build err: %v", err)
+		}
 	}
-}
 
-func (b *asyncBuilder) Build(ctx context.Context, opts BuildOptions) (string, error) {
-	go b.build(ctx, opts)
-	return "", nil
-}
-
-func (b *asyncBuilder) build(ctx context.Context, opts BuildOptions) {
-	if _, err := b.Builder.Build(ctx, opts); err != nil {
-		log.Printf("build err: %v", err)
-	}
+	return BuilderFunc(func(ctx context.Context, opts BuildOptions) (string, error) {
+		go build(ctx, opts)
+		return "", nil
+	})
 }

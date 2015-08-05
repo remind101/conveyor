@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
-	"os"
 	"strings"
 
 	"golang.org/x/net/context"
@@ -39,14 +38,6 @@ func NewServer(b Builder, newLogger LogFactory) http.Handler {
 
 func NewServerWithSecret(b Builder, secret string) http.Handler {
 	return hookshot.Authorize(NewServer(b, nil), secret)
-}
-
-func NewServerFromEnv() (http.Handler, error) {
-	c, err := NewFromEnv()
-	if err != nil {
-		return nil, err
-	}
-	return NewServerWithSecret(newAsyncBuilder(c), os.Getenv("GITHUB_SECRET")), nil
 }
 
 // Ping is an http.HandlerFunc that will handle the `ping` event from GitHub.

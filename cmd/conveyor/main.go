@@ -1,20 +1,39 @@
 package main
 
 import (
-	"flag"
 	"log"
 	"net/http"
+	"os"
 
+	"github.com/codegangsta/cli"
 	"github.com/remind101/conveyor"
 )
 
 func main() {
-	var port = flag.String("port", "8080", "The port to bind to.")
-	s, err := conveyor.NewServerFromEnv()
-	if err != nil {
-		log.Fatal(err)
+	app := cli.NewApp()
+	app.Name = "conveyor"
+	app.Usage = "Build docker images from GitHub repositories"
+	app.Commands = []cli.Command{
+		cmdServer,
 	}
 
-	log.Println("Listening on " + *port)
-	log.Fatal(http.ListenAndServe(":"+*port, s))
+	if err := app.Run(os.Args); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func newBuilder(c *cli.Context) (conveyor.Builder, error) {
+	b, err := conveyor.NewDockerBuilderFromEnv()
+	if err != nil {
+		return nil, err
+	}
+	b.DryRun = c.Bool("dry")
+
+	g := conveyor.NewGitHubClient(c.String("github.token"))
+	return conveyor.UpdateGitHubCommitStatus(b, g), nil
+}
+
+func newServer(c *cli.Context, b conveyor.Builder) http.Handler {
+	b = conveyor.BuildAsync(b)
+	return conveyor.NewServerWithSecret(b, c.String("github.secret"))
 }

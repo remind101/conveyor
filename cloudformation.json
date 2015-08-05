@@ -444,6 +444,10 @@
                 "Value": { "Ref": "GitHubSecret" }
               },
               {
+                "Name": "DRY",
+                "Value": "true"
+              },
+              {
                 "Name": "CLOUDWATCH_LOGS_GROUP",
                 "Value": { "Ref": "LogGroup" }
               }

@@ -64,10 +64,12 @@ build() {
 }
 
 push() {
-  status "Pushing..."
-  docker push "$REPOSITORY:latest"
-  docker push "$REPOSITORY:$SHA"
-  docker push "$REPOSITORY:$BRANCH"
+  if [ ! -z "$DRY" ]; then
+    status "Pushing..."
+    docker push "$REPOSITORY:latest"
+    docker push "$REPOSITORY:$SHA"
+    docker push "$REPOSITORY:$BRANCH"
+  fi
 }
 
 run() {
