@@ -34,6 +34,9 @@ type BuildOptions struct {
 	Sha string
 	// Branch is the name of the branch that this build relates to.
 	Branch string
+	// Set to true to disable the layer cache. The zero value is to enable
+	// caching.
+	NoCache bool
 	// An io.Writer where output will be written to.
 	OutputStream io.Writer
 }
@@ -88,6 +91,14 @@ func NewDockerBuilderFromEnv() (*DockerBuilder, error) {
 
 // Build executes the docker image.
 func (b *DockerBuilder) Build(ctx context.Context, opts BuildOptions) (string, error) {
+	env := []string{
+		fmt.Sprintf("REPOSITORY=%s", opts.Repository),
+		fmt.Sprintf("BRANCH=%s", opts.Branch),
+		fmt.Sprintf("SHA=%s", opts.Sha),
+		fmt.Sprintf("DRY=%s", b.dryRun()),
+		fmt.Sprintf("CACHE=%s", b.cache(opts)),
+	}
+
 	c, err := b.client.CreateContainer(docker.CreateContainerOptions{
 		Name: uuid.New(),
 		Config: &docker.Config{
@@ -96,12 +107,7 @@ func (b *DockerBuilder) Build(ctx context.Context, opts BuildOptions) (string, e
 			AttachStderr: true,
 			OpenStdin:    true,
 			Image:        b.image(),
-			Env: []string{
-				fmt.Sprintf("REPOSITORY=%s", opts.Repository),
-				fmt.Sprintf("BRANCH=%s", opts.Branch),
-				fmt.Sprintf("SHA=%s", opts.Sha),
-				fmt.Sprintf("DRY=%s", b.dryRun()),
-			},
+			Env:          env,
 		},
 	})
 	if err != nil {
@@ -156,6 +162,14 @@ func (b *DockerBuilder) dataVolume() string {
 		return DefaultDataVolume
 	}
 	return b.DataVolume
+}
+
+func (b *DockerBuilder) cache(opts BuildOptions) string {
+	if opts.NoCache {
+		return "off"
+	}
+
+	return "on"
 }
 
 // UpdateGitHubCommitStatus wraps b to update the GitHub commit status when a

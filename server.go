@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"regexp"
 	"strings"
 
 	"golang.org/x/net/context"
@@ -50,7 +51,6 @@ func (s *Server) Push(w http.ResponseWriter, r *http.Request) {
 	ctx := context.TODO()
 
 	var event events.Push
-
 	if err := json.NewDecoder(r.Body).Decode(&event); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -60,6 +60,7 @@ func (s *Server) Push(w http.ResponseWriter, r *http.Request) {
 		Repository: event.Repository.FullName,
 		Branch:     strings.Replace(event.Ref, "refs/heads/", "", -1),
 		Sha:        event.HeadCommit.ID,
+		NoCache:    noCache(event.HeadCommit.Message),
 	}
 
 	log, err := s.newLogger(opts)
@@ -74,4 +75,13 @@ func (s *Server) Push(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+}
+
+// http://rubular.com/r/y8oJAY9eAS
+var noCacheRegexp = regexp.MustCompile(`\[docker nocache\]`)
+
+// noCache returns whether the docker layer cache should be used for this build
+// or not.
+func noCache(message string) bool {
+	return noCacheRegexp.MatchString(message)
 }

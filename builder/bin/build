@@ -51,9 +51,13 @@ clone() {
 }
 
 pull() {
-  status "Pulling..."
-  # Attempt to pull the last build image for this branch.
-  docker pull "$REPOSITORY:$BRANCH" || docker pull "$REPOSITORY:master" || docker pull "$REPOSITORY:latest" || true
+  if [ "$CACHE" = "on" ]; then
+    status "Pulling..."
+    # Attempt to pull the last build image for this branch.
+    docker pull "$REPOSITORY:$BRANCH" || docker pull "$REPOSITORY:master" || docker pull "$REPOSITORY:latest" || true
+  else
+    status "Cache disabled. Not pulling."
+  fi
 }
 
 build() {
@@ -69,6 +73,8 @@ push() {
     docker push "$REPOSITORY:latest"
     docker push "$REPOSITORY:$SHA"
     docker push "$REPOSITORY:$BRANCH"
+  else
+    status "Dry run enabled. Not pushing."
   fi
 }
 
