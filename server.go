@@ -18,15 +18,15 @@ import (
 // GitHub webhooks.
 type Server struct {
 	Builder
-	newLogger LogFactory
+	LogFactory LogFactory
+
+	// mux contains the routes.
+	mux http.Handler
 }
 
-func NewServer(b Builder, newLogger LogFactory) http.Handler {
-	if newLogger == nil {
-		newLogger = StdoutLogger
-	}
-
-	s := &Server{Builder: b, newLogger: newLogger}
+// NewServer returns a new Server instance
+func NewServer(b Builder) *Server {
+	s := &Server{Builder: b}
 
 	r := hookshot.NewRouter()
 	r.HandleFunc("ping", s.Ping)
@@ -34,11 +34,14 @@ func NewServer(b Builder, newLogger LogFactory) http.Handler {
 
 	n := negroni.Classic()
 	n.UseHandler(r)
-	return n
+
+	s.mux = n
+	return s
 }
 
-func NewServerWithSecret(b Builder, secret string) http.Handler {
-	return hookshot.Authorize(NewServer(b, nil), secret)
+// ServeHTTP implements the http.Handler interface.
+func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	s.mux.ServeHTTP(w, r)
 }
 
 // Ping is an http.HandlerFunc that will handle the `ping` event from GitHub.
@@ -75,6 +78,14 @@ func (s *Server) Push(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+}
+
+func (s *Server) newLogger(opts BuildOptions) (io.Writer, error) {
+	if s.LogFactory == nil {
+		return StdoutLogger(opts)
+	}
+
+	return s.LogFactory(opts)
 }
 
 // http://rubular.com/r/y8oJAY9eAS

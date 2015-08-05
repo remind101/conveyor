@@ -42,6 +42,12 @@ var cmdServer = cli.Command{
 			Usage:  "A docker image to use to perform the build.",
 			EnvVar: "BUILDER_IMAGE",
 		},
+		cli.StringFlag{
+			Name:   "logger",
+			Value:  "stdout://",
+			Usage:  "The logger to use. Available options are `stdout://`, or `s3://bucket`.",
+			EnvVar: "LOGGER",
+		},
 	},
 }
 
@@ -53,7 +59,10 @@ func runServer(c *cli.Context) {
 		log.Fatal(err)
 	}
 
-	s := newServer(c, b)
+	s, err := newServer(c, b)
+	if err != nil {
+		log.Fatal(err)
+	}
 	log.Println("Listening on " + port)
 	log.Fatal(http.ListenAndServe(":"+port, s))
 }

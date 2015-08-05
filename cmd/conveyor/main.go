@@ -3,10 +3,13 @@ package main
 import (
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 
 	"github.com/codegangsta/cli"
+	"github.com/ejholmes/hookshot"
 	"github.com/remind101/conveyor"
+	"github.com/rlmcpherson/s3gof3r"
 )
 
 func main() {
@@ -34,7 +37,34 @@ func newBuilder(c *cli.Context) (conveyor.Builder, error) {
 	return conveyor.UpdateGitHubCommitStatus(b, g), nil
 }
 
-func newServer(c *cli.Context, b conveyor.Builder) http.Handler {
+func newServer(c *cli.Context, b conveyor.Builder) (http.Handler, error) {
 	b = conveyor.BuildAsync(b)
-	return conveyor.NewServerWithSecret(b, c.String("github.secret"))
+	s := conveyor.NewServer(b)
+
+	f, err := logFactory(c.String("logger"))
+	if err != nil {
+		return nil, err
+	}
+	s.LogFactory = f
+
+	return hookshot.Authorize(s, c.String("github.secret")), nil
+}
+
+func logFactory(uri string) (f conveyor.LogFactory, err error) {
+	var u *url.URL
+	u, err = url.Parse(uri)
+	if err != nil {
+		return nil, err
+	}
+
+	switch u.Scheme {
+	case "s3":
+		f, err = conveyor.S3Logger(u.Host, s3gof3r.EnvKeys)
+		if err != nil {
+			return
+		}
+	}
+
+	f = conveyor.MultiLogger(conveyor.StdoutLogger, f)
+	return
 }

@@ -36,6 +36,11 @@
 			"Rev": "547ef5ac979778feb2f760cdb5f4eae1a2207b86"
 		},
 		{
+			"ImportPath": "github.com/rlmcpherson/s3gof3r",
+			"Comment": "v0.4.10-10-g4ecf3c1",
+			"Rev": "4ecf3c16aa1ebde1a25b2d4240595010598fd5d6"
+		},
+		{
 			"ImportPath": "golang.org/x/net/context",
 			"Rev": "1dfe7915deaf3f80b962c163b918868d8a6d8974"
 		},
