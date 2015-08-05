@@ -3,6 +3,5 @@ conveyor:
   env_file: .env
   volumes:
     - "/var/run/docker.sock:/var/run/docker.sock"
-    - "/usr/local/bin/docker:/usr/bin/docker:ro"
   ports:
     - "8080:8080"
