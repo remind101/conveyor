@@ -141,6 +141,16 @@ func (b *DockerBuilder) Build(ctx context.Context, opts BuildOptions) (string, e
 		return "", fmt.Errorf("attach: %v", err)
 	}
 
+	exit, err := b.client.WaitContainer(c.ID)
+	if err != nil {
+		return "", fmt.Errorf("wait container: %v", err)
+	}
+
+	// A non-zero exit status means the build failed.
+	if exit != 0 {
+		return "", fmt.Errorf("container returned a non-zero exit code: %d", exit)
+	}
+
 	// TODO: Return sha256
 	return "", nil
 }
@@ -194,12 +204,12 @@ func (b *statusUpdaterBuilder) Build(ctx context.Context, opts BuildOptions) (id
 	defer func() {
 		status := "success"
 		if err != nil {
-			status = "error"
+			status = "failure"
 		}
-		b.updateStatus(opts, status)
+		b.updateStatus(opts, status, err)
 	}()
 
-	if err = b.updateStatus(opts, "pending"); err != nil {
+	if err = b.updateStatus(opts, "pending", nil); err != nil {
 		err = fmt.Errorf("status: %v", err)
 		return
 	}
@@ -209,15 +219,20 @@ func (b *statusUpdaterBuilder) Build(ctx context.Context, opts BuildOptions) (id
 }
 
 // updateStatus updates the given commit with a new status.
-func (b *statusUpdaterBuilder) updateStatus(opts BuildOptions, status string) error {
+func (b *statusUpdaterBuilder) updateStatus(opts BuildOptions, status string, err error) error {
 	context := Context
 	parts := strings.SplitN(opts.Repository, "/", 2)
-	_, _, err := b.github.CreateStatus(parts[0], parts[1], opts.Sha, &github.RepoStatus{
-		State:     &status,
-		Context:   &context,
-		TargetURL: github.String(opts.OutputStream.URL()),
+	var description string
+	if err != nil {
+		description = err.Error()
+	}
+	_, _, err2 := b.github.CreateStatus(parts[0], parts[1], opts.Sha, &github.RepoStatus{
+		State:       &status,
+		Context:     &context,
+		Description: github.String(description),
+		TargetURL:   github.String(opts.OutputStream.URL()),
 	})
-	return err
+	return err2
 }
 
 // BuildAsync wraps a Builder to run the build in a goroutine.

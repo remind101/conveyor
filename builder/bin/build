@@ -39,7 +39,10 @@ setup() {
   # Start docker daemon.
   service docker start
 
-  sleep 5
+  # Wait for docker daemon to come up.
+  until docker version > /dev/null 2>&1; do
+    sleep 1
+  done
 }
 
 clone() {
