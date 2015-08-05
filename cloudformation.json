@@ -443,10 +443,6 @@
               {
                 "Name": "DRY",
                 "Value": "true"
-              },
-              {
-                "Name": "CLOUDWATCH_LOGS_GROUP",
-                "Value": { "Ref": "LogGroup" }
               }
             ],
             "PortMappings": [
@@ -492,13 +488,6 @@
         ],
         "Role" : { "Ref": "ServiceRole" },
         "TaskDefinition" : { "Ref": "TaskDefinition" }
-      }
-    },
-
-    "LogGroup": {
-      "Type": "AWS::Logs::LogGroup",
-      "Properties": {
-        "RetentionInDays": 1
       }
     }
   }
