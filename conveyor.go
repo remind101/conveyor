@@ -222,14 +222,15 @@ func (b *statusUpdaterBuilder) Build(ctx context.Context, opts BuildOptions) (id
 func (b *statusUpdaterBuilder) updateStatus(opts BuildOptions, status string, err error) error {
 	context := Context
 	parts := strings.SplitN(opts.Repository, "/", 2)
-	var description string
+	var description *string
 	if err != nil {
-		description = err.Error()
+		s := err.Error()
+		description = &s
 	}
 	_, _, err2 := b.github.CreateStatus(parts[0], parts[1], opts.Sha, &github.RepoStatus{
 		State:       &status,
 		Context:     &context,
-		Description: github.String(description),
+		Description: description,
 		TargetURL:   github.String(opts.OutputStream.URL()),
 	})
 	return err2
