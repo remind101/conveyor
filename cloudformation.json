@@ -13,15 +13,10 @@
       "Default": "",
       "Description": "GitHub API token to use when creating commit statuses."
     },
-    "PublicKey": {
+    "Bucket": {
       "Type": "String",
       "Default": "",
-      "Description": "Public key for pulling GitHub repos."
-    },
-    "PrivateKey": {
-      "Type": "String",
-      "Default": "",
-      "Description": "Private key for pulling GitHub repos."
+      "Description": "S3 bucket where ssh keys are located."
     },
     "BuilderImage": {
       "Type": "String",
@@ -260,6 +255,13 @@
               "Resource": [
                 "*"
               ]
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "s3:GetObject"
+              ],
+              "Resource": { "Fn::Join": ["", ["arn:aws:s3:::", { "Ref": "Bucket" }, "/*"]] }
             }
           ]
         }
@@ -325,6 +327,13 @@
       "Type": "AWS::AutoScaling::LaunchConfiguration",
       "DependsOn": "Cluster",
       "Metadata": {
+        "AWS::CloudFormation::Authentication": {
+          "S3AccessCreds": {
+            "type": "S3",
+            "roleName": { "Ref": "InstanceRole" },
+            "buckets": { "Ref": "Bucket" }
+          }
+        },
         "AWS::CloudFormation::Init": {
           "config": {
             "files": {
@@ -357,13 +366,13 @@
                 "group": "root"
               },
               "/var/run/conveyor/.ssh/id_rsa": {
-                "content": { "Ref": "PrivateKey" },
+                "source": { "Fn::Join": ["", ["http://s3.amazonaws.com/", { "Ref": "Bucket" }, "/id_rsa"]] },
                 "mode": "000600",
                 "owner": "root",
                 "group": "root"
               },
               "/var/run/conveyor/.ssh/id_rsa.pub": {
-                "content": { "Ref": "PublicKey" },
+                "source": { "Fn::Join": ["", ["http://s3.amazonaws.com/", { "Ref": "Bucket" }, "/id_rsa.pub"]] },
                 "mode": "000600",
                 "owner": "root",
                 "group": "root"
