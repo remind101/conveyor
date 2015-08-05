@@ -2,7 +2,6 @@ package conveyor
 
 import (
 	"fmt"
-	"io"
 	"log"
 	"strings"
 
@@ -125,6 +124,9 @@ func (b *DockerBuilder) Build(ctx context.Context, opts BuildOptions) (string, e
 	}); err != nil {
 		return "", fmt.Errorf("start container: %v", err)
 	}
+	// Attempt to close the stream if the writer supports it. This
+	// is needed for S3 logger to ensure that the file is written.
+	defer opts.OutputStream.Close()
 
 	if err := b.client.AttachToContainer(docker.AttachToContainerOptions{
 		Container:    c.ID,
@@ -137,14 +139,6 @@ func (b *DockerBuilder) Build(ctx context.Context, opts BuildOptions) (string, e
 		RawTerminal:  true,
 	}); err != nil {
 		return "", fmt.Errorf("attach: %v", err)
-	}
-
-	if w, ok := opts.OutputStream.(io.Closer); ok {
-		// Attempt to close the stream if the writer supports it. This
-		// is needed for S3 logger to ensure that the file is written.
-		if err := w.Close(); err != nil {
-			return "", err
-		}
 	}
 
 	// TODO: Return sha256
