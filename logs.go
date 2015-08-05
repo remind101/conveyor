@@ -12,12 +12,36 @@ import (
 	"github.com/rlmcpherson/s3gof3r"
 )
 
+// Logger is a place where logs are written to.
+type Logger interface {
+	// Loggers implement Write and Close methods.
+	io.WriteCloser
+
+	// URL should return the URL to view the logs.
+	URL() string
+}
+
+type logger struct {
+	io.WriteCloser
+	url string
+}
+
+func (l *logger) URL() string {
+	return l.url
+}
+
+type stdoutLogger struct{}
+
+func (l *stdoutLogger) Write(p []byte) (int, error) { return os.Stdout.Write(p) }
+func (l *stdoutLogger) Close() error                { return nil }
+func (l *stdoutLogger) URL() string                 { return "" }
+
 // LogFactory is a function that can return a location to write logs to for a
 // build.
-type LogFactory func(BuildOptions) (io.Writer, error)
+type LogFactory func(BuildOptions) (Logger, error)
 
-func StdoutLogger(opts BuildOptions) (io.Writer, error) {
-	return os.Stdout, nil
+func StdoutLogger(opts BuildOptions) (Logger, error) {
+	return &stdoutLogger{}, nil
 }
 
 // S3Logger returns a log factory that writes logs to a file in an S3
@@ -29,56 +53,17 @@ func S3Logger(bucket string, keys func() (s3gof3r.Keys, error)) (LogFactory, err
 	}
 
 	b := s3gof3r.New("", k).Bucket(bucket)
-	return func(opts BuildOptions) (io.Writer, error) {
+	return func(opts BuildOptions) (Logger, error) {
 		name := filepath.Join("logs", opts.Repository, fmt.Sprintf("%s-%s.txt", opts.Sha, uuid.New()))
 		h := make(http.Header)
 		h.Add("Content-Type", "text/plain")
-		return b.PutWriter(name, h, nil)
+		w, err := b.PutWriter(name, h, nil)
+		if err != nil {
+			return nil, err
+		}
+		return &logger{
+			WriteCloser: w,
+			url:         fmt.Sprintf("https://%s.s3.amazonaws.com/%s", bucket, name),
+		}, nil
 	}, nil
-}
-
-// MultiLogger is a LogFactory that writes to multiple logs.
-func MultiLogger(f ...LogFactory) LogFactory {
-	return func(opts BuildOptions) (io.Writer, error) {
-		var writers []io.Writer
-
-		for _, ff := range f {
-			w, err := ff(opts)
-			if err != nil {
-				return nil, err
-			}
-			writers = append(writers, w)
-		}
-
-		return MultiWriteCloser(writers...), nil
-	}
-}
-
-type multiWriteCloser struct {
-	writers []io.Writer
-	io.Writer
-}
-
-func MultiWriteCloser(writers ...io.Writer) io.WriteCloser {
-	return &multiWriteCloser{
-		Writer:  io.MultiWriter(writers...),
-		writers: writers,
-	}
-}
-
-func (t *multiWriteCloser) Close() error {
-	var errors []error
-	for _, w := range t.writers {
-		if w, ok := w.(io.Closer); ok {
-			if err := w.Close(); err != nil {
-				errors = append(errors, err)
-			}
-		}
-	}
-
-	if len(errors) > 0 {
-		return errors[0]
-	}
-
-	return nil
 }

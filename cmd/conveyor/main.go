@@ -65,6 +65,6 @@ func logFactory(uri string) (f conveyor.LogFactory, err error) {
 		}
 	}
 
-	f = conveyor.MultiLogger(conveyor.StdoutLogger, f)
+	// f = conveyor.MultiLogger(conveyor.StdoutLogger, f)
 	return
 }

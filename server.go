@@ -80,7 +80,7 @@ func (s *Server) Push(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *Server) newLogger(opts BuildOptions) (io.Writer, error) {
+func (s *Server) newLogger(opts BuildOptions) (Logger, error) {
 	if s.LogFactory == nil {
 		return StdoutLogger(opts)
 	}

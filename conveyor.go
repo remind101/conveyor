@@ -38,7 +38,7 @@ type BuildOptions struct {
 	// caching.
 	NoCache bool
 	// An io.Writer where output will be written to.
-	OutputStream io.Writer
+	OutputStream Logger
 }
 
 // Builder represents something that can build a Docker image.
@@ -202,10 +202,10 @@ func (b *statusUpdaterBuilder) Build(ctx context.Context, opts BuildOptions) (id
 		if err != nil {
 			status = "error"
 		}
-		b.updateStatus(opts.Repository, opts.Sha, status)
+		b.updateStatus(opts, status)
 	}()
 
-	if err = b.updateStatus(opts.Repository, opts.Sha, "pending"); err != nil {
+	if err = b.updateStatus(opts, "pending"); err != nil {
 		err = fmt.Errorf("status: %v", err)
 		return
 	}
@@ -215,12 +215,13 @@ func (b *statusUpdaterBuilder) Build(ctx context.Context, opts BuildOptions) (id
 }
 
 // updateStatus updates the given commit with a new status.
-func (b *statusUpdaterBuilder) updateStatus(repo, commit, status string) error {
+func (b *statusUpdaterBuilder) updateStatus(opts BuildOptions, status string) error {
 	context := Context
-	parts := strings.SplitN(repo, "/", 2)
-	_, _, err := b.github.CreateStatus(parts[0], parts[1], commit, &github.RepoStatus{
-		State:   &status,
-		Context: &context,
+	parts := strings.SplitN(opts.Repository, "/", 2)
+	_, _, err := b.github.CreateStatus(parts[0], parts[1], opts.Sha, &github.RepoStatus{
+		State:     &status,
+		Context:   &context,
+		TargetURL: github.String(opts.OutputStream.URL()),
 	})
 	return err
 }
