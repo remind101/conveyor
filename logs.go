@@ -3,6 +3,7 @@ package conveyor
 import (
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 
@@ -29,8 +30,10 @@ func S3Logger(bucket string, keys func() (s3gof3r.Keys, error)) (LogFactory, err
 
 	b := s3gof3r.New("", k).Bucket(bucket)
 	return func(opts BuildOptions) (io.Writer, error) {
-		name := filepath.Join("logs", opts.Repository, fmt.Sprintf("%s-%s", opts.Sha, uuid.New()))
-		return b.PutWriter(name, nil, nil)
+		name := filepath.Join("logs", opts.Repository, fmt.Sprintf("%s-%s.txt", opts.Sha, uuid.New()))
+		h := make(http.Header)
+		h.Add("Content-Type", "text/plain")
+		return b.PutWriter(name, h, nil)
 	}, nil
 }
 
@@ -47,6 +50,35 @@ func MultiLogger(f ...LogFactory) LogFactory {
 			writers = append(writers, w)
 		}
 
-		return io.MultiWriter(writers...), nil
+		return MultiWriteCloser(writers...), nil
 	}
+}
+
+type multiWriteCloser struct {
+	writers []io.Writer
+	io.Writer
+}
+
+func MultiWriteCloser(writers ...io.Writer) io.WriteCloser {
+	return &multiWriteCloser{
+		Writer:  io.MultiWriter(writers...),
+		writers: writers,
+	}
+}
+
+func (t *multiWriteCloser) Close() error {
+	var errors []error
+	for _, w := range t.writers {
+		if w, ok := w.(io.Closer); ok {
+			if err := w.Close(); err != nil {
+				errors = append(errors, err)
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return errors[0]
+	}
+
+	return nil
 }

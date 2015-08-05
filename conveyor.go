@@ -139,6 +139,14 @@ func (b *DockerBuilder) Build(ctx context.Context, opts BuildOptions) (string, e
 		return "", fmt.Errorf("attach: %v", err)
 	}
 
+	if w, ok := opts.OutputStream.(io.Closer); ok {
+		// Attempt to close the stream if the writer supports it. This
+		// is needed for S3 logger to ensure that the file is written.
+		if err := w.Close(); err != nil {
+			return "", err
+		}
+	}
+
 	// TODO: Return sha256
 	return "", nil
 }
