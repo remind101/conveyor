@@ -37,11 +37,21 @@ setup() {
   cp -r /var/run/conveyor/.dockercfg /root/.dockercfg
 
   # Start docker daemon.
-  service docker start
+  status "Starting Docker..."
+  service docker start > /dev/null 2>&1
 
+  local retries=30
   # Wait for docker daemon to come up.
-  until docker version > /dev/null 2>&1; do
-    sleep 1
+  while [ "$retries" -gt 0 ]; do
+    if docker version > /dev/null 2>&1; then
+      docker version
+      retries=0
+    else
+      status "Docker not running. Retrying in 1 second..."
+      # Decrement counter and retry
+      retries=$(expr $retries - 1)
+      sleep 1
+    fi
   done
 }
 
@@ -83,7 +93,6 @@ push() {
 
 run() {
   setup
-  docker version
   clone && pull && build && push
 }
 
