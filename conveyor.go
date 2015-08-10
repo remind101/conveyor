@@ -1,7 +1,6 @@
 package conveyor
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -83,8 +82,7 @@ func (c *Conveyor) Build(ctx context.Context, w Logger, opts BuildOptions) (id s
 		}
 	}()
 
-	//id, err = c.build(ctx, w, opts)
-	err = errors.New("Boom")
+	id, err = c.build(ctx, w, opts)
 	return
 }
 
