@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -54,31 +53,39 @@ func S3Logger(bucket string) (LogFactory, error) {
 	return func(opts BuildOptions) (Logger, error) {
 		name := filepath.Join("logs", opts.Repository, fmt.Sprintf("%s-%s.txt", opts.Sha, uuid.New()))
 
-		r, w := io.Pipe()
-
-		go func() {
-			raw, err := ioutil.ReadAll(r)
-			if err != nil {
-				fmt.Printf("err: %v", err)
-				return
-			}
-
-			if _, err := c.PutObject(&s3.PutObjectInput{
-				Bucket:        aws.String(bucket),
-				Key:           aws.String(name),
-				ACL:           aws.String("public-read"),
-				Body:          bytes.NewReader(raw),
-				ContentLength: aws.Int64(int64(len(raw))),
-				ContentType:   aws.String("text/plain"),
-			}); err != nil {
-				fmt.Printf("err: %v", err)
-				return
-			}
-		}()
-
-		return &logger{
-			WriteCloser: w,
-			url:         fmt.Sprintf("https://%s.s3.amazonaws.com/%s", bucket, name),
+		return &s3Logger{
+			bucket: bucket,
+			name:   name,
+			client: c,
+			b:      new(bytes.Buffer),
 		}, nil
 	}, nil
+}
+
+type s3Logger struct {
+	// Data will be buffered here.
+	b *bytes.Buffer
+
+	bucket, name string
+	client       *s3.S3
+}
+
+func (l *s3Logger) Write(p []byte) (int, error) {
+	return l.b.Write(p)
+}
+
+func (l *s3Logger) Close() error {
+	_, err := l.client.PutObject(&s3.PutObjectInput{
+		Bucket:        aws.String(l.bucket),
+		Key:           aws.String(l.name),
+		ACL:           aws.String("public-read"),
+		Body:          bytes.NewReader(l.b.Bytes()),
+		ContentLength: aws.Int64(int64(l.b.Len())),
+		ContentType:   aws.String("text/plain"),
+	})
+	return err
+}
+
+func (l *s3Logger) URL() string {
+	return fmt.Sprintf("https://%s.s3.amazonaws.com/%s", l.bucket, l.name)
 }
