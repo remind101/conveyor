@@ -262,13 +262,13 @@ func (b *statusUpdaterBuilder) updateStatus(w Logger, opts BuildOptions, status 
 		desc = &description
 	}
 
-	_, _, err2 := b.github.CreateStatus(parts[0], parts[1], opts.Sha, &github.RepoStatus{
+	_, _, err := b.github.CreateStatus(parts[0], parts[1], opts.Sha, &github.RepoStatus{
 		State:       &status,
 		Context:     &context,
 		Description: desc,
 		TargetURL:   github.String(w.URL()),
 	})
-	return err2
+	return err
 }
 
 // BuildAsync wraps a Builder to run the build in a goroutine.
