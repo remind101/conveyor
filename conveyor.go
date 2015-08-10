@@ -180,6 +180,8 @@ func (b *DockerBuilder) Build(ctx context.Context, w Logger, opts BuildOptions) 
 		Force:         true,
 	})
 
+	reporter.AddContext(ctx, "container_id", c.ID)
+
 	if err := b.client.StartContainer(c.ID, &docker.HostConfig{
 		Privileged:  true,
 		VolumesFrom: []string{b.dataVolume()},
