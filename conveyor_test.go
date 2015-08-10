@@ -11,44 +11,40 @@ import (
 )
 
 func TestConveyor_Build(t *testing.T) {
-	b := func(ctx context.Context, opts BuildOptions) (string, error) {
+	b := func(ctx context.Context, w Logger, opts BuildOptions) (string, error) {
 		return "", nil
 	}
-	l := &mockLogger{}
+	w := &mockLogger{}
 	c := New(BuilderFunc(b))
 
-	if _, err := c.Build(context.Background(), BuildOptions{
-		OutputStream: l,
-	}); err != nil {
+	if _, err := c.Build(context.Background(), w, BuildOptions{}); err != nil {
 		t.Fatal(err)
 	}
 
-	if !l.closed {
+	if !w.closed {
 		t.Fatal("Expected logger to be closed")
 	}
 }
 
 func TestConveyor_Build_CloseError(t *testing.T) {
 	closeErr := errors.New("i/o timeout")
-	b := func(ctx context.Context, opts BuildOptions) (string, error) {
+	b := func(ctx context.Context, w Logger, opts BuildOptions) (string, error) {
 		return "", nil
 	}
-	l := &mockLogger{closeErr: closeErr}
+	w := &mockLogger{closeErr: closeErr}
 	c := New(BuilderFunc(b))
 
-	if _, err := c.Build(context.Background(), BuildOptions{
-		OutputStream: l,
-	}); err != closeErr {
+	if _, err := c.Build(context.Background(), w, BuildOptions{}); err != closeErr {
 		t.Fatalf("Expected error to be %v", closeErr)
 	}
 
-	if !l.closed {
+	if !w.closed {
 		t.Fatal("Expected logger to be closed")
 	}
 }
 
 func TestUpdateGitHubCommitStatus(t *testing.T) {
-	b := func(ctx context.Context, opts BuildOptions) (string, error) {
+	b := func(ctx context.Context, w Logger, opts BuildOptions) (string, error) {
 		return "", nil
 	}
 	g := &MockGitHubClient{}
@@ -70,18 +66,17 @@ func TestUpdateGitHubCommitStatus(t *testing.T) {
 		Context:     github.String("container/docker"),
 	}).Return(nil)
 
-	builder.Build(context.Background(), BuildOptions{
-		Repository:   "remind101/acme-inc",
-		Branch:       "master",
-		Sha:          "abcd",
-		OutputStream: &logger{},
+	builder.Build(context.Background(), &logger{}, BuildOptions{
+		Repository: "remind101/acme-inc",
+		Branch:     "master",
+		Sha:        "abcd",
 	})
 
 	g.AssertExpectations(t)
 }
 
 func TestUpdateGitHubCommitStatus_Error(t *testing.T) {
-	b := func(ctx context.Context, opts BuildOptions) (string, error) {
+	b := func(ctx context.Context, w Logger, opts BuildOptions) (string, error) {
 		return "", errors.New("i/o timeout")
 	}
 	g := &MockGitHubClient{}
@@ -103,11 +98,10 @@ func TestUpdateGitHubCommitStatus_Error(t *testing.T) {
 		Context:     github.String("container/docker"),
 	}).Return(nil)
 
-	builder.Build(context.Background(), BuildOptions{
-		Repository:   "remind101/acme-inc",
-		Branch:       "master",
-		Sha:          "abcd",
-		OutputStream: &logger{},
+	builder.Build(context.Background(), &logger{}, BuildOptions{
+		Repository: "remind101/acme-inc",
+		Branch:     "master",
+		Sha:        "abcd",
 	})
 
 	g.AssertExpectations(t)

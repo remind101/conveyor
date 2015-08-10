@@ -72,9 +72,7 @@ func (s *Server) Push(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	opts.OutputStream = log
-
-	if _, err := s.Build(ctx, opts); err != nil {
+	if _, err := s.Build(ctx, log, opts); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

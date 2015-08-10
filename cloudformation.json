@@ -447,6 +447,10 @@
                 "Value": { "Fn::Join": ["", ["s3://", { "Ref": "Bucket" }]] }
               },
               {
+                "Name": "AWS_REGION",
+                "Value": { "Ref": "AWS::Region" }
+              },
+              {
                 "Name": "DRY",
                 "Value": "true"
               }

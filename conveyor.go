@@ -37,22 +37,20 @@ type BuildOptions struct {
 	// Set to true to disable the layer cache. The zero value is to enable
 	// caching.
 	NoCache bool
-	// An io.Writer where output will be written to.
-	OutputStream Logger
 }
 
 // Builder represents something that can build a Docker image.
 type Builder interface {
 	// Build should build the docker image, tag it and push it to the docker
 	// registry. This should return the sha256 digest of the image.
-	Build(context.Context, BuildOptions) (string, error)
+	Build(context.Context, Logger, BuildOptions) (string, error)
 }
 
 // BuilderFunc is a function that implements the Builder interface.
-type BuilderFunc func(context.Context, BuildOptions) (string, error)
+type BuilderFunc func(context.Context, Logger, BuildOptions) (string, error)
 
-func (fn BuilderFunc) Build(ctx context.Context, opts BuildOptions) (string, error) {
-	return fn(ctx, opts)
+func (fn BuilderFunc) Build(ctx context.Context, w Logger, opts BuildOptions) (string, error) {
+	return fn(ctx, w, opts)
 }
 
 // Conveyor serves as a builder.
@@ -68,11 +66,11 @@ func New(b Builder) *Conveyor {
 }
 
 // Build performs the build and ensures that the output stream is closed.
-func (c *Conveyor) Build(ctx context.Context, opts BuildOptions) (id string, err error) {
+func (c *Conveyor) Build(ctx context.Context, w Logger, opts BuildOptions) (id string, err error) {
 	defer func() {
 		var closeErr error
-		if opts.OutputStream != nil {
-			closeErr = opts.OutputStream.Close()
+		if w != nil {
+			closeErr = w.Close()
 		}
 		if err == nil {
 			// If there was no error from the builder, let the
@@ -82,7 +80,7 @@ func (c *Conveyor) Build(ctx context.Context, opts BuildOptions) (id string, err
 		}
 	}()
 
-	id, err = c.Builder.Build(ctx, opts)
+	id, err = c.Builder.Build(ctx, w, opts)
 	return
 }
 
@@ -121,7 +119,7 @@ func NewDockerBuilderFromEnv() (*DockerBuilder, error) {
 }
 
 // Build executes the docker image.
-func (b *DockerBuilder) Build(ctx context.Context, opts BuildOptions) (string, error) {
+func (b *DockerBuilder) Build(ctx context.Context, w Logger, opts BuildOptions) (string, error) {
 	env := []string{
 		fmt.Sprintf("REPOSITORY=%s", opts.Repository),
 		fmt.Sprintf("BRANCH=%s", opts.Branch),
@@ -159,8 +157,8 @@ func (b *DockerBuilder) Build(ctx context.Context, opts BuildOptions) (string, e
 
 	if err := b.client.AttachToContainer(docker.AttachToContainerOptions{
 		Container:    c.ID,
-		OutputStream: opts.OutputStream,
-		ErrorStream:  opts.OutputStream,
+		OutputStream: w,
+		ErrorStream:  w,
 		Logs:         true,
 		Stream:       true,
 		Stdout:       true,
@@ -231,7 +229,7 @@ func UpdateGitHubCommitStatus(b Builder, g GitHubClient) *statusUpdaterBuilder {
 	}
 }
 
-func (b *statusUpdaterBuilder) Build(ctx context.Context, opts BuildOptions) (id string, err error) {
+func (b *statusUpdaterBuilder) Build(ctx context.Context, w Logger, opts BuildOptions) (id string, err error) {
 	t := time.Now()
 
 	defer func() {
@@ -242,20 +240,20 @@ func (b *statusUpdaterBuilder) Build(ctx context.Context, opts BuildOptions) (id
 			status = "failure"
 			description = err.Error()
 		}
-		b.updateStatus(opts, status, description)
+		b.updateStatus(w, opts, status, description)
 	}()
 
-	if err = b.updateStatus(opts, "pending", "Image building."); err != nil {
+	if err = b.updateStatus(w, opts, "pending", "Image building."); err != nil {
 		err = fmt.Errorf("status: %v", err)
 		return
 	}
 
-	id, err = b.Builder.Build(ctx, opts)
+	id, err = b.Builder.Build(ctx, w, opts)
 	return
 }
 
 // updateStatus updates the given commit with a new status.
-func (b *statusUpdaterBuilder) updateStatus(opts BuildOptions, status string, description string) error {
+func (b *statusUpdaterBuilder) updateStatus(w Logger, opts BuildOptions, status string, description string) error {
 	context := Context
 	parts := strings.SplitN(opts.Repository, "/", 2)
 
@@ -268,21 +266,21 @@ func (b *statusUpdaterBuilder) updateStatus(opts BuildOptions, status string, de
 		State:       &status,
 		Context:     &context,
 		Description: desc,
-		TargetURL:   github.String(opts.OutputStream.URL()),
+		TargetURL:   github.String(w.URL()),
 	})
 	return err2
 }
 
 // BuildAsync wraps a Builder to run the build in a goroutine.
 func BuildAsync(b Builder) Builder {
-	build := func(ctx context.Context, opts BuildOptions) {
-		if _, err := b.Build(ctx, opts); err != nil {
+	build := func(ctx context.Context, w Logger, opts BuildOptions) {
+		if _, err := b.Build(ctx, w, opts); err != nil {
 			log.Printf("build err: %v", err)
 		}
 	}
 
-	return BuilderFunc(func(ctx context.Context, opts BuildOptions) (string, error) {
-		go build(ctx, opts)
+	return BuilderFunc(func(ctx context.Context, w Logger, opts BuildOptions) (string, error) {
+		go build(ctx, w, opts)
 		return "", nil
 	})
 }

@@ -10,7 +10,7 @@ import (
 )
 
 func TestServer_Ping(t *testing.T) {
-	b := func(ctx context.Context, opts BuildOptions) (string, error) {
+	b := func(ctx context.Context, w Logger, opts BuildOptions) (string, error) {
 		return "", nil
 	}
 	s := NewServer(New(BuilderFunc(b)))
@@ -27,18 +27,13 @@ func TestServer_Ping(t *testing.T) {
 }
 
 func TestServer_Push(t *testing.T) {
-	var (
-		called bool
-		w      Logger
-	)
-
-	b := func(ctx context.Context, opts BuildOptions) (string, error) {
+	var called bool
+	b := func(ctx context.Context, w Logger, opts BuildOptions) (string, error) {
 		called = true
 		expected := BuildOptions{
-			Repository:   "remind101/acme-inc",
-			Branch:       "master",
-			Sha:          "abcd",
-			OutputStream: w,
+			Repository: "remind101/acme-inc",
+			Branch:     "master",
+			Sha:        "abcd",
 		}
 		if got, want := opts, expected; got != want {
 			t.Fatalf("BuildOptions => %v; want %v", got, want)
@@ -47,9 +42,6 @@ func TestServer_Push(t *testing.T) {
 	}
 	s := NewServer(New(BuilderFunc(b)))
 	s.Builder = BuilderFunc(b) // Remove Async
-	s.LogFactory = func(_ BuildOptions) (Logger, error) {
-		return w, nil
-	}
 
 	resp := httptest.NewRecorder()
 	req, _ := http.NewRequest("POST", "/", strings.NewReader(`{
