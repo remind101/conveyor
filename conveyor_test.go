@@ -59,13 +59,13 @@ func TestUpdateGitHubCommitStatus(t *testing.T) {
 
 	g.On("CreateStatus", "remind101", "acme-inc", "abcd", &github.RepoStatus{
 		State:       github.String("pending"),
-		Description: github.String("Your Docker image is building."),
+		Description: github.String("Image building."),
 		TargetURL:   github.String(""),
 		Context:     github.String("container/docker"),
 	}).Return(nil)
 	g.On("CreateStatus", "remind101", "acme-inc", "abcd", &github.RepoStatus{
 		State:       github.String("success"),
-		Description: github.String("Your Docker image was built in 1s."),
+		Description: github.String("Image built in 1s."),
 		TargetURL:   github.String(""),
 		Context:     github.String("container/docker"),
 	}).Return(nil)
@@ -92,7 +92,7 @@ func TestUpdateGitHubCommitStatus_Error(t *testing.T) {
 
 	g.On("CreateStatus", "remind101", "acme-inc", "abcd", &github.RepoStatus{
 		State:       github.String("pending"),
-		Description: github.String("Your Docker image is building."),
+		Description: github.String("Image building."),
 		TargetURL:   github.String(""),
 		Context:     github.String("container/docker"),
 	}).Return(nil)

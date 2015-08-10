@@ -236,7 +236,7 @@ func (b *statusUpdaterBuilder) Build(ctx context.Context, opts BuildOptions) (id
 
 	defer func() {
 		duration := b.since(t)
-		description := fmt.Sprintf("Your Docker image was built in %v.", duration)
+		description := fmt.Sprintf("Image built in %v.", duration)
 		status := "success"
 		if err != nil {
 			status = "failure"
@@ -245,7 +245,7 @@ func (b *statusUpdaterBuilder) Build(ctx context.Context, opts BuildOptions) (id
 		b.updateStatus(opts, status, description)
 	}()
 
-	if err = b.updateStatus(opts, "pending", "Your Docker image is building."); err != nil {
+	if err = b.updateStatus(opts, "pending", "Image building."); err != nil {
 		err = fmt.Errorf("status: %v", err)
 		return
 	}
