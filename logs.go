@@ -1,15 +1,17 @@
 package conveyor
 
 import (
+	"bytes"
 	"fmt"
 	"io"
-	"net/http"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 
 	"code.google.com/p/go-uuid/uuid"
 
-	"github.com/rlmcpherson/s3gof3r"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/s3"
 )
 
 // Logger is a place where logs are written to.
@@ -46,22 +48,34 @@ func StdoutLogger(opts BuildOptions) (Logger, error) {
 
 // S3Logger returns a log factory that writes logs to a file in an S3
 // bucket.
-func S3Logger(bucket string, keys func() (s3gof3r.Keys, error)) (LogFactory, error) {
-	k, err := keys()
-	if err != nil {
-		return nil, err
-	}
+func S3Logger(bucket string) (LogFactory, error) {
+	c := s3.New(aws.DefaultConfig)
 
-	b := s3gof3r.New("", k).Bucket(bucket)
 	return func(opts BuildOptions) (Logger, error) {
 		name := filepath.Join("logs", opts.Repository, fmt.Sprintf("%s-%s.txt", opts.Sha, uuid.New()))
-		h := make(http.Header)
-		h.Add("Content-Type", "text/plain")
-		h.Add("x-amz-acl", "public-read")
-		w, err := b.PutWriter(name, h, nil)
-		if err != nil {
-			return nil, fmt.Errorf("could not create s3 log file: %v", err)
-		}
+
+		r, w := io.Pipe()
+
+		go func() {
+			raw, err := ioutil.ReadAll(r)
+			if err != nil {
+				fmt.Printf("err: %v", err)
+				return
+			}
+
+			if _, err := c.PutObject(&s3.PutObjectInput{
+				Bucket:        aws.String(bucket),
+				Key:           aws.String(name),
+				ACL:           aws.String("public-read"),
+				Body:          bytes.NewReader(raw),
+				ContentLength: aws.Int64(int64(len(raw))),
+				ContentType:   aws.String("text/plain"),
+			}); err != nil {
+				fmt.Printf("err: %v", err)
+				return
+			}
+		}()
+
 		return &logger{
 			WriteCloser: w,
 			url:         fmt.Sprintf("https://%s.s3.amazonaws.com/%s", bucket, name),

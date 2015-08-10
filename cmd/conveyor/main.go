@@ -9,7 +9,6 @@ import (
 	"github.com/codegangsta/cli"
 	"github.com/ejholmes/hookshot"
 	"github.com/remind101/conveyor"
-	"github.com/rlmcpherson/s3gof3r"
 )
 
 func main() {
@@ -59,12 +58,7 @@ func logFactory(uri string) (f conveyor.LogFactory, err error) {
 
 	switch u.Scheme {
 	case "s3":
-		keys := s3gof3r.InstanceKeys
-		if len(os.Getenv("AWS_ACCESS_KEY_ID")) > 0 {
-			keys = s3gof3r.EnvKeys
-		}
-
-		f, err = conveyor.S3Logger(u.Host, keys)
+		f, err = conveyor.S3Logger(u.Host)
 	}
 
 	// f = conveyor.MultiLogger(conveyor.StdoutLogger, f)

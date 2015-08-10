@@ -11,6 +11,46 @@
 			"Rev": "7dda39b2e7d5e265014674c5af696ba4186679e9"
 		},
 		{
+			"ImportPath": "github.com/aws/aws-sdk-go/aws",
+			"Comment": "v0.7.1-4-g1c75632",
+			"Rev": "1c75632eb9b77bb3d8e6416fbd8f3e98fc1367db"
+		},
+		{
+			"ImportPath": "github.com/aws/aws-sdk-go/internal/endpoints",
+			"Comment": "v0.7.1-4-g1c75632",
+			"Rev": "1c75632eb9b77bb3d8e6416fbd8f3e98fc1367db"
+		},
+		{
+			"ImportPath": "github.com/aws/aws-sdk-go/internal/protocol/query",
+			"Comment": "v0.7.1-4-g1c75632",
+			"Rev": "1c75632eb9b77bb3d8e6416fbd8f3e98fc1367db"
+		},
+		{
+			"ImportPath": "github.com/aws/aws-sdk-go/internal/protocol/rest",
+			"Comment": "v0.7.1-4-g1c75632",
+			"Rev": "1c75632eb9b77bb3d8e6416fbd8f3e98fc1367db"
+		},
+		{
+			"ImportPath": "github.com/aws/aws-sdk-go/internal/protocol/restxml",
+			"Comment": "v0.7.1-4-g1c75632",
+			"Rev": "1c75632eb9b77bb3d8e6416fbd8f3e98fc1367db"
+		},
+		{
+			"ImportPath": "github.com/aws/aws-sdk-go/internal/protocol/xml/xmlutil",
+			"Comment": "v0.7.1-4-g1c75632",
+			"Rev": "1c75632eb9b77bb3d8e6416fbd8f3e98fc1367db"
+		},
+		{
+			"ImportPath": "github.com/aws/aws-sdk-go/internal/signer/v4",
+			"Comment": "v0.7.1-4-g1c75632",
+			"Rev": "1c75632eb9b77bb3d8e6416fbd8f3e98fc1367db"
+		},
+		{
+			"ImportPath": "github.com/aws/aws-sdk-go/service/s3",
+			"Comment": "v0.7.1-4-g1c75632",
+			"Rev": "1c75632eb9b77bb3d8e6416fbd8f3e98fc1367db"
+		},
+		{
 			"ImportPath": "github.com/codegangsta/cli",
 			"Comment": "1.2.0-26-gf7ebb76",
 			"Rev": "f7ebb761e83e21225d1d8954fde853bf8edd46c4"
@@ -36,9 +76,8 @@
 			"Rev": "547ef5ac979778feb2f760cdb5f4eae1a2207b86"
 		},
 		{
-			"ImportPath": "github.com/rlmcpherson/s3gof3r",
-			"Comment": "v0.4.10-10-g4ecf3c1",
-			"Rev": "4ecf3c16aa1ebde1a25b2d4240595010598fd5d6"
+			"ImportPath": "github.com/vaughan0/go-ini",
+			"Rev": "a98ad7ee00ec53921f08832bc06ecf7fd600e6a1"
 		},
 		{
 			"ImportPath": "golang.org/x/net/context",
