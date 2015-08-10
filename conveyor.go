@@ -261,12 +261,16 @@ func (b *statusUpdaterBuilder) updateStatus(w Logger, opts BuildOptions, status 
 	if description != "" {
 		desc = &description
 	}
+	var url *string
+	if status == "success" || status == "failure" || status == "error" {
+		url = github.String(w.URL())
+	}
 
 	_, _, err := b.github.CreateStatus(parts[0], parts[1], opts.Sha, &github.RepoStatus{
 		State:       &status,
 		Context:     &context,
 		Description: desc,
-		TargetURL:   github.String(w.URL()),
+		TargetURL:   url,
 	})
 	return err
 }

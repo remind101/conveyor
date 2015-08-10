@@ -48,6 +48,7 @@ func TestUpdateGitHubCommitStatus(t *testing.T) {
 		return "", nil
 	}
 	g := &MockGitHubClient{}
+	w := &mockLogger{}
 	builder := UpdateGitHubCommitStatus(BuilderFunc(b), g)
 	builder.since = func(t time.Time) time.Duration {
 		return time.Second
@@ -56,17 +57,16 @@ func TestUpdateGitHubCommitStatus(t *testing.T) {
 	g.On("CreateStatus", "remind101", "acme-inc", "abcd", &github.RepoStatus{
 		State:       github.String("pending"),
 		Description: github.String("Image building."),
-		TargetURL:   github.String(""),
 		Context:     github.String("container/docker"),
 	}).Return(nil)
 	g.On("CreateStatus", "remind101", "acme-inc", "abcd", &github.RepoStatus{
 		State:       github.String("success"),
 		Description: github.String("Image built in 1s."),
-		TargetURL:   github.String(""),
+		TargetURL:   github.String("https://google.com"),
 		Context:     github.String("container/docker"),
 	}).Return(nil)
 
-	builder.Build(context.Background(), &logger{}, BuildOptions{
+	builder.Build(context.Background(), w, BuildOptions{
 		Repository: "remind101/acme-inc",
 		Branch:     "master",
 		Sha:        "abcd",
@@ -80,6 +80,7 @@ func TestUpdateGitHubCommitStatus_Error(t *testing.T) {
 		return "", errors.New("i/o timeout")
 	}
 	g := &MockGitHubClient{}
+	w := &mockLogger{}
 	builder := UpdateGitHubCommitStatus(BuilderFunc(b), g)
 	builder.since = func(t time.Time) time.Duration {
 		return time.Second
@@ -88,17 +89,16 @@ func TestUpdateGitHubCommitStatus_Error(t *testing.T) {
 	g.On("CreateStatus", "remind101", "acme-inc", "abcd", &github.RepoStatus{
 		State:       github.String("pending"),
 		Description: github.String("Image building."),
-		TargetURL:   github.String(""),
 		Context:     github.String("container/docker"),
 	}).Return(nil)
 	g.On("CreateStatus", "remind101", "acme-inc", "abcd", &github.RepoStatus{
 		State:       github.String("failure"),
 		Description: github.String("i/o timeout"),
-		TargetURL:   github.String(""),
+		TargetURL:   github.String("https://google.com"),
 		Context:     github.String("container/docker"),
 	}).Return(nil)
 
-	builder.Build(context.Background(), &logger{}, BuildOptions{
+	builder.Build(context.Background(), w, BuildOptions{
 		Repository: "remind101/acme-inc",
 		Branch:     "master",
 		Sha:        "abcd",
