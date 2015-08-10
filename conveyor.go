@@ -168,6 +168,7 @@ func (b *DockerBuilder) Build(ctx context.Context, w Logger, opts BuildOptions) 
 			AttachStderr: true,
 			OpenStdin:    true,
 			Image:        b.image(),
+			Hostname:     hostname,
 			Env:          env,
 		},
 	})
@@ -321,4 +322,10 @@ func BuildAsync(b Builder) Builder {
 		go build(ctx, w, opts)
 		return "", nil
 	})
+}
+
+var hostname string
+
+func init() {
+	hostname, _ = os.Hostname()
 }
