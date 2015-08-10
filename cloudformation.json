@@ -28,6 +28,13 @@
       "Default": "remind101/conveyor-builder",
       "Description": "Docker image to use to perform the build."
     },
+    "DryRun": {
+      "Type": "Number",
+      "Default": "0",
+      "Description": "Set to 1 to enable dry run mode.",
+      "MinValue": "0",
+      "MaxValue": "1"
+    },
     "InstanceType": {
       "Type": "String",
       "Default": "t2.small",
@@ -452,7 +459,7 @@
               },
               {
                 "Name": "DRY",
-                "Value": "true"
+                "Value": { "Ref": "DryRun" }
               }
             ],
             "PortMappings": [
