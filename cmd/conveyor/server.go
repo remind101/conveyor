@@ -48,13 +48,19 @@ var cmdServer = cli.Command{
 			Usage:  "The logger to use. Available options are `stdout://`, or `s3://bucket`.",
 			EnvVar: "LOGGER",
 		},
+		cli.StringFlag{
+			Name:   "reporter",
+			Value:  "",
+			Usage:  "The reporter to use to report errors. Available options are `hb://api.honeybadger.io?key=<key>&environment=<environment>",
+			EnvVar: "REPORTER",
+		},
 	},
 }
 
 func runServer(c *cli.Context) {
 	port := c.String("port")
 
-	b, err := newBuilder(c)
+	b, err := newConveyor(c)
 	if err != nil {
 		log.Fatal(err)
 	}

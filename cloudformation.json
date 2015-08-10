@@ -35,6 +35,11 @@
       "MinValue": "0",
       "MaxValue": "1"
     },
+    "Reporter": {
+      "Type": "String",
+      "Default": "",
+      "Description": "A Reporter to use to report errors. Default is to write errors to stderr."
+    },
     "InstanceType": {
       "Type": "String",
       "Default": "t2.small",
@@ -460,6 +465,10 @@
               {
                 "Name": "DRY",
                 "Value": { "Ref": "DryRun" }
+              },
+              {
+                "Name": "REPORTER",
+                "Value": { "Ref": "Reporter" }
               }
             ],
             "PortMappings": [

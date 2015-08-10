@@ -76,6 +76,34 @@
 			"Rev": "547ef5ac979778feb2f760cdb5f4eae1a2207b86"
 		},
 		{
+			"ImportPath": "github.com/honeybadger-io/honeybadger-go",
+			"Comment": "v0.0.1-12-geb2b024",
+			"Rev": "eb2b0249b6c3189079f1e55f940b91f8b03c73ea"
+		},
+		{
+			"ImportPath": "github.com/remind101/pkg/logger",
+			"Rev": "345c5e4ff41f2e9783d5261b7babfa3e554cc804"
+		},
+		{
+			"ImportPath": "github.com/remind101/pkg/reporter",
+			"Rev": "345c5e4ff41f2e9783d5261b7babfa3e554cc804"
+		},
+		{
+			"ImportPath": "github.com/shirou/gopsutil/common",
+			"Comment": "1.0.0-93-g1223e28",
+			"Rev": "1223e28905537f5365eda14a40889c5ddcfd4409"
+		},
+		{
+			"ImportPath": "github.com/shirou/gopsutil/load",
+			"Comment": "1.0.0-93-g1223e28",
+			"Rev": "1223e28905537f5365eda14a40889c5ddcfd4409"
+		},
+		{
+			"ImportPath": "github.com/shirou/gopsutil/mem",
+			"Comment": "1.0.0-93-g1223e28",
+			"Rev": "1223e28905537f5365eda14a40889c5ddcfd4409"
+		},
+		{
 			"ImportPath": "github.com/stretchr/objx",
 			"Rev": "cbeaeb16a013161a98496fad62933b1d21786672"
 		},

@@ -1,8 +1,10 @@
 package conveyor
 
 import (
+	"errors"
 	"fmt"
 	"log"
+	"os"
 	"strings"
 	"time"
 
@@ -10,6 +12,7 @@ import (
 
 	"github.com/fsouza/go-dockerclient"
 	"github.com/google/go-github/github"
+	"github.com/remind101/pkg/reporter"
 
 	"golang.org/x/net/context"
 )
@@ -56,6 +59,9 @@ func (fn BuilderFunc) Build(ctx context.Context, w Logger, opts BuildOptions) (s
 // Conveyor serves as a builder.
 type Conveyor struct {
 	Builder
+
+	// A Reporter to use to report errors.
+	Reporter reporter.Reporter
 }
 
 // New returns a new Conveyor instance.
@@ -65,8 +71,25 @@ func New(b Builder) *Conveyor {
 	}
 }
 
-// Build performs the build and ensures that the output stream is closed.
 func (c *Conveyor) Build(ctx context.Context, w Logger, opts BuildOptions) (id string, err error) {
+	// Embed the reporter in the context.Context.
+	ctx = reporter.WithReporter(ctx, c.reporter())
+	reporter.AddContext(ctx, "options", opts)
+	defer reporter.Monitor(ctx)
+
+	defer func() {
+		if err != nil {
+			reporter.Report(ctx, err)
+		}
+	}()
+
+	//id, err = c.build(ctx, w, opts)
+	err = errors.New("Boom")
+	return
+}
+
+// Build performs the build and ensures that the output stream is closed.
+func (c *Conveyor) build(ctx context.Context, w Logger, opts BuildOptions) (id string, err error) {
 	defer func() {
 		var closeErr error
 		if w != nil {
@@ -82,6 +105,17 @@ func (c *Conveyor) Build(ctx context.Context, w Logger, opts BuildOptions) (id s
 
 	id, err = c.Builder.Build(ctx, w, opts)
 	return
+}
+
+func (c *Conveyor) reporter() reporter.Reporter {
+	if c.Reporter == nil {
+		return reporter.ReporterFunc(func(ctx context.Context, err error) error {
+			fmt.Fprintf(os.Stderr, "reporting err: %v", err)
+			return nil
+		})
+	}
+
+	return c.Reporter
 }
 
 // DockerBuilder is a Builder implementation that runs the build in a docker

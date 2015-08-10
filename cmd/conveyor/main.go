@@ -9,6 +9,8 @@ import (
 	"github.com/codegangsta/cli"
 	"github.com/ejholmes/hookshot"
 	"github.com/remind101/conveyor"
+	"github.com/remind101/pkg/reporter"
+	"github.com/remind101/pkg/reporter/hb2"
 )
 
 func main() {
@@ -24,7 +26,24 @@ func main() {
 	}
 }
 
-func newBuilder(c *cli.Context) (*conveyor.Conveyor, error) {
+func newConveyor(c *cli.Context) (*conveyor.Conveyor, error) {
+	b, err := newBuilder(c)
+	if err != nil {
+		return nil, err
+	}
+	cv, err := conveyor.New(b), nil
+	if err != nil {
+		return cv, err
+	}
+	r, err := newReporter(c.String("reporter"))
+	if err != nil {
+		return cv, err
+	}
+	cv.Reporter = r
+	return cv, nil
+}
+
+func newBuilder(c *cli.Context) (conveyor.Builder, error) {
 	b, err := conveyor.NewDockerBuilderFromEnv()
 	if err != nil {
 		return nil, err
@@ -33,7 +52,7 @@ func newBuilder(c *cli.Context) (*conveyor.Conveyor, error) {
 	b.Image = c.String("builder.image")
 
 	g := conveyor.NewGitHubClient(c.String("github.token"))
-	return conveyor.New(conveyor.UpdateGitHubCommitStatus(b, g)), nil
+	return conveyor.UpdateGitHubCommitStatus(b, g), nil
 }
 
 func newServer(c *cli.Context, b *conveyor.Conveyor) (http.Handler, error) {
@@ -61,5 +80,24 @@ func logFactory(uri string) (f conveyor.LogFactory, err error) {
 	}
 
 	// f = conveyor.MultiLogger(conveyor.StdoutLogger, f)
+	return
+}
+
+func newReporter(uri string) (r reporter.Reporter, err error) {
+	var u *url.URL
+	u, err = url.Parse(uri)
+	if err != nil {
+		return nil, err
+	}
+
+	switch u.Scheme {
+	case "hb":
+		q := u.Query()
+		r = hb2.NewReporter(hb2.Config{
+			ApiKey:      q.Get("key"),
+			Environment: q.Get("environment"),
+		})
+	}
+
 	return
 }
