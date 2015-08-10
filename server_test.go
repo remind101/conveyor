@@ -13,7 +13,7 @@ func TestServer_Ping(t *testing.T) {
 	b := func(ctx context.Context, opts BuildOptions) (string, error) {
 		return "", nil
 	}
-	s := NewServer(BuilderFunc(b))
+	s := NewServer(New(BuilderFunc(b)))
 
 	resp := httptest.NewRecorder()
 	req, _ := http.NewRequest("POST", "/", nil)
@@ -45,7 +45,8 @@ func TestServer_Push(t *testing.T) {
 		}
 		return "", nil
 	}
-	s := NewServer(BuilderFunc(b))
+	s := NewServer(New(BuilderFunc(b)))
+	s.Builder = BuilderFunc(b) // Remove Async
 	s.LogFactory = func(_ BuildOptions) (Logger, error) {
 		return w, nil
 	}

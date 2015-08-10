@@ -24,7 +24,7 @@ func main() {
 	}
 }
 
-func newBuilder(c *cli.Context) (conveyor.Builder, error) {
+func newBuilder(c *cli.Context) (*conveyor.Conveyor, error) {
 	b, err := conveyor.NewDockerBuilderFromEnv()
 	if err != nil {
 		return nil, err
@@ -33,11 +33,10 @@ func newBuilder(c *cli.Context) (conveyor.Builder, error) {
 	b.Image = c.String("builder.image")
 
 	g := conveyor.NewGitHubClient(c.String("github.token"))
-	return conveyor.UpdateGitHubCommitStatus(b, g), nil
+	return conveyor.New(conveyor.UpdateGitHubCommitStatus(b, g)), nil
 }
 
-func newServer(c *cli.Context, b conveyor.Builder) (http.Handler, error) {
-	b = conveyor.BuildAsync(b)
+func newServer(c *cli.Context, b *conveyor.Conveyor) (http.Handler, error) {
 	s := conveyor.NewServer(b)
 
 	f, err := logFactory(c.String("logger"))

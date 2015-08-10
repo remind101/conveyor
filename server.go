@@ -25,8 +25,8 @@ type Server struct {
 }
 
 // NewServer returns a new Server instance
-func NewServer(b Builder) *Server {
-	s := &Server{Builder: b}
+func NewServer(b *Conveyor) *Server {
+	s := &Server{Builder: BuildAsync(b)}
 
 	r := hookshot.NewRouter()
 	r.HandleFunc("ping", s.Ping)

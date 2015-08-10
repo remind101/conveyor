@@ -55,6 +55,37 @@ func (fn BuilderFunc) Build(ctx context.Context, opts BuildOptions) (string, err
 	return fn(ctx, opts)
 }
 
+// Conveyor serves as a builder.
+type Conveyor struct {
+	Builder
+}
+
+// New returns a new Conveyor instance.
+func New(b Builder) *Conveyor {
+	return &Conveyor{
+		Builder: b,
+	}
+}
+
+// Build performs the build and ensures that the output stream is closed.
+func (c *Conveyor) Build(ctx context.Context, opts BuildOptions) (id string, err error) {
+	defer func() {
+		var closeErr error
+		if opts.OutputStream != nil {
+			closeErr = opts.OutputStream.Close()
+		}
+		if err == nil {
+			// If there was no error from the builder, let the
+			// downstream know that there was an error closing the
+			// output stream.
+			err = closeErr
+		}
+	}()
+
+	id, err = c.Builder.Build(ctx, opts)
+	return
+}
+
 // DockerBuilder is a Builder implementation that runs the build in a docker
 // container.
 type DockerBuilder struct {
@@ -125,9 +156,6 @@ func (b *DockerBuilder) Build(ctx context.Context, opts BuildOptions) (string, e
 	}); err != nil {
 		return "", fmt.Errorf("start container: %v", err)
 	}
-	// Attempt to close the stream if the writer supports it. This
-	// is needed for S3 logger to ensure that the file is written.
-	defer opts.OutputStream.Close()
 
 	if err := b.client.AttachToContainer(docker.AttachToContainerOptions{
 		Container:    c.ID,
