@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	"code.google.com/p/go-uuid/uuid"
 
@@ -184,32 +185,39 @@ func (b *DockerBuilder) cache(opts BuildOptions) string {
 	return "on"
 }
 
-// UpdateGitHubCommitStatus wraps b to update the GitHub commit status when a
-// build starts, and stops.
-func UpdateGitHubCommitStatus(b Builder, g GitHubClient) Builder {
-	return &statusUpdaterBuilder{
-		Builder: b,
-		github:  g,
-	}
-}
-
 // statusUpdaterBuilder is a Builder implementation that updates the commit
 // status in github.
 type statusUpdaterBuilder struct {
 	Builder
 	github GitHubClient
+	since  func(time.Time) time.Duration
+}
+
+// UpdateGitHubCommitStatus wraps b to update the GitHub commit status when a
+// build starts, and stops.
+func UpdateGitHubCommitStatus(b Builder, g GitHubClient) *statusUpdaterBuilder {
+	return &statusUpdaterBuilder{
+		Builder: b,
+		github:  g,
+		since:   time.Since,
+	}
 }
 
 func (b *statusUpdaterBuilder) Build(ctx context.Context, opts BuildOptions) (id string, err error) {
+	t := time.Now()
+
 	defer func() {
+		duration := b.since(t)
+		description := fmt.Sprintf("Your Docker image was built in %v.", duration)
 		status := "success"
 		if err != nil {
 			status = "failure"
+			description = err.Error()
 		}
-		b.updateStatus(opts, status, err)
+		b.updateStatus(opts, status, description)
 	}()
 
-	if err = b.updateStatus(opts, "pending", nil); err != nil {
+	if err = b.updateStatus(opts, "pending", "Your Docker image is building."); err != nil {
 		err = fmt.Errorf("status: %v", err)
 		return
 	}
@@ -219,18 +227,19 @@ func (b *statusUpdaterBuilder) Build(ctx context.Context, opts BuildOptions) (id
 }
 
 // updateStatus updates the given commit with a new status.
-func (b *statusUpdaterBuilder) updateStatus(opts BuildOptions, status string, err error) error {
+func (b *statusUpdaterBuilder) updateStatus(opts BuildOptions, status string, description string) error {
 	context := Context
 	parts := strings.SplitN(opts.Repository, "/", 2)
-	var description *string
-	if err != nil {
-		s := err.Error()
-		description = &s
+
+	var desc *string
+	if description != "" {
+		desc = &description
 	}
+
 	_, _, err2 := b.github.CreateStatus(parts[0], parts[1], opts.Sha, &github.RepoStatus{
 		State:       &status,
 		Context:     &context,
-		Description: description,
+		Description: desc,
 		TargetURL:   github.String(opts.OutputStream.URL()),
 	})
 	return err2

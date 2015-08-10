@@ -3,6 +3,7 @@ package conveyor
 import (
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/google/go-github/github"
 
@@ -15,16 +16,21 @@ func TestUpdateGitHubCommitStatus(t *testing.T) {
 	}
 	g := &MockGitHubClient{}
 	builder := UpdateGitHubCommitStatus(BuilderFunc(b), g)
+	builder.since = func(t time.Time) time.Duration {
+		return time.Second
+	}
 
 	g.On("CreateStatus", "remind101", "acme-inc", "abcd", &github.RepoStatus{
-		State:     github.String("pending"),
-		TargetURL: github.String(""),
-		Context:   github.String("container/docker"),
+		State:       github.String("pending"),
+		Description: github.String("Your Docker image is building."),
+		TargetURL:   github.String(""),
+		Context:     github.String("container/docker"),
 	}).Return(nil)
 	g.On("CreateStatus", "remind101", "acme-inc", "abcd", &github.RepoStatus{
-		State:     github.String("success"),
-		TargetURL: github.String(""),
-		Context:   github.String("container/docker"),
+		State:       github.String("success"),
+		Description: github.String("Your Docker image was built in 1s."),
+		TargetURL:   github.String(""),
+		Context:     github.String("container/docker"),
 	}).Return(nil)
 
 	builder.Build(context.Background(), BuildOptions{
@@ -43,11 +49,15 @@ func TestUpdateGitHubCommitStatus_Error(t *testing.T) {
 	}
 	g := &MockGitHubClient{}
 	builder := UpdateGitHubCommitStatus(BuilderFunc(b), g)
+	builder.since = func(t time.Time) time.Duration {
+		return time.Second
+	}
 
 	g.On("CreateStatus", "remind101", "acme-inc", "abcd", &github.RepoStatus{
-		State:     github.String("pending"),
-		TargetURL: github.String(""),
-		Context:   github.String("container/docker"),
+		State:       github.String("pending"),
+		Description: github.String("Your Docker image is building."),
+		TargetURL:   github.String(""),
+		Context:     github.String("container/docker"),
 	}).Return(nil)
 	g.On("CreateStatus", "remind101", "acme-inc", "abcd", &github.RepoStatus{
 		State:       github.String("failure"),
