@@ -27,6 +27,7 @@ fi
 export USER=`echo "${REPOSITORY}" | cut -f 1 -d '/'`
 
 setup() {
+  ls -la /var/run/conveyor
   # Copy ssh keys from the data volume.
   cp -r /var/run/conveyor/.ssh /root/.ssh
   chown -R root:root ~/.ssh
