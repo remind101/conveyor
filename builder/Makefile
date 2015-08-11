@@ -22,7 +22,7 @@ data: data/.dockercfg data/.ssh
 	docker create --name data \
 		-v ${PWD}/data/.ssh:/var/run/conveyor/.ssh \
 		-v ${PWD}/data/.dockercfg:/var/run/conveyor/.dockercfg \
-		ubuntu:14.04
+		alpine:3.1 sh
 
 data/.dockercfg:
 	cp ${HOME}/.dockercfg data/.dockercfg
