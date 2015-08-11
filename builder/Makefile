@@ -21,6 +21,7 @@ data: data/.dockercfg data/.ssh/id_rsa
 	docker rm data || true
 	ls ${PWD}/data/.ssh
 	docker create --name data \
+		-it \
 		-v ${PWD}/data/.ssh:/var/run/conveyor/.ssh \
 		-v ${PWD}/data/.dockercfg:/var/run/conveyor/.dockercfg \
 		alpine:3.1 sh
