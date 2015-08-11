@@ -22,9 +22,22 @@ type Logger interface {
 	URL() string
 }
 
+// NewLogger returns a logger that writes logs to w.
+func NewLogger(w io.Writer) *logger {
+	return &logger{Writer: w}
+}
+
 type logger struct {
-	io.WriteCloser
+	io.Writer
 	url string
+}
+
+func (l *logger) Close() error {
+	if w, ok := l.Writer.(io.Closer); ok {
+		return w.Close()
+	}
+
+	return nil
 }
 
 func (l *logger) URL() string {
@@ -36,21 +49,8 @@ func (l *logger) URL() string {
 type LogFactory func(BuildOptions) (Logger, error)
 
 func StdoutLogger(opts BuildOptions) (Logger, error) {
-	return &stdoutLogger{}, nil
+	return NewLogger(os.Stdout), nil
 }
-
-type stdoutLogger struct{}
-
-func (l *stdoutLogger) Write(p []byte) (int, error) { return os.Stdout.Write(p) }
-func (l *stdoutLogger) Close() error                { return nil }
-func (l *stdoutLogger) URL() string                 { return "" }
-
-// NullLogger is a logger that does nothing.
-type NullLogger struct{}
-
-func (l *NullLogger) Write(p []byte) (int, error) { return len(p), nil }
-func (l *NullLogger) Close() error                { return nil }
-func (l *NullLogger) URL() string                 { return "" }
 
 // S3Logger returns a log factory that writes logs to a file in an S3
 // bucket.

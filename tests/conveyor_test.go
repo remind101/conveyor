@@ -1,6 +1,7 @@
 package conveyor_test
 
 import (
+	"io/ioutil"
 	"testing"
 
 	"golang.org/x/net/context"
@@ -13,7 +14,7 @@ func TestConveyor(t *testing.T) {
 	checkDocker(t)
 
 	c := newConveyor(t)
-	w := &conveyor.NullLogger{}
+	w := conveyor.NewLogger(ioutil.Discard)
 
 	if _, err := c.Build(context.Background(), w, conveyor.BuildOptions{
 		Repository: "remind101/acme-inc",
