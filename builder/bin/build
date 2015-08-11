@@ -47,11 +47,11 @@ setup() {
       docker version
       retries=0
     else
+      retries=$(expr $retries - 1)
       status "Docker not running. Retrying in 1 second..."
       # Decrement counter and retry
-      retries=$(expr $retries - 1)
       sleep 1
-      if [ "$retries" -eq 0 ]; then
+      if [ "$retries" -eq 1 ]; then
         cat /var/log/docker.log
       fi
     fi
