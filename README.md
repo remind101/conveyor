@@ -68,9 +68,15 @@ This endpoint will create a build and stream it's output back to the client.
 ```json
 {
   "Repository": "remind101/acme-inc",
-  "Sha": "827fecd2d36ebeaa2fd05aa8ef3eed1e56a8cd57",
-  "Branch": "master"
+  "Sha": "827fecd2d36ebeaa2fd05aa8ef3eed1e56a8cd57"
 }
+```
+
+**Example Command**
+
+```console
+$ conveyor build remind101/acme-inc:827fecd2d36ebeaa2fd05aa8ef3eed1e56a8cd57
+remind101/acme-inc@sha256:44be4f298f764a2a8eb7eecce5383d2b
 ```
 
 ## Development
