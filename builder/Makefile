@@ -17,7 +17,7 @@ test: build data
 build:
 	docker build -t ${IMAGE} .
 
-data: data/.dockercfg data/.ssh
+data: data/.dockercfg data/.ssh/id_rsa
 	docker rm data || true
 	docker create --name data \
 		-v ${PWD}/data/.ssh:/var/run/conveyor/.ssh \
@@ -27,5 +27,5 @@ data: data/.dockercfg data/.ssh
 data/.dockercfg:
 	cp ${HOME}/.dockercfg data/.dockercfg
 
-data/.ssh:
+data/.ssh/id_rsa:
 	ssh-keygen -t rsa -b 4096 -C ${EMAIL} -f data/.ssh/id_rsa -P ""
