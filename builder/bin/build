@@ -28,7 +28,7 @@ export USER=`echo "${REPOSITORY}" | cut -f 1 -d '/'`
 
 teardown() {
   status "Stopping Docker..."
-  kill $(cat /var/run/docker.pid)
+  kill -15 $(cat /var/run/docker.pid)
 }
 
 setup() {
