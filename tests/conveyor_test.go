@@ -1,7 +1,8 @@
 package conveyor_test
 
 import (
-	"io/ioutil"
+	"bytes"
+	"regexp"
 	"testing"
 
 	"golang.org/x/net/context"
@@ -14,7 +15,8 @@ func TestConveyor(t *testing.T) {
 	checkDocker(t)
 
 	c := newConveyor(t)
-	w := conveyor.NewLogger(ioutil.Discard)
+	b := new(bytes.Buffer)
+	w := conveyor.NewLogger(b)
 
 	if _, err := c.Build(context.Background(), w, conveyor.BuildOptions{
 		Repository: "remind101/acme-inc",
@@ -22,6 +24,11 @@ func TestConveyor(t *testing.T) {
 		Sha:        "827fecd2d36ebeaa2fd05aa8ef3eed1e56a8cd57",
 	}); err != nil {
 		t.Fatal(err)
+	}
+
+	if !regexp.MustCompile(`Successfully built`).MatchString(b.String()) {
+		t.Log(b.String())
+		t.Fatal("Expected image to be built")
 	}
 }
 

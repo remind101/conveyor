@@ -1,0 +1,20 @@
+machine:
+  timezone: America/Los_Angeles
+  services:
+    - docker
+
+checkout:
+  post:
+    - rm -rf ~/.go_workspace/src/github.com/remind101
+    - mkdir -p ~/.go_workspace/src/github.com/remind101
+    - cp -R ~/conveyor ~/.go_workspace/src/github.com/remind101/conveyor
+
+dependencies:
+  override:
+    - go install -a -race std
+    - go get github.com/tools/godep
+    - go version
+
+test:
+  override:
+    - cd ~/.go_workspace/src/github.com/remind101/conveyor && godep go test -race ./...
