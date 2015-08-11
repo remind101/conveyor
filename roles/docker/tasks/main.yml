@@ -1,3 +1,28 @@
+# Setup the docker filesystem if a device exists
+- stat: path=/dev/xvdh
+  register: dev_xvdh
+- filesystem: fstype=ext4 dev=/dev/xvdh
+  when: dev_xvdh.stat.exists
+  register: new_docker_fs
+  notify:
+    - restart_docker
+
+- service: name=docker state=stopped
+  when: new_docker_fs|changed
+- mount: name=/var/lib/docker/aufs state=umounted
+  ignore_errors: yes
+  when: new_docker_fs|changed
+- mount: name=/var/lib/docker src=/dev/xvdh fstype=ext4 state=mounted
+  when: new_docker_fs|changed
+# Make absolutely sure aufs doesn't exist or docker freaks
+# https://github.com/docker/docker/issues/14026
+- mount: name=/var/lib/docker/aufs state=umounted
+  ignore_errors: yes
+  when: new_docker_fs|changed
+- file: path=/var/lib/docker/aufs state=absent
+  ignore_errors: yes
+  when: new_docker_fs|changed
+
 - apt: name=linux-image-extra-{{ansible_kernel}}
 - apt: name=linux-image-extra-virtual
 - apt: name=apparmor
