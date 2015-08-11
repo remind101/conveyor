@@ -6,7 +6,7 @@ RUN curl -sSL https://test.docker.com | sh
 ADD ./bin/install /bin/install
 RUN /bin/install
 ADD ./bin/build /bin/build
+ADD ./bin/wrapdocker /bin/wrapdocker
 
 VOLUME /var/lib/docker
-
 ENTRYPOINT ["build"]

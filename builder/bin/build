@@ -26,11 +26,6 @@ fi
 # Captain namespace. https://github.com/harbur/captain/blob/32fb0d765cae2c15fb2fa15b5b989fb527704715/captain/cmd.go#L115-L117
 export USER=`echo "${REPOSITORY}" | cut -f 1 -d '/'`
 
-teardown() {
-  status "Stopping Docker..."
-  service docker stop > /dev/null 2>&1
-}
-
 setup() {
   # Copy ssh keys from the data volume.
   cp -r /var/run/conveyor/.ssh /root/.ssh
@@ -41,26 +36,7 @@ setup() {
   # Copy .dockercfg from the data volume.
   cp -r /var/run/conveyor/.dockercfg /root/.dockercfg
 
-  # Start docker daemon.
-  status "Starting Docker..."
-  service docker start > /dev/null 2>&1
-
-  local retries=30
-  # Wait for docker daemon to come up.
-  while [ "$retries" -gt 0 ]; do
-    if docker version > /dev/null 2>&1; then
-      docker version
-      retries=0
-    else
-      retries=$(expr $retries - 1)
-      status "Docker not running. Retrying in 1 second..."
-      # Decrement counter and retry
-      sleep 1
-      if [ "$retries" -eq 1 ]; then
-        cat /var/log/docker.log
-      fi
-    fi
-  done
+  wrapdocker
 }
 
 clone() {
@@ -103,7 +79,5 @@ run() {
   setup
   clone && pull && build && push
 }
-
-trap teardown 0
 
 run
