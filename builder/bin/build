@@ -27,8 +27,11 @@ fi
 export USER=`echo "${REPOSITORY}" | cut -f 1 -d '/'`
 
 teardown() {
+  local pid_file="/var/run/docker.pid"
   status "Stopping Docker..."
-  kill -15 $(cat /var/run/docker.pid)
+  if [ -e "$pid_file" ]; then
+    kill -15 $(cat "$pid_file")
+  fi
 }
 
 setup() {
