@@ -23,6 +23,7 @@ func TestConveyor(t *testing.T) {
 		Branch:     "master",
 		Sha:        "827fecd2d36ebeaa2fd05aa8ef3eed1e56a8cd57",
 	}); err != nil {
+		t.Log(b.String())
 		t.Fatal(err)
 	}
 
