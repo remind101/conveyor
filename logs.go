@@ -31,12 +31,6 @@ func (l *logger) URL() string {
 	return l.url
 }
 
-type stdoutLogger struct{}
-
-func (l *stdoutLogger) Write(p []byte) (int, error) { return os.Stdout.Write(p) }
-func (l *stdoutLogger) Close() error                { return nil }
-func (l *stdoutLogger) URL() string                 { return "" }
-
 // LogFactory is a function that can return a location to write logs to for a
 // build.
 type LogFactory func(BuildOptions) (Logger, error)
@@ -44,6 +38,19 @@ type LogFactory func(BuildOptions) (Logger, error)
 func StdoutLogger(opts BuildOptions) (Logger, error) {
 	return &stdoutLogger{}, nil
 }
+
+type stdoutLogger struct{}
+
+func (l *stdoutLogger) Write(p []byte) (int, error) { return os.Stdout.Write(p) }
+func (l *stdoutLogger) Close() error                { return nil }
+func (l *stdoutLogger) URL() string                 { return "" }
+
+// NullLogger is a logger that does nothing.
+type NullLogger struct{}
+
+func (l *NullLogger) Write(p []byte) (int, error) { return len(p), nil }
+func (l *NullLogger) Close() error                { return nil }
+func (l *NullLogger) URL() string                 { return "" }
 
 // S3Logger returns a log factory that writes logs to a file in an S3
 // bucket.

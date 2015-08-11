@@ -160,8 +160,15 @@ func (b *DockerBuilder) Build(ctx context.Context, w Logger, opts BuildOptions) 
 		fmt.Sprintf("CACHE=%s", b.cache(opts)),
 	}
 
+	name := strings.Join([]string{
+		strings.Replace(opts.Repository, "/", "-", -1),
+		opts.Branch,
+		opts.Sha,
+		uuid.New(),
+	}, "-")
+
 	c, err := b.client.CreateContainer(docker.CreateContainerOptions{
-		Name: uuid.New(),
+		Name: name,
 		Config: &docker.Config{
 			Tty:          true,
 			AttachStdout: true,
