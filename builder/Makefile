@@ -19,6 +19,7 @@ build:
 
 data: data/.dockercfg data/.ssh/id_rsa
 	docker rm data || true
+	ls ${PWD}/data/.ssh
 	docker create --name data \
 		-v ${PWD}/data/.ssh:/var/run/conveyor/.ssh \
 		-v ${PWD}/data/.dockercfg:/var/run/conveyor/.dockercfg \
