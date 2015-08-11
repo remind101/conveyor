@@ -48,8 +48,8 @@
     },
     "AmiId" : {
       "Type": "AWS::EC2::Image::Id",
-      "Description": "AMI Id. Defaults to the official ECS Optimized Linux.",
-      "Default": "ami-e1c33f8a"
+      "Description": "AMI Id. Defaults to the Conveyor AMI.",
+      "Default": "ami-6b9a3200"
     },
     "KeyName": {
       "Type": "AWS::EC2::KeyPair::KeyName",
@@ -348,7 +348,7 @@
         "AWS::CloudFormation::Init": {
           "config": {
             "files": {
-              "/etc/ecs/ecs.config": {
+              "/etc/env/ecs.env": {
                 "content": { "Fn::Join": ["", [
                   "ECS_CLUSTER=", { "Ref": "Cluster" }, "\n",
                   "ECS_ENGINE_AUTH_TYPE=dockercfg\n",
@@ -358,11 +358,11 @@
                 "owner": "root",
                 "group": "root"
               },
-              "/home/ec2-user/.dockercfg": {
+              "/home/ubuntu/.dockercfg": {
                 "content": { "Ref": "DockerCfg" },
                 "mode": "000600",
-                "owner": "ec2-user",
-                "group": "ec2-user"
+                "owner": "ubuntu",
+                "group": "ubuntu"
               },
               "/root/.dockercfg": {
                 "content": { "Ref": "DockerCfg" },
@@ -408,8 +408,7 @@
               [
                 "#!/bin/bash\n",
                 "mkdir -p /var/run/conveyor/.ssh\n",
-                "yum install -y aws-cfn-bootstrap\n",
-                "/opt/aws/bin/cfn-init -s ", { "Ref": "AWS::StackName" }, " -r LaunchConfiguration --region ", { "Ref": "AWS::Region" }, "\n",
+                "cfn-init -s ", { "Ref": "AWS::StackName" }, " -r LaunchConfiguration --region ", { "Ref": "AWS::Region" }, "\n",
                 "docker pull ", { "Ref": "BuilderImage" }, "\n",
                 "docker create --name data -v /var/run/conveyor:/var/run/conveyor:ro ubuntu:14.04\n"
               ]
@@ -428,6 +427,17 @@
         "MinSize": "1",
         "MaxSize": { "Ref": "MaxCapacity" },
         "DesiredCapacity": { "Ref": "DesiredCapacity" }
+      },
+      "UpdatePolicy": {
+        "AutoScalingScheduledAction": {
+          "IgnoreUnmodifiedGroupSizeProperties": "true"
+        },
+        "AutoScalingRollingUpdate": {
+          "MinInstancesInService": "1",
+          "MaxBatchSize": "2",
+          "WaitOnResourceSignals": "false",
+          "PauseTime": "PT2M"
+        }
       }
     },
 

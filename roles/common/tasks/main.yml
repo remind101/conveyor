@@ -1,0 +1,13 @@
+- file: name=/etc/env mode=0750 owner=root group=root state=directory
+- name: Gather EC2 facts
+  action: ec2_facts
+- name: Write /etc/hosts
+  template: src=etc/hosts dest=/etc/hosts owner=root group=root mode=0644
+- apt: update_cache=yes
+- apt: name=apt-transport-https
+- apt: name=ca-certificates
+- apt_repository: repo='deb https://get.docker.com/ubuntu docker main' state=present
+- apt_key: url=http://get.docker.io/gpg
+- apt: update_cache=yes
+- apt: name=ntp
+- service: name=ntp state=started enabled=yes

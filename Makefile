@@ -5,3 +5,6 @@ cmd:
 
 build:
 	docker build -t remind101/conveyor .
+
+ami:
+	packer build -var "sha=$(shell git rev-parse HEAD)" packer.json

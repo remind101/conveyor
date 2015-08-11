@@ -1,8 +1,0 @@
-#!/bin/sh
-
-set -e
-
-# Install captain
-echo " ---> Installing captain"
-curl -Ls https://github.com/harbur/captain/releases/download/v0.5.0/captain > /bin/captain
-chmod +x /bin/captain

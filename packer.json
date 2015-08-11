@@ -1,0 +1,57 @@
+
+{
+  "variables": {
+    "aws_access_key": "{{env `AWS_ACCESS_KEY_ID`}}",
+    "aws_secret_key": "{{env `AWS_SECRET_ACCESS_KEY`}}",
+    "vpc": "{{env `VPC`}}",
+    "subnet": "{{env `SUBNET`}}",
+    "sha": ""
+  },
+  "builders": [{
+    "type": "amazon-ebs",
+    "access_key": "{{user `aws_access_key`}}",
+    "secret_key": "{{user `aws_secret_key`}}",
+    "region": "us-east-1",
+    "vpc_id": "{{user `vpc`}}",
+    "subnet_id": "{{user `subnet`}}",
+    "source_ami": "ami-cc3b3ea4",
+    "instance_type": "m3.medium",
+    "ssh_username": "ubuntu",
+    "ssh_timeout": "5m",
+    "associate_public_ip_address": "true",
+    "ami_name": "Conveyor {{user `sha`}}",
+    "tags": {
+      "sha": "{{user `sha`}}"
+    }
+  }],
+  "provisioners": [{
+    "type": "shell",
+    "pause_before": "60s",
+    "execute_command": "chmod +x {{ .Path  }}; {{ .Vars  }} sudo {{ .Path  }}",
+    "script": "./bin/install_ansible"
+  },{
+    "type": "shell",
+    "inline": [
+      "sudo sh -c \"echo '127.0.0.1 ansible_connection=local' > /etc/ansible/hosts\"",
+      "sudo mkdir -p /etc/ansible/playbook",
+      "sudo chown -R ubuntu:ubuntu /etc/ansible"
+    ]
+  },{
+    "type": "file",
+    "source": "./roles",
+    "destination": "/etc/ansible"
+  },{
+    "type": "file",
+    "source": "site.yml",
+    "destination": "/etc/ansible/playbook/site.yml"
+  },{
+    "type": "shell",
+    "inline": [
+      "sudo ls -la /etc/ansible/playbook"
+    ]
+  },{
+    "type": "shell",
+    "script": "./bin/ansible"
+  }]
+}
+

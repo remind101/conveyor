@@ -1,0 +1,4 @@
+- apt: name=python-setuptools
+- shell: mkdir -p /tmp/aws-cfn-bootstrap-latest
+- shell: curl https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz | tar xz -C /tmp/aws-cfn-bootstrap-latest --strip-components 1
+- shell: easy_install /tmp/aws-cfn-bootstrap-latest

@@ -1,0 +1,1 @@
+ecs_agent_image: "amazon/amazon-ecs-agent@sha256:54e98d053d0fd6735732e2c17054ab5d78b40be9d20a628fce993dc789240399" # v1.2.1 tag
