@@ -99,6 +99,39 @@ func TestServer_Push_Fork(t *testing.T) {
 	}
 }
 
+func TestServer_Push_Deleted(t *testing.T) {
+	var called bool
+	b := func(ctx context.Context, w Logger, opts BuildOptions) (string, error) {
+		called = true
+		return "", nil
+	}
+	s := NewServer(New(BuilderFunc(b)))
+	s.Builder = BuilderFunc(b) // Remove Async
+
+	resp := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/", strings.NewReader(`{
+  "ref": "refs/heads/master",
+  "deleted": true,
+  "head_commit": {
+    "id": "abcd"
+  },
+  "repository": {
+    "full_name": "remind101/acme-inc"
+  }
+}`))
+	req.Header.Set("X-GitHub-Event", "push")
+
+	s.ServeHTTP(resp, req)
+
+	if resp.Code != http.StatusOK {
+		t.Fatal("Expected 200 OK")
+	}
+
+	if called {
+		t.Fatal("Expected builder to have not been called")
+	}
+}
+
 func TestNoCache(t *testing.T) {
 	tests := []struct {
 		in  string
