@@ -6,11 +6,8 @@ RUN apt-get update && apt-get install -qqy \
     ca-certificates \
     curl \
     git \
-    wget \
-    lxc \
-    linux-image-extra-virtual \
-    iptables
-RUN curl -sSL https://get.docker.com/ubuntu/ | sh
+    wget
+RUN curl -sSL https://get.docker.com | sh
 ADD ./bin/build /bin/build
 ADD ./bin/wrapdocker /bin/wrapdocker
 

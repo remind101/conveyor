@@ -44,7 +44,9 @@ setup() {
   # Copy .dockercfg from the data volume.
   cp -r /var/run/conveyor/.dockercfg /root/.dockercfg
 
+  status "Starting Docker..."
   wrapdocker
+  docker version
 }
 
 clone() {
