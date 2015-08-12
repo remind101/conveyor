@@ -59,6 +59,12 @@ func (s *Server) Push(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Don't build forks.
+	if event.Repository.Fork {
+		io.WriteString(w, "Not building fork")
+		return
+	}
+
 	opts := BuildOptions{
 		Repository: event.Repository.FullName,
 		Branch:     strings.Replace(event.Ref, "refs/heads/", "", -1),
