@@ -27,7 +27,22 @@ const (
 	// data volume for ssh keys and docker credentials. In general, you
 	// shouldn't need to change this.
 	DefaultDataVolume = "data"
+
+	// DefaultTimeout is the default amount of time to wait for a build
+	// to complete before cancelling it.
+	DefaultTimeout = 20 * time.Minute
 )
+
+// BuildCanceledError is returned if the build is canceled, or times out and the
+// container returns an error.
+type BuildCanceledError struct {
+	Err error
+}
+
+// Error implements the error interface.
+func (e *BuildCanceledError) Error() string {
+	return e.Err.Error()
+}
 
 type BuildOptions struct {
 	// Repository is the repo to build.
@@ -61,12 +76,17 @@ type Conveyor struct {
 
 	// A Reporter to use to report errors.
 	Reporter reporter.Reporter
+
+	// Timeout controls how long to wait before canceling a build. A timeout
+	// of 0 means no timeout.
+	Timeout time.Duration
 }
 
 // New returns a new Conveyor instance.
 func New(b Builder) *Conveyor {
 	return &Conveyor{
 		Builder: b,
+		Timeout: DefaultTimeout,
 	}
 }
 
@@ -79,6 +99,13 @@ func (c *Conveyor) Build(ctx context.Context, w Logger, opts BuildOptions) (id s
 
 	// Embed the reporter in the context.Context.
 	ctx = reporter.WithReporter(ctx, c.reporter())
+
+	if c.Timeout != 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, c.Timeout)
+		defer cancel() // Release resources.
+	}
+
 	reporter.AddContext(ctx, "options", opts)
 	defer reporter.Monitor(ctx)
 
@@ -202,17 +229,42 @@ func (b *DockerBuilder) Build(ctx context.Context, w Logger, opts BuildOptions) 
 		return "", fmt.Errorf("start container: %v", err)
 	}
 
-	if err := b.client.AttachToContainer(docker.AttachToContainerOptions{
-		Container:    c.ID,
-		OutputStream: w,
-		ErrorStream:  w,
-		Logs:         true,
-		Stream:       true,
-		Stdout:       true,
-		Stderr:       true,
-		RawTerminal:  true,
-	}); err != nil {
-		return "", fmt.Errorf("attach: %v", err)
+	done := make(chan error, 1)
+	go func() {
+		err := b.client.AttachToContainer(docker.AttachToContainerOptions{
+			Container:    c.ID,
+			OutputStream: w,
+			ErrorStream:  w,
+			Logs:         true,
+			Stream:       true,
+			Stdout:       true,
+			Stderr:       true,
+			RawTerminal:  true,
+		})
+		done <- err
+	}()
+
+	var canceled bool
+	select {
+	case <-ctx.Done():
+		// Build was canceled or the build timedout. Stop the container
+		// prematurely. We'll SIGTERM and give it 10 seconds to stop,
+		// after that we'll SIGKILL.
+		if err := b.client.StopContainer(c.ID, 10); err != nil {
+			return "", fmt.Errorf("stop: %v", err)
+		}
+
+		// Wait for log streaming to finish.
+		err := <-done
+		if err != nil {
+			return "", fmt.Errorf("attach: %v", err)
+		}
+
+		canceled = true
+	case err := <-done:
+		if err != nil {
+			return "", fmt.Errorf("attach: %v", err)
+		}
 	}
 
 	exit, err := b.client.WaitContainer(c.ID)
@@ -222,7 +274,13 @@ func (b *DockerBuilder) Build(ctx context.Context, w Logger, opts BuildOptions) 
 
 	// A non-zero exit status means the build failed.
 	if exit != 0 {
-		return "", fmt.Errorf("container returned a non-zero exit code: %d", exit)
+		err := fmt.Errorf("container returned a non-zero exit code: %d", exit)
+		if canceled {
+			err = &BuildCanceledError{
+				Err: err,
+			}
+		}
+		return "", err
 	}
 
 	// TODO: Return sha256
