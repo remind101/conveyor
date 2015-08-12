@@ -71,6 +71,12 @@ func New(b Builder) *Conveyor {
 }
 
 func (c *Conveyor) Build(ctx context.Context, w Logger, opts BuildOptions) (id string, err error) {
+	log.Printf("Starting build: repository=%s branch=%s sha=%s",
+		opts.Repository,
+		opts.Branch,
+		opts.Sha,
+	)
+
 	// Embed the reporter in the context.Context.
 	ctx = reporter.WithReporter(ctx, c.reporter())
 	reporter.AddContext(ctx, "options", opts)
