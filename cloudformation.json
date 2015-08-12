@@ -23,6 +23,11 @@
       "Default": "",
       "Description": "S3 bucket where ssh keys are located."
     },
+    "Version": {
+      "Type": "String",
+      "Default": "latest",
+      "Description": "Version of Conveyor to run."
+    },
     "BuilderImage": {
       "Type": "String",
       "Default": "remind101/conveyor-builder",
@@ -451,7 +456,7 @@
         "ContainerDefinitions": [
           {
             "Name": "conveyor",
-            "Image": "remind101/conveyor:latest",
+            "Image": { "Fn::Join": ["", ["remind101/conveyor:", { "Ref": "Version" }]] },
             "Cpu": 512,
             "Memory": 256,
             "EntryPoint": [],
