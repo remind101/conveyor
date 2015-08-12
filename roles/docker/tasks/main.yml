@@ -1,3 +1,8 @@
+- apt: name=linux-image-extra-{{ansible_kernel}}
+- apt: name=linux-image-extra-virtual
+- apt: name=apparmor
+- apt: name=lxc-docker
+
 # Setup the docker filesystem if a device exists
 - stat: path=/dev/xvdh
   register: dev_xvdh
@@ -23,10 +28,6 @@
   ignore_errors: yes
   when: new_docker_fs|changed
 
-- apt: name=linux-image-extra-{{ansible_kernel}}
-- apt: name=linux-image-extra-virtual
-- apt: name=apparmor
-- apt: name=lxc-docker
 - name: Adding ubuntu to docker group
   user: name=ubuntu groups=docker append=yes
 - service: name=docker state=started

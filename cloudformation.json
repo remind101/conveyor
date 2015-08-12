@@ -401,12 +401,6 @@
         "SecurityGroups": [
           { "Ref": "InstanceSecurityGroup" }
         ],
-        "BlockDeviceMappings": [
-          {
-            "DeviceName": "/dev/xvdh",
-            "Ebs": { "VolumeSize": "100", "DeleteOnTermination": "true" }
-          }
-        ],
         "UserData": {
           "Fn::Base64": {
             "Fn::Join": [

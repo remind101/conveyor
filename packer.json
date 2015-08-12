@@ -20,6 +20,12 @@
     "ssh_timeout": "5m",
     "associate_public_ip_address": "true",
     "ami_name": "Conveyor {{user `sha`}}",
+    "ami_block_device_mappings": [
+      { "device_name": "/dev/xvdh", "volume_type": "standard", "volume_size": 100, "delete_on_termination": true }
+    ],
+    "launch_block_device_mappings": [
+      { "device_name": "/dev/xvdh", "volume_type": "standard", "volume_size": 100, "delete_on_termination": true }
+    ],
     "tags": {
       "sha": "{{user `sha`}}"
     }
