@@ -182,6 +182,11 @@ func (b *DockerBuilder) Build(ctx context.Context, w Logger, opts BuildOptions) 
 	if err != nil {
 		return "", fmt.Errorf("create container: %v", err)
 	}
+	defer b.client.RemoveContainer(docker.RemoveContainerOptions{
+		ID:            c.ID,
+		RemoveVolumes: true,
+		Force:         true,
+	})
 
 	reporter.AddContext(ctx, "container_id", c.ID)
 
