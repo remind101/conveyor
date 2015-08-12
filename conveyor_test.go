@@ -2,6 +2,7 @@ package conveyor
 
 import (
 	"errors"
+	"net/http"
 	"testing"
 	"time"
 
@@ -105,6 +106,39 @@ func TestUpdateGitHubCommitStatus_Error(t *testing.T) {
 	})
 
 	g.AssertExpectations(t)
+}
+
+func TestUpdateGitHubCommitStatus_CommitNotFound(t *testing.T) {
+	var called bool
+	b := func(ctx context.Context, w Logger, opts BuildOptions) (string, error) {
+		called = true
+		return "", nil
+	}
+	g := &MockGitHubClient{}
+	w := &mockLogger{}
+	builder := UpdateGitHubCommitStatus(BuilderFunc(b), g)
+
+	g.On("CreateStatus", "remind101", "acme-inc", "abcd", &github.RepoStatus{
+		State:       github.String("pending"),
+		Description: github.String("Image building."),
+		Context:     github.String("container/docker"),
+	}).Return(&github.ErrorResponse{
+		Response: &http.Response{
+			StatusCode: 404,
+		},
+	})
+
+	builder.Build(context.Background(), w, BuildOptions{
+		Repository: "remind101/acme-inc",
+		Branch:     "master",
+		Sha:        "abcd",
+	})
+
+	g.AssertExpectations(t)
+
+	if called {
+		t.Fatal("Expected builder to not be called")
+	}
 }
 
 type mockLogger struct {

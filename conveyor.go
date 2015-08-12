@@ -3,6 +3,7 @@ package conveyor
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"strings"
 	"time"
@@ -279,6 +280,21 @@ func UpdateGitHubCommitStatus(b Builder, g GitHubClient) *statusUpdaterBuilder {
 func (b *statusUpdaterBuilder) Build(ctx context.Context, w Logger, opts BuildOptions) (id string, err error) {
 	t := time.Now()
 
+	// Add the initial pending status.
+	if err = b.updateStatus(w, opts, "pending", "Image building."); err != nil {
+		// If we try to create a pending status and we get a 404 back from GitHub, then
+		// we shouldn't try to build, because it will fail. This generally happens when
+		// someone ammends a commit and force pushes.
+		if gErr, ok := err.(*github.ErrorResponse); ok {
+			if gErr.Response.StatusCode == http.StatusNotFound {
+				log.Printf("Commit %s for %s was not found on GitHub. Aborting build.\n", opts.Sha, opts.Repository)
+				err = nil
+				return
+			}
+		}
+		return
+	}
+
 	defer func() {
 		duration := b.since(t)
 		description := fmt.Sprintf("Image built in %v.", duration)
@@ -289,10 +305,6 @@ func (b *statusUpdaterBuilder) Build(ctx context.Context, w Logger, opts BuildOp
 		}
 		b.updateStatus(w, opts, status, description)
 	}()
-
-	if err = b.updateStatus(w, opts, "pending", "Image building."); err != nil {
-		return
-	}
 
 	id, err = b.Builder.Build(ctx, w, opts)
 	return
