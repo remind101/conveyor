@@ -65,6 +65,12 @@ func (s *Server) Push(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Don't build deleted branches.
+	if event.Deleted {
+		io.WriteString(w, "Not building deleted branch")
+		return
+	}
+
 	opts := BuildOptions{
 		Repository: event.Repository.FullName,
 		Branch:     strings.Replace(event.Ref, "refs/heads/", "", -1),
