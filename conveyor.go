@@ -168,7 +168,6 @@ func (b *DockerBuilder) Build(ctx context.Context, w Logger, opts BuildOptions) 
 
 	name := strings.Join([]string{
 		strings.Replace(opts.Repository, "/", "-", -1),
-		opts.Branch,
 		opts.Sha,
 		uuid.New(),
 	}, "-")
