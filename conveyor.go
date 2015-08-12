@@ -291,7 +291,6 @@ func (b *statusUpdaterBuilder) Build(ctx context.Context, w Logger, opts BuildOp
 	}()
 
 	if err = b.updateStatus(w, opts, "pending", "Image building."); err != nil {
-		err = fmt.Errorf("status: %v", err)
 		return
 	}
 
