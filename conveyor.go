@@ -49,7 +49,7 @@ type BuildCanceledError struct {
 
 // Error implements the error interface.
 func (e *BuildCanceledError) Error() string {
-	return e.Err.Error()
+	return fmt.Sprintf("%s (canceled)", e.Err.Error())
 }
 
 type BuildOptions struct {
