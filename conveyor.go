@@ -412,16 +412,13 @@ func BuildAsync(b Builder) Builder {
 // WithCancel wraps a Builder with a method to stop all builds.
 func WithCancel(b Builder) *CancelBuilder {
 	return &CancelBuilder{
-		Builder:  b,
-		shutdown: make(chan struct{}),
-		builds:   make(map[context.Context]context.CancelFunc),
+		Builder: b,
+		builds:  make(map[context.Context]context.CancelFunc),
 	}
 }
 
 type CancelBuilder struct {
 	Builder
-
-	shutdown chan struct{}
 
 	sync.Mutex
 	stopped bool
