@@ -107,6 +107,59 @@ func TestUpdateGitHubCommitStatus_Error(t *testing.T) {
 	g.AssertExpectations(t)
 }
 
+func TestWithCancel(t *testing.T) {
+	var (
+		// Total number of builds to add.
+		numBuilds   = 2
+		numCanceled int
+
+		// context.Contexts are sent onto this channel when the build
+		// starts.
+		building = make(chan context.Context, numBuilds)
+	)
+
+	b := WithCancel(BuilderFunc(func(ctx context.Context, w Logger, opts BuildOptions) (string, error) {
+		building <- ctx
+
+		select {
+		case <-time.After(1 * time.Minute):
+			t.Fatal("Got here")
+		case <-ctx.Done():
+			if ctx.Err() != context.Canceled {
+				t.Fatal("Expected to be canceled")
+				return "", nil
+			}
+
+			numCanceled += 1
+		}
+
+		return "", nil
+	}))
+	w := &mockLogger{}
+
+	// Add a couple builds.
+	for i := 0; i < numBuilds; i++ {
+		go func() {
+			b.Build(context.Background(), w, BuildOptions{
+				Repository: "remind101/acme-inc",
+				Branch:     "master",
+				Sha:        "abcd",
+			})
+		}()
+
+		// Wait for the build to start.
+		<-building
+	}
+
+	if err := b.Cancel(); err != nil {
+		t.Fatal(err)
+	}
+
+	if got, want := numCanceled, numBuilds; got != want {
+		t.Fatalf("%d builds canceled; want %d", got, want)
+	}
+}
+
 type mockLogger struct {
 	closeErr error
 	closed   bool
