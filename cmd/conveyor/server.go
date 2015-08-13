@@ -3,6 +3,9 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/codegangsta/cli"
 	"github.com/remind101/conveyor"
@@ -64,6 +67,18 @@ func runServer(c *cli.Context) {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		sig := <-quit
+
+		log.Printf("Signal %d received. Shutting down.\n", sig)
+		if err := b.Cancel(); err != nil {
+			log.Fatal(err)
+		}
+		os.Exit(0)
+	}()
 
 	s, err := newServer(c, b)
 	if err != nil {

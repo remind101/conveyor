@@ -1,10 +1,12 @@
 package conveyor
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"code.google.com/p/go-uuid/uuid"
@@ -31,6 +33,12 @@ const (
 	// DefaultTimeout is the default amount of time to wait for a build
 	// to complete before cancelling it.
 	DefaultTimeout = 20 * time.Minute
+)
+
+var (
+	// ErrShuttingDown can be returned by builders if they're shutting down
+	// and not accepting more jobs.
+	ErrShuttingDown = errors.New("shutting down")
 )
 
 // BuildCanceledError is returned if the build is canceled, or times out and the
@@ -85,7 +93,7 @@ type Conveyor struct {
 // New returns a new Conveyor instance.
 func New(b Builder) *Conveyor {
 	return &Conveyor{
-		Builder: b,
+		Builder: WithCancel(b),
 		Timeout: DefaultTimeout,
 	}
 }
@@ -136,6 +144,14 @@ func (c *Conveyor) build(ctx context.Context, w Logger, opts BuildOptions) (id s
 
 	id, err = c.Builder.Build(ctx, w, opts)
 	return
+}
+
+func (c *Conveyor) Cancel() error {
+	if b, ok := c.Builder.(*CancelBuilder); ok {
+		return b.Cancel()
+	}
+
+	return fmt.Errorf("Builder does not support Cancel()")
 }
 
 func (c *Conveyor) reporter() reporter.Reporter {
@@ -391,6 +407,72 @@ func BuildAsync(b Builder) Builder {
 		go build(ctx, w, opts)
 		return "", nil
 	})
+}
+
+// WithCancel wraps a Builder with a method to stop all builds.
+func WithCancel(b Builder) *CancelBuilder {
+	return &CancelBuilder{
+		Builder:  b,
+		shutdown: make(chan struct{}),
+		builds:   make(map[context.Context]context.CancelFunc),
+	}
+}
+
+type CancelBuilder struct {
+	Builder
+
+	shutdown chan struct{}
+
+	sync.Mutex
+	stopped bool
+	builds  map[context.Context]context.CancelFunc
+}
+
+func (b *CancelBuilder) Build(ctx context.Context, w Logger, opts BuildOptions) (string, error) {
+	if b.stopped {
+		return "", ErrShuttingDown
+	}
+
+	ctx = b.addBuild(ctx)
+	defer b.removeBuild(ctx)
+
+	return b.Builder.Build(ctx, w, opts)
+}
+
+func (b *CancelBuilder) Cancel() error {
+	b.Lock()
+	defer b.Unlock()
+
+	// Mark as stopped so we don't accept anymore builds.
+	b.stopped = true
+
+	// Cancel each build.
+	for _, cancel := range b.builds {
+		cancel()
+	}
+
+	// Wait for each build to complete.
+	for ctx := range b.builds {
+		<-ctx.Done()
+	}
+
+	return nil
+}
+
+func (b *CancelBuilder) addBuild(ctx context.Context) context.Context {
+	b.Lock()
+	defer b.Unlock()
+
+	ctx, cancel := context.WithCancel(ctx)
+	b.builds[ctx] = cancel
+	return ctx
+}
+
+func (b *CancelBuilder) removeBuild(ctx context.Context) {
+	b.Lock()
+	defer b.Unlock()
+
+	delete(b.builds, ctx)
 }
 
 var hostname string
