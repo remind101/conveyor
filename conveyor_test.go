@@ -116,7 +116,6 @@ func TestWithCancel(t *testing.T) {
 		// context.Contexts are sent onto this channel when the build
 		// starts.
 		building = make(chan context.Context, numBuilds)
-		canceled = make(chan context.Context, numBuilds)
 	)
 
 	b := WithCancel(BuilderFunc(func(ctx context.Context, w Logger, opts BuildOptions) (string, error) {
@@ -131,12 +130,7 @@ func TestWithCancel(t *testing.T) {
 				return "", nil
 			}
 
-			canceled <- ctx
 			numCanceled += 1
-
-			if numCanceled == numBuilds {
-				close(canceled)
-			}
 		}
 
 		return "", nil
@@ -159,21 +153,6 @@ func TestWithCancel(t *testing.T) {
 
 	if err := b.Cancel(); err != nil {
 		t.Fatal(err)
-	}
-
-	done := make(chan struct{})
-	go func() {
-		for range canceled {
-			// Wait for builds to cancel
-		}
-		close(done)
-	}()
-
-	select {
-	case <-done:
-		// Yay
-	case <-time.After(time.Second):
-		t.Fatal("Timedout waiting for builds to cancel")
 	}
 
 	if got, want := numCanceled, numBuilds; got != want {

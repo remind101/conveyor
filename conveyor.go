@@ -438,7 +438,6 @@ func (b *CancelBuilder) Build(ctx context.Context, w Logger, opts BuildOptions) 
 
 func (b *CancelBuilder) Cancel() error {
 	b.Lock()
-	defer b.Unlock()
 
 	// Mark as stopped so we don't accept anymore builds.
 	b.stopped = true
@@ -448,9 +447,16 @@ func (b *CancelBuilder) Cancel() error {
 		cancel()
 	}
 
-	// Wait for each build to complete.
-	for ctx := range b.builds {
-		<-ctx.Done()
+	b.Unlock()
+
+	// Wait for all builds to stop.
+	for {
+		<-time.After(time.Second)
+
+		if len(b.builds) == 0 {
+			// All builds stopped.
+			break
+		}
 	}
 
 	return nil
