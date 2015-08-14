@@ -157,7 +157,7 @@ func (c *Conveyor) Cancel() error {
 func (c *Conveyor) reporter() reporter.Reporter {
 	if c.Reporter == nil {
 		return reporter.ReporterFunc(func(ctx context.Context, err error) error {
-			fmt.Fprintf(os.Stderr, "reporting err: %v", err)
+			fmt.Fprintf(os.Stderr, "reporting err: %v\n", err)
 			return nil
 		})
 	}
