@@ -3,8 +3,6 @@
   "variables": {
     "aws_access_key": "{{env `AWS_ACCESS_KEY_ID`}}",
     "aws_secret_key": "{{env `AWS_SECRET_ACCESS_KEY`}}",
-    "vpc": "{{env `VPC`}}",
-    "subnet": "{{env `SUBNET`}}",
     "sha": ""
   },
   "builders": [{
@@ -12,14 +10,14 @@
     "access_key": "{{user `aws_access_key`}}",
     "secret_key": "{{user `aws_secret_key`}}",
     "region": "us-east-1",
-    "vpc_id": "{{user `vpc`}}",
-    "subnet_id": "{{user `subnet`}}",
     "source_ami": "ami-cc3b3ea4",
     "instance_type": "m3.medium",
     "ssh_username": "ubuntu",
     "ssh_timeout": "5m",
-    "associate_public_ip_address": "true",
+    "associate_public_ip_address": true,
+    "ami_groups": "all",
     "ami_name": "Conveyor {{user `sha`}}",
+    "associate_public_ip_address": true,
     "ami_block_device_mappings": [
       { "device_name": "/dev/xvdh", "volume_type": "standard", "volume_size": 100, "delete_on_termination": true }
     ],
