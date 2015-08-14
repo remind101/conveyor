@@ -1,8 +1,8 @@
 
 {
   "variables": {
-    "aws_access_key": "{{env `AWS_ACCESS_KEY_ID`}}",
-    "aws_secret_key": "{{env `AWS_SECRET_ACCESS_KEY`}}",
+    "aws_access_key": "",
+    "aws_secret_key": "",
     "sha": ""
   },
   "builders": [{
@@ -14,10 +14,8 @@
     "instance_type": "m3.medium",
     "ssh_username": "ubuntu",
     "ssh_timeout": "5m",
-    "associate_public_ip_address": true,
     "ami_groups": "all",
     "ami_name": "Conveyor {{user `sha`}}",
-    "associate_public_ip_address": true,
     "ami_block_device_mappings": [
       { "device_name": "/dev/xvdh", "volume_type": "standard", "volume_size": 100, "delete_on_termination": true }
     ],
