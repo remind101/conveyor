@@ -51,8 +51,12 @@ type BuildOptions struct {
 
 // Builder represents something that can build a Docker image.
 type Builder interface {
-	// Build should build the docker image, tag it and push it to the docker
-	// registry. This should return the sha256 digest of the image.
+	// Builder should build an image and write output to Logger. In general,
+	// it's expected that the image will be pushed to some location where it
+	// can be pulled by clients.
+	//
+	// Implementers should take note and handle the ctx.Done() case in the
+	// event that the build should timeout or get canceled by the user.
 	Build(context.Context, Logger, BuildOptions) (string, error)
 }
 

@@ -1,6 +1,6 @@
 # Docker Builder
 
-This a [Builder](../builder) implementation that builds Docker images inside Docker. So meta.
+This a [Builder](../../builder) implementation that builds Docker images inside Docker. So meta.
 
 It does the following:
 
