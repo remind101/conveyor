@@ -2,6 +2,7 @@ package builder
 
 import (
 	"errors"
+	"io"
 	"testing"
 	"time"
 
@@ -10,7 +11,7 @@ import (
 )
 
 func TestUpdateGitHubCommitStatus(t *testing.T) {
-	b := func(ctx context.Context, w Logger, opts BuildOptions) (string, error) {
+	b := func(ctx context.Context, w io.Writer, opts BuildOptions) (string, error) {
 		return "", nil
 	}
 	g := &MockGitHubClient{}
@@ -42,7 +43,7 @@ func TestUpdateGitHubCommitStatus(t *testing.T) {
 }
 
 func TestUpdateGitHubCommitStatus_Error(t *testing.T) {
-	b := func(ctx context.Context, w Logger, opts BuildOptions) (string, error) {
+	b := func(ctx context.Context, w io.Writer, opts BuildOptions) (string, error) {
 		return "", errors.New("i/o timeout")
 	}
 	g := &MockGitHubClient{}
@@ -84,7 +85,7 @@ func TestWithCancel(t *testing.T) {
 		building = make(chan context.Context, numBuilds)
 	)
 
-	b := WithCancel(BuilderFunc(func(ctx context.Context, w Logger, opts BuildOptions) (string, error) {
+	b := WithCancel(BuilderFunc(func(ctx context.Context, w io.Writer, opts BuildOptions) (string, error) {
 		building <- ctx
 
 		select {

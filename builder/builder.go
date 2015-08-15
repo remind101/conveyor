@@ -5,6 +5,7 @@ package builder
 import (
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 	"sync"
 	"time"
@@ -51,20 +52,30 @@ type BuildOptions struct {
 
 // Builder represents something that can build a Docker image.
 type Builder interface {
-	// Builder should build an image and write output to Logger. In general,
+	// Builder should build an image and write output to w.Writer. In general,
 	// it's expected that the image will be pushed to some location where it
 	// can be pulled by clients.
 	//
 	// Implementers should take note and handle the ctx.Done() case in the
 	// event that the build should timeout or get canceled by the user.
-	Build(context.Context, Logger, BuildOptions) (string, error)
+	//
+	// The value of image should be the location to pull the immutable
+	// image. For example, if the image is built and generates a sha256
+	// digest, the value for image may look like:
+	//
+	//	remind101/acme-inc@sha256:6b558cade79544da908c349ba0e5b63d
+	//
+	// Or possibly a tag:
+	//
+	//	remind101/acme-inc:<git sha>
+	Build(ctx context.Context, w io.Writer, opts BuildOptions) (image string, err error)
 }
 
 // BuilderFunc is a function that implements the Builder interface.
-type BuilderFunc func(context.Context, Logger, BuildOptions) (string, error)
+type BuilderFunc func(context.Context, io.Writer, BuildOptions) (string, error)
 
 // Build implements Builder Build.
-func (fn BuilderFunc) Build(ctx context.Context, w Logger, opts BuildOptions) (string, error) {
+func (fn BuilderFunc) Build(ctx context.Context, w io.Writer, opts BuildOptions) (string, error) {
 	return fn(ctx, w, opts)
 }
 
@@ -86,7 +97,7 @@ func UpdateGitHubCommitStatus(b Builder, g GitHubClient) *statusUpdaterBuilder {
 	}
 }
 
-func (b *statusUpdaterBuilder) Build(ctx context.Context, w Logger, opts BuildOptions) (id string, err error) {
+func (b *statusUpdaterBuilder) Build(ctx context.Context, w io.Writer, opts BuildOptions) (image string, err error) {
 	t := time.Now()
 
 	defer func() {
@@ -104,12 +115,12 @@ func (b *statusUpdaterBuilder) Build(ctx context.Context, w Logger, opts BuildOp
 		return
 	}
 
-	id, err = b.Builder.Build(ctx, w, opts)
+	image, err = b.Builder.Build(ctx, w, opts)
 	return
 }
 
 // updateStatus updates the given commit with a new status.
-func (b *statusUpdaterBuilder) updateStatus(w Logger, opts BuildOptions, status string, description string) error {
+func (b *statusUpdaterBuilder) updateStatus(w io.Writer, opts BuildOptions, status string, description string) error {
 	context := Context
 	parts := strings.SplitN(opts.Repository, "/", 2)
 
@@ -119,7 +130,9 @@ func (b *statusUpdaterBuilder) updateStatus(w Logger, opts BuildOptions, status 
 	}
 	var url *string
 	if status == "success" || status == "failure" || status == "error" {
-		url = github.String(w.URL())
+		if w, ok := w.(Logger); ok {
+			url = github.String(w.URL())
+		}
 	}
 
 	_, _, err := b.github.CreateStatus(parts[0], parts[1], opts.Sha, &github.RepoStatus{
@@ -147,7 +160,7 @@ type CancelBuilder struct {
 	builds  map[context.Context]context.CancelFunc
 }
 
-func (b *CancelBuilder) Build(ctx context.Context, w Logger, opts BuildOptions) (string, error) {
+func (b *CancelBuilder) Build(ctx context.Context, w io.Writer, opts BuildOptions) (string, error) {
 	if b.stopped {
 		return "", ErrShuttingDown
 	}

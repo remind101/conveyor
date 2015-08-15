@@ -2,6 +2,7 @@ package conveyor
 
 import (
 	"errors"
+	"io"
 	"testing"
 
 	"github.com/remind101/conveyor/builder"
@@ -10,10 +11,10 @@ import (
 )
 
 func TestConveyor_Build(t *testing.T) {
-	b := func(ctx context.Context, w builder.Logger, opts builder.BuildOptions) (string, error) {
+	b := func(ctx context.Context, w io.Writer, opts builder.BuildOptions) (string, error) {
 		return "", nil
 	}
-	w := &mockLogger{}
+	w := &closeWriter{}
 	c := New(builder.BuilderFunc(b))
 
 	if _, err := c.Build(context.Background(), w, builder.BuildOptions{}); err != nil {
@@ -27,10 +28,10 @@ func TestConveyor_Build(t *testing.T) {
 
 func TestConveyor_Build_CloseError(t *testing.T) {
 	closeErr := errors.New("i/o timeout")
-	b := func(ctx context.Context, w builder.Logger, opts builder.BuildOptions) (string, error) {
+	b := func(ctx context.Context, w io.Writer, opts builder.BuildOptions) (string, error) {
 		return "", nil
 	}
-	w := &mockLogger{closeErr: closeErr}
+	w := &closeWriter{closeErr: closeErr}
 	c := New(builder.BuilderFunc(b))
 
 	if _, err := c.Build(context.Background(), w, builder.BuildOptions{}); err != closeErr {
@@ -42,20 +43,16 @@ func TestConveyor_Build_CloseError(t *testing.T) {
 	}
 }
 
-type mockLogger struct {
+type closeWriter struct {
 	closeErr error
 	closed   bool
 }
 
-func (m *mockLogger) Write(p []byte) (int, error) {
+func (w *closeWriter) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-func (m *mockLogger) Close() error {
-	m.closed = true
-	return m.closeErr
-}
-
-func (m *mockLogger) URL() string {
-	return "https://google.com"
+func (w *closeWriter) Close() error {
+	w.closed = true
+	return w.closeErr
 }

@@ -2,6 +2,7 @@ package conveyor
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"time"
@@ -38,7 +39,7 @@ func New(b builder.Builder) *Conveyor {
 	}
 }
 
-func (c *Conveyor) Build(ctx context.Context, w builder.Logger, opts builder.BuildOptions) (id string, err error) {
+func (c *Conveyor) Build(ctx context.Context, w io.Writer, opts builder.BuildOptions) (image string, err error) {
 	log.Printf("Starting build: repository=%s branch=%s sha=%s",
 		opts.Repository,
 		opts.Branch,
@@ -63,15 +64,15 @@ func (c *Conveyor) Build(ctx context.Context, w builder.Logger, opts builder.Bui
 		}
 	}()
 
-	id, err = c.build(ctx, w, opts)
+	image, err = c.build(ctx, w, opts)
 	return
 }
 
 // Build performs the build and ensures that the output stream is closed.
-func (c *Conveyor) build(ctx context.Context, w builder.Logger, opts builder.BuildOptions) (id string, err error) {
+func (c *Conveyor) build(ctx context.Context, w io.Writer, opts builder.BuildOptions) (image string, err error) {
 	defer func() {
 		var closeErr error
-		if w != nil {
+		if w, ok := w.(io.Closer); ok {
 			closeErr = w.Close()
 		}
 		if err == nil {
@@ -82,7 +83,7 @@ func (c *Conveyor) build(ctx context.Context, w builder.Logger, opts builder.Bui
 		}
 	}()
 
-	id, err = c.Builder.Build(ctx, w, opts)
+	image, err = c.Builder.Build(ctx, w, opts)
 	return
 }
 

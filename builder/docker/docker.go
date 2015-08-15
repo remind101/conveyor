@@ -2,6 +2,7 @@ package docker
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
@@ -57,7 +58,7 @@ func NewBuilderFromEnv() (*Builder, error) {
 }
 
 // Build executes the docker image.
-func (b *Builder) Build(ctx context.Context, w builder.Logger, opts builder.BuildOptions) (string, error) {
+func (b *Builder) Build(ctx context.Context, w io.Writer, opts builder.BuildOptions) (string, error) {
 	env := []string{
 		fmt.Sprintf("REPOSITORY=%s", opts.Repository),
 		fmt.Sprintf("BRANCH=%s", opts.Branch),
@@ -156,8 +157,8 @@ func (b *Builder) Build(ctx context.Context, w builder.Logger, opts builder.Buil
 		return "", err
 	}
 
-	// TODO: Return sha256
-	return "", nil
+	image := fmt.Sprintf("%s:%s", opts.Repository, opts.Sha)
+	return image, nil
 }
 
 func (b *Builder) dryRun() string {

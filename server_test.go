@@ -1,6 +1,7 @@
 package conveyor
 
 import (
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -12,7 +13,7 @@ import (
 )
 
 func TestServer_Ping(t *testing.T) {
-	b := func(ctx context.Context, w builder.Logger, opts builder.BuildOptions) (string, error) {
+	b := func(ctx context.Context, w io.Writer, opts builder.BuildOptions) (string, error) {
 		return "", nil
 	}
 	s := NewServer(New(builder.BuilderFunc(b)))
@@ -30,7 +31,7 @@ func TestServer_Ping(t *testing.T) {
 
 func TestServer_Push(t *testing.T) {
 	var called bool
-	b := func(ctx context.Context, w builder.Logger, opts builder.BuildOptions) (string, error) {
+	b := func(ctx context.Context, w io.Writer, opts builder.BuildOptions) (string, error) {
 		called = true
 		expected := builder.BuildOptions{
 			Repository: "remind101/acme-inc",
@@ -69,7 +70,7 @@ func TestServer_Push(t *testing.T) {
 
 func TestServer_Push_Fork(t *testing.T) {
 	var called bool
-	b := func(ctx context.Context, w builder.Logger, opts builder.BuildOptions) (string, error) {
+	b := func(ctx context.Context, w io.Writer, opts builder.BuildOptions) (string, error) {
 		called = true
 		return "", nil
 	}
@@ -101,7 +102,7 @@ func TestServer_Push_Fork(t *testing.T) {
 
 func TestServer_Push_Deleted(t *testing.T) {
 	var called bool
-	b := func(ctx context.Context, w builder.Logger, opts builder.BuildOptions) (string, error) {
+	b := func(ctx context.Context, w io.Writer, opts builder.BuildOptions) (string, error) {
 		called = true
 		return "", nil
 	}
