@@ -9,6 +9,8 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/remind101/conveyor"
+	"github.com/remind101/conveyor/builder"
+	"github.com/remind101/conveyor/builder/docker"
 )
 
 // This is just a highlevel sanity test.
@@ -17,10 +19,10 @@ func TestConveyor(t *testing.T) {
 
 	c := newConveyor(t)
 	b := new(bytes.Buffer)
-	w := conveyor.NewLogger(b)
+	w := builder.NewLogger(b)
 
 	ctx := context.Background()
-	if _, err := c.Build(ctx, w, conveyor.BuildOptions{
+	if _, err := c.Build(ctx, w, builder.BuildOptions{
 		Repository: "remind101/acme-inc",
 		Branch:     "master",
 		Sha:        "827fecd2d36ebeaa2fd05aa8ef3eed1e56a8cd57",
@@ -40,24 +42,24 @@ func TestConveyor_WithTimeout(t *testing.T) {
 
 	c := newConveyor(t)
 	b := new(bytes.Buffer)
-	w := conveyor.NewLogger(b)
+	w := builder.NewLogger(b)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	if _, err := c.Build(ctx, w, conveyor.BuildOptions{
+	if _, err := c.Build(ctx, w, builder.BuildOptions{
 		Repository: "remind101/acme-inc",
 		Branch:     "master",
 		Sha:        "827fecd2d36ebeaa2fd05aa8ef3eed1e56a8cd57",
 	}); err != nil {
-		if _, ok := err.(*conveyor.BuildCanceledError); !ok {
+		if _, ok := err.(*builder.BuildCanceledError); !ok {
 			t.Fatal("Expected build to be canceled")
 		}
 	}
 }
 
 func newConveyor(t *testing.T) *conveyor.Conveyor {
-	b, err := conveyor.NewDockerBuilderFromEnv()
+	b, err := docker.NewBuilderFromEnv()
 	if err != nil {
 		t.Fatal(err)
 	}
