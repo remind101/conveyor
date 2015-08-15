@@ -212,3 +212,25 @@ func (b *CancelBuilder) removeBuild(ctx context.Context) {
 
 	delete(b.builds, ctx)
 }
+
+// CloseWriter wraps a Builder to call Close on w if it implements the io.Closer
+// interface.
+func CloseWriter(b Builder) Builder {
+	return BuilderFunc(func(ctx context.Context, w io.Writer, opts BuildOptions) (image string, err error) {
+		defer func() {
+			var closeErr error
+			if w, ok := w.(io.Closer); ok {
+				closeErr = w.Close()
+			}
+			if err == nil {
+				// If there was no error from the builder, let the
+				// downstream know that there was an error closing the
+				// output stream.
+				err = closeErr
+			}
+		}()
+
+		image, err = b.Build(ctx, w, opts)
+		return
+	})
+}

@@ -35,7 +35,7 @@ type Conveyor struct {
 // New returns a new Conveyor instance.
 func New(b builder.Builder) *Conveyor {
 	return &Conveyor{
-		Builder: builder.WithCancel(b),
+		Builder: builder.WithCancel(builder.CloseWriter(b)),
 		Timeout: DefaultTimeout,
 	}
 }
@@ -73,25 +73,6 @@ func (c *Conveyor) Build(ctx context.Context, w io.Writer, opts builder.BuildOpt
 	defer func() {
 		if err != nil {
 			reporter.Report(ctx, err)
-		}
-	}()
-
-	image, err = c.build(ctx, w, opts)
-	return
-}
-
-// Build performs the build and ensures that the output stream is closed.
-func (c *Conveyor) build(ctx context.Context, w io.Writer, opts builder.BuildOptions) (image string, err error) {
-	defer func() {
-		var closeErr error
-		if w, ok := w.(io.Closer); ok {
-			closeErr = w.Close()
-		}
-		if err == nil {
-			// If there was no error from the builder, let the
-			// downstream know that there was an error closing the
-			// output stream.
-			err = closeErr
 		}
 	}()
 

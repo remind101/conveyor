@@ -127,6 +127,37 @@ func TestWithCancel(t *testing.T) {
 	}
 }
 
+func TestCloseWriter(t *testing.T) {
+	b := CloseWriter(BuilderFunc(func(ctx context.Context, w io.Writer, opts BuildOptions) (string, error) {
+		return "", nil
+	}))
+	w := &mockLogger{}
+
+	if _, err := b.Build(context.Background(), w, BuildOptions{}); err != nil {
+		t.Fatal(err)
+	}
+
+	if !w.closed {
+		t.Fatal("Expected logger to be closed")
+	}
+}
+
+func TestCloseWriter_CloseError(t *testing.T) {
+	closeErr := errors.New("i/o timeout")
+	b := CloseWriter(BuilderFunc(func(ctx context.Context, w io.Writer, opts BuildOptions) (string, error) {
+		return "", nil
+	}))
+	w := &mockLogger{closeErr: closeErr}
+
+	if _, err := b.Build(context.Background(), w, BuildOptions{}); err != closeErr {
+		t.Fatalf("Expected error to be %v", closeErr)
+	}
+
+	if !w.closed {
+		t.Fatal("Expected logger to be closed")
+	}
+}
+
 type mockLogger struct {
 	closeErr error
 	closed   bool
