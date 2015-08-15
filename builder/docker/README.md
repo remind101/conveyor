@@ -1,6 +1,8 @@
-# Builder
+# Docker Builder
 
-This a Docker image suitable for using as a builder for conveyor. It performs the following actions:
+This a [Builder](../builder) implementation that builds Docker images inside Docker. So meta.
+
+It does the following:
 
 1. Clones the GitHub repo.
 2. Pulls that last built docker image for the given branch.
