@@ -2,14 +2,15 @@ package conveyor
 
 import (
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"time"
 
+	"github.com/jinzhu/gorm"
+	_ "github.com/lib/pq"
+	_ "github.com/mattn/go-sqlite3"
 	"github.com/remind101/conveyor/builder"
 	"github.com/remind101/pkg/reporter"
-
 	"golang.org/x/net/context"
 )
 
@@ -24,6 +25,8 @@ type Conveyor struct {
 	Builder    builder.Builder
 	LogFactory builder.LogFactory
 
+	Builds *BuildsService
+
 	// A Reporter to use to report errors.
 	Reporter reporter.Reporter
 
@@ -34,24 +37,20 @@ type Conveyor struct {
 
 // New returns a new Conveyor instance.
 func New(b builder.Builder) *Conveyor {
+	db, err := gorm.Open("sqlite3", ":memory:")
+	if err != nil {
+		panic(err)
+	}
+	db.AutoMigrate(&Build{})
+
 	return &Conveyor{
-		Builder: builder.WithCancel(b),
+		Builder: builder.WithCancel(builder.CloseWriter(b)),
+		Builds:  &BuildsService{db: &db},
 		Timeout: DefaultTimeout,
 	}
 }
 
-// EnqueueBuild enqueus a build to run at a later time.
-func (c *Conveyor) EnqueueBuild(ctx context.Context, opts builder.BuildOptions) error {
-	w, err := c.newLogger(opts)
-	if err != nil {
-		return err
-	}
-
-	go c.Build(ctx, w, opts)
-	return err
-}
-
-func (c *Conveyor) Build(ctx context.Context, w io.Writer, opts builder.BuildOptions) (image string, err error) {
+func (c *Conveyor) Build(ctx context.Context, opts builder.BuildOptions) (b *Build, err error) {
 	log.Printf("Starting build: repository=%s branch=%s sha=%s",
 		opts.Repository,
 		opts.Branch,
@@ -76,26 +75,30 @@ func (c *Conveyor) Build(ctx context.Context, w io.Writer, opts builder.BuildOpt
 		}
 	}()
 
-	image, err = c.build(ctx, w, opts)
-	return
-}
+	var w builder.Logger
+	w, err = c.newLogger(opts)
+	if err != nil {
+		return
+	}
 
-// Build performs the build and ensures that the output stream is closed.
-func (c *Conveyor) build(ctx context.Context, w io.Writer, opts builder.BuildOptions) (image string, err error) {
-	defer func() {
-		var closeErr error
-		if w, ok := w.(io.Closer); ok {
-			closeErr = w.Close()
+	b = &Build{BuildOptions: opts}
+	if err = c.Builds.Create(b); err != nil {
+		return
+	}
+
+	go func() {
+		image, err := c.Builder.Build(ctx, w, opts)
+		if err != nil {
+			reporter.Report(ctx, err)
+			return
 		}
-		if err == nil {
-			// If there was no error from the builder, let the
-			// downstream know that there was an error closing the
-			// output stream.
-			err = closeErr
+
+		b.Image = image
+		if err := c.Builds.Update(b); err != nil {
+			reporter.Report(ctx, err)
 		}
 	}()
 
-	image, err = c.Builder.Build(ctx, w, opts)
 	return
 }
 

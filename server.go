@@ -78,10 +78,13 @@ func (s *Server) Push(w http.ResponseWriter, r *http.Request) {
 		NoCache:    noCache(event.HeadCommit.Message),
 	}
 
-	if err := s.EnqueueBuild(ctx, opts); err != nil {
+	b, err := s.Build(ctx, opts)
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	io.WriteString(w, b.String())
 }
 
 // http://rubular.com/r/y8oJAY9eAS
