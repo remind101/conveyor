@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/remind101/conveyor/builder"
 
@@ -30,9 +31,9 @@ func TestServer_Ping(t *testing.T) {
 }
 
 func TestServer_Push(t *testing.T) {
-	var called bool
+	called := make(chan struct{})
 	b := func(ctx context.Context, w io.Writer, opts builder.BuildOptions) (string, error) {
-		called = true
+		close(called)
 		expected := builder.BuildOptions{
 			Repository: "remind101/acme-inc",
 			Branch:     "master",
@@ -63,7 +64,9 @@ func TestServer_Push(t *testing.T) {
 		t.Fatal("Expected 200 OK")
 	}
 
-	if !called {
+	select {
+	case <-called:
+	case <-time.After(time.Second):
 		t.Fatal("Expected builder to have been called")
 	}
 }

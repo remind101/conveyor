@@ -21,7 +21,8 @@ const (
 
 // Conveyor serves as a builder.
 type Conveyor struct {
-	builder.Builder
+	Builder    builder.Builder
+	LogFactory builder.LogFactory
 
 	// A Reporter to use to report errors.
 	Reporter reporter.Reporter
@@ -37,6 +38,17 @@ func New(b builder.Builder) *Conveyor {
 		Builder: builder.WithCancel(b),
 		Timeout: DefaultTimeout,
 	}
+}
+
+// EnqueueBuild enqueus a build to run at a later time.
+func (c *Conveyor) EnqueueBuild(ctx context.Context, opts builder.BuildOptions) error {
+	w, err := c.newLogger(opts)
+	if err != nil {
+		return err
+	}
+
+	go c.Build(ctx, w, opts)
+	return err
 }
 
 func (c *Conveyor) Build(ctx context.Context, w io.Writer, opts builder.BuildOptions) (image string, err error) {
@@ -93,6 +105,14 @@ func (c *Conveyor) Cancel() error {
 	}
 
 	return fmt.Errorf("Builder does not support Cancel()")
+}
+
+func (c *Conveyor) newLogger(opts builder.BuildOptions) (builder.Logger, error) {
+	if c.LogFactory == nil {
+		return builder.StdoutLogger(opts)
+	}
+
+	return c.LogFactory(opts)
 }
 
 func (c *Conveyor) reporter() reporter.Reporter {
