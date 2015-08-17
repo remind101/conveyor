@@ -1,4 +1,4 @@
-package conveyor
+package builder
 
 import (
 	"github.com/google/go-github/github"

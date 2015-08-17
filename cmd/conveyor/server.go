@@ -8,7 +8,7 @@ import (
 	"syscall"
 
 	"github.com/codegangsta/cli"
-	"github.com/remind101/conveyor"
+	dockerbuilder "github.com/remind101/conveyor/builder/docker"
 )
 
 var cmdServer = cli.Command{
@@ -41,7 +41,7 @@ var cmdServer = cli.Command{
 		},
 		cli.StringFlag{
 			Name:   "builder.image",
-			Value:  conveyor.DefaultBuilderImage,
+			Value:  dockerbuilder.DefaultBuilderImage,
 			Usage:  "A docker image to use to perform the build.",
 			EnvVar: "BUILDER_IMAGE",
 		},

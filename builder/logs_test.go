@@ -1,6 +1,6 @@
 // +build s3
 
-package conveyor
+package builder
 
 import (
 	"io"

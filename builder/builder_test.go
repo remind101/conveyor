@@ -1,50 +1,17 @@
-package conveyor
+package builder
 
 import (
 	"errors"
+	"io"
 	"testing"
 	"time"
 
 	"github.com/google/go-github/github"
-
 	"golang.org/x/net/context"
 )
 
-func TestConveyor_Build(t *testing.T) {
-	b := func(ctx context.Context, w Logger, opts BuildOptions) (string, error) {
-		return "", nil
-	}
-	w := &mockLogger{}
-	c := New(BuilderFunc(b))
-
-	if _, err := c.Build(context.Background(), w, BuildOptions{}); err != nil {
-		t.Fatal(err)
-	}
-
-	if !w.closed {
-		t.Fatal("Expected logger to be closed")
-	}
-}
-
-func TestConveyor_Build_CloseError(t *testing.T) {
-	closeErr := errors.New("i/o timeout")
-	b := func(ctx context.Context, w Logger, opts BuildOptions) (string, error) {
-		return "", nil
-	}
-	w := &mockLogger{closeErr: closeErr}
-	c := New(BuilderFunc(b))
-
-	if _, err := c.Build(context.Background(), w, BuildOptions{}); err != closeErr {
-		t.Fatalf("Expected error to be %v", closeErr)
-	}
-
-	if !w.closed {
-		t.Fatal("Expected logger to be closed")
-	}
-}
-
 func TestUpdateGitHubCommitStatus(t *testing.T) {
-	b := func(ctx context.Context, w Logger, opts BuildOptions) (string, error) {
+	b := func(ctx context.Context, w io.Writer, opts BuildOptions) (string, error) {
 		return "", nil
 	}
 	g := &MockGitHubClient{}
@@ -76,7 +43,7 @@ func TestUpdateGitHubCommitStatus(t *testing.T) {
 }
 
 func TestUpdateGitHubCommitStatus_Error(t *testing.T) {
-	b := func(ctx context.Context, w Logger, opts BuildOptions) (string, error) {
+	b := func(ctx context.Context, w io.Writer, opts BuildOptions) (string, error) {
 		return "", errors.New("i/o timeout")
 	}
 	g := &MockGitHubClient{}
@@ -118,7 +85,7 @@ func TestWithCancel(t *testing.T) {
 		building = make(chan context.Context, numBuilds)
 	)
 
-	b := WithCancel(BuilderFunc(func(ctx context.Context, w Logger, opts BuildOptions) (string, error) {
+	b := WithCancel(BuilderFunc(func(ctx context.Context, w io.Writer, opts BuildOptions) (string, error) {
 		building <- ctx
 
 		select {
@@ -157,6 +124,37 @@ func TestWithCancel(t *testing.T) {
 
 	if got, want := numCanceled, numBuilds; got != want {
 		t.Fatalf("%d builds canceled; want %d", got, want)
+	}
+}
+
+func TestCloseWriter(t *testing.T) {
+	b := CloseWriter(BuilderFunc(func(ctx context.Context, w io.Writer, opts BuildOptions) (string, error) {
+		return "", nil
+	}))
+	w := &mockLogger{}
+
+	if _, err := b.Build(context.Background(), w, BuildOptions{}); err != nil {
+		t.Fatal(err)
+	}
+
+	if !w.closed {
+		t.Fatal("Expected logger to be closed")
+	}
+}
+
+func TestCloseWriter_CloseError(t *testing.T) {
+	closeErr := errors.New("i/o timeout")
+	b := CloseWriter(BuilderFunc(func(ctx context.Context, w io.Writer, opts BuildOptions) (string, error) {
+		return "", nil
+	}))
+	w := &mockLogger{closeErr: closeErr}
+
+	if _, err := b.Build(context.Background(), w, BuildOptions{}); err != closeErr {
+		t.Fatalf("Expected error to be %v", closeErr)
+	}
+
+	if !w.closed {
+		t.Fatal("Expected logger to be closed")
 	}
 }
 

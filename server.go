@@ -12,21 +12,21 @@ import (
 	"github.com/codegangsta/negroni"
 	"github.com/ejholmes/hookshot"
 	"github.com/ejholmes/hookshot/events"
+	"github.com/remind101/conveyor/builder"
 )
 
 // Server implements the http.Handler interface for serving build requests via
 // GitHub webhooks.
 type Server struct {
-	Builder
-	LogFactory LogFactory
+	*Conveyor
 
 	// mux contains the routes.
 	mux http.Handler
 }
 
 // NewServer returns a new Server instance
-func NewServer(b *Conveyor) *Server {
-	s := &Server{Builder: BuildAsync(b)}
+func NewServer(c *Conveyor) *Server {
+	s := &Server{Conveyor: c}
 
 	r := hookshot.NewRouter()
 	r.HandleFunc("ping", s.Ping)
@@ -71,31 +71,17 @@ func (s *Server) Push(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	opts := BuildOptions{
+	opts := builder.BuildOptions{
 		Repository: event.Repository.FullName,
 		Branch:     strings.Replace(event.Ref, "refs/heads/", "", -1),
 		Sha:        event.HeadCommit.ID,
 		NoCache:    noCache(event.HeadCommit.Message),
 	}
 
-	log, err := s.newLogger(opts)
-	if err != nil {
+	if err := s.EnqueueBuild(ctx, opts); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	if _, err := s.Build(ctx, log, opts); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-}
-
-func (s *Server) newLogger(opts BuildOptions) (Logger, error) {
-	if s.LogFactory == nil {
-		return StdoutLogger(opts)
-	}
-
-	return s.LogFactory(opts)
 }
 
 // http://rubular.com/r/y8oJAY9eAS

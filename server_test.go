@@ -1,19 +1,23 @@
 package conveyor
 
 import (
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/remind101/conveyor/builder"
 
 	"golang.org/x/net/context"
 )
 
 func TestServer_Ping(t *testing.T) {
-	b := func(ctx context.Context, w Logger, opts BuildOptions) (string, error) {
+	b := func(ctx context.Context, w io.Writer, opts builder.BuildOptions) (string, error) {
 		return "", nil
 	}
-	s := NewServer(New(BuilderFunc(b)))
+	s := NewServer(New(builder.BuilderFunc(b)))
 
 	resp := httptest.NewRecorder()
 	req, _ := http.NewRequest("POST", "/", nil)
@@ -27,10 +31,10 @@ func TestServer_Ping(t *testing.T) {
 }
 
 func TestServer_Push(t *testing.T) {
-	var called bool
-	b := func(ctx context.Context, w Logger, opts BuildOptions) (string, error) {
-		called = true
-		expected := BuildOptions{
+	called := make(chan struct{})
+	b := func(ctx context.Context, w io.Writer, opts builder.BuildOptions) (string, error) {
+		close(called)
+		expected := builder.BuildOptions{
 			Repository: "remind101/acme-inc",
 			Branch:     "master",
 			Sha:        "abcd",
@@ -40,8 +44,7 @@ func TestServer_Push(t *testing.T) {
 		}
 		return "", nil
 	}
-	s := NewServer(New(BuilderFunc(b)))
-	s.Builder = BuilderFunc(b) // Remove Async
+	s := NewServer(New(builder.BuilderFunc(b)))
 
 	resp := httptest.NewRecorder()
 	req, _ := http.NewRequest("POST", "/", strings.NewReader(`{
@@ -61,19 +64,20 @@ func TestServer_Push(t *testing.T) {
 		t.Fatal("Expected 200 OK")
 	}
 
-	if !called {
+	select {
+	case <-called:
+	case <-time.After(time.Second):
 		t.Fatal("Expected builder to have been called")
 	}
 }
 
 func TestServer_Push_Fork(t *testing.T) {
 	var called bool
-	b := func(ctx context.Context, w Logger, opts BuildOptions) (string, error) {
+	b := func(ctx context.Context, w io.Writer, opts builder.BuildOptions) (string, error) {
 		called = true
 		return "", nil
 	}
-	s := NewServer(New(BuilderFunc(b)))
-	s.Builder = BuilderFunc(b) // Remove Async
+	s := NewServer(New(builder.BuilderFunc(b)))
 
 	resp := httptest.NewRecorder()
 	req, _ := http.NewRequest("POST", "/", strings.NewReader(`{
@@ -101,12 +105,11 @@ func TestServer_Push_Fork(t *testing.T) {
 
 func TestServer_Push_Deleted(t *testing.T) {
 	var called bool
-	b := func(ctx context.Context, w Logger, opts BuildOptions) (string, error) {
+	b := func(ctx context.Context, w io.Writer, opts builder.BuildOptions) (string, error) {
 		called = true
 		return "", nil
 	}
-	s := NewServer(New(BuilderFunc(b)))
-	s.Builder = BuilderFunc(b) // Remove Async
+	s := NewServer(New(builder.BuilderFunc(b)))
 
 	resp := httptest.NewRecorder()
 	req, _ := http.NewRequest("POST", "/", strings.NewReader(`{
