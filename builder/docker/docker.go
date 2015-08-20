@@ -151,7 +151,8 @@ func (b *Builder) Build(ctx context.Context, w io.Writer, opts builder.BuildOpti
 		err := fmt.Errorf("container returned a non-zero exit code: %d", exit)
 		if canceled {
 			err = &builder.BuildCanceledError{
-				Err: err,
+				Err:    err,
+				Reason: ctx.Err(),
 			}
 		}
 		return "", err

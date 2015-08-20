@@ -29,12 +29,13 @@ var (
 // BuildCanceledError is returned if the build is canceled, or times out and the
 // container returns an error.
 type BuildCanceledError struct {
-	Err error
+	Err    error
+	Reason error
 }
 
 // Error implements the error interface.
 func (e *BuildCanceledError) Error() string {
-	return fmt.Sprintf("%s (canceled)", e.Err.Error())
+	return fmt.Sprintf("%s (%s)", e.Err.Error(), e.Reason.Error())
 }
 
 // BuildOptions is provided when building an image.
