@@ -11,6 +11,24 @@ error() {
   >&2 echo $@
 }
 
+retry() {
+  local retry_max=$1
+  shift
+
+  local count=$retry_max
+  while [ $count -gt 0 ]; do
+    "$@" && break
+    count=$(($count - 1))
+    sleep 1
+  done
+
+  [ $count -eq 0 ] && {
+    echo "Retry failed [$retry_max]: $@" >&2
+    return 1
+  }
+  return 0
+}
+
 if [ -z "$REPOSITORY" ]; then
   error "REPOSITORY env var is required"
 fi
@@ -74,12 +92,18 @@ build() {
   docker tag -f "$REPOSITORY" "$REPOSITORY:$BRANCH" # Force tag because we pulled the last build for this branch.
 }
 
+# Push tag pushes a tag for this repository. It will also retry up to 3 times because the docker registry sucks.
+push_tag() {
+  local tag="$1"
+  status "Pushing ${tag}..."
+  retry 3 docker push "$REPOSITORY:$tag"
+}
+
 push() {
   if [ -z "$DRY" ]; then
-    status "Pushing..."
-    docker push "$REPOSITORY:latest"
-    docker push "$REPOSITORY:$SHA"
-    docker push "$REPOSITORY:$BRANCH"
+    push_tag "latest"
+    push_tag "$SHA"
+    push_tag "$BRANCH"
   else
     status "Dry run enabled. Not pushing."
   fi
