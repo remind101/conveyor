@@ -76,7 +76,7 @@ func (b *Builder) Build(ctx context.Context, w io.Writer, opts builder.BuildOpti
 	c, err := b.client.CreateContainer(docker.CreateContainerOptions{
 		Name: name,
 		Config: &docker.Config{
-			Tty:          true,
+			Tty:          false,
 			AttachStdout: true,
 			AttachStderr: true,
 			OpenStdin:    true,
@@ -113,7 +113,7 @@ func (b *Builder) Build(ctx context.Context, w io.Writer, opts builder.BuildOpti
 			Stream:       true,
 			Stdout:       true,
 			Stderr:       true,
-			RawTerminal:  true,
+			RawTerminal:  false,
 		})
 		done <- err
 	}()
