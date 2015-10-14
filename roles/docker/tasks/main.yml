@@ -1,5 +1,7 @@
+- apt: name=linux-image-extra-{{ansible_kernel}}
+- apt: name=linux-image-extra-virtual
 - apt: name=apparmor
-- apt: name=docker-engine={{ docker_version }} update_cache=yes
+- apt: name=lxc-docker
 
 # Setup the docker filesystem if a device exists
 - stat: path=/dev/xvdh
