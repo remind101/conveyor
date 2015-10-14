@@ -54,7 +54,7 @@
     "AmiId" : {
       "Type": "AWS::EC2::Image::Id",
       "Description": "AMI Id. Defaults to the Conveyor AMI.",
-      "Default": "ami-f377dd98"
+      "Default": "ami-a9cc99cc"
     },
     "KeyName": {
       "Type": "AWS::EC2::KeyPair::KeyName",
@@ -431,7 +431,10 @@
         "LaunchConfigurationName": { "Ref": "LaunchConfiguration" },
         "MinSize": "1",
         "MaxSize": { "Ref": "MaxCapacity" },
-        "DesiredCapacity": { "Ref": "DesiredCapacity" }
+        "DesiredCapacity": { "Ref": "DesiredCapacity" },
+        "Tags": [
+          { "Key": "Name", "Value": "conveyor", "PropagateAtLaunch": true }
+        ]
       },
       "UpdatePolicy": {
         "AutoScalingScheduledAction": {
