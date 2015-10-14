@@ -7,7 +7,7 @@
 - apt: name=apt-transport-https
 - apt: name=ca-certificates
 - apt_repository: repo='deb https://get.docker.com/ubuntu docker main' state=present
-- apt_key: url=http://get.docker.io/gpg
+- apt_key: keyserver=hkp://pgp.mit.edu:80 id=58118E89F3A912897C070ADBF76221572C52609D
 - apt: update_cache=yes
 - apt: name=ntp
 - service: name=ntp state=started enabled=yes
