@@ -1,5 +1,5 @@
 - apt: name=apparmor
-- apt: name=docker-engine update_cache=yes
+- apt: name=docker-engine={{ docker_version }} update_cache=yes
 
 # Setup the docker filesystem if a device exists
 - stat: path=/dev/xvdh
