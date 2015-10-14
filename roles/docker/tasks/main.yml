@@ -1,3 +1,5 @@
+- apt: name=linux-image-extra-{{ansible_kernel}}
+- apt: name=linux-image-extra-virtual
 - apt: name=apparmor
 - apt: name=docker-engine={{ docker_version }} update_cache=yes
 

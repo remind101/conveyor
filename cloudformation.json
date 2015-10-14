@@ -54,7 +54,7 @@
     "AmiId" : {
       "Type": "AWS::EC2::Image::Id",
       "Description": "AMI Id. Defaults to the Conveyor AMI.",
-      "Default": "ami-a9cc99cc"
+      "Default": "ami-bdf2a7d8"
     },
     "KeyName": {
       "Type": "AWS::EC2::KeyPair::KeyName",
