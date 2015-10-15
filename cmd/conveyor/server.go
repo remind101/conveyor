@@ -46,6 +46,12 @@ var cmdServer = cli.Command{
 			EnvVar: "BUILDER_IMAGE",
 		},
 		cli.StringFlag{
+			Name:   "queue",
+			Value:  "memory://",
+			Usage:  "Specify a queue to use for scale out. The default behavior is to spin up workers that consume off of an in memory queue.",
+			EnvVar: "QUEUE",
+		},
+		cli.StringFlag{
 			Name:   "logger",
 			Value:  "stdout://",
 			Usage:  "The logger to use. Available options are `stdout://`, or `s3://bucket`.",

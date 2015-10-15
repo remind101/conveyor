@@ -28,6 +28,8 @@ func main() {
 	}
 }
 
+// newConveyor builds a new Conveyor instance backed by in memory queue and
+// workers.
 func newConveyor(c *cli.Context) (*conveyor.Conveyor, error) {
 	b, err := newBuilder(c)
 	if err != nil {

@@ -28,20 +28,24 @@ type Options struct {
 	// The backend used to perform the builds.
 	Builder builder.Builder
 
+	// Number of jobs to buffer in the in memory queue.
+	Buffer int
+
 	// Number of workers to spin up.
 	Workers int
 }
 
-// Conveyor serves as a builder.
+// Conveyor is a struct that represents something that can build docker images.
 type Conveyor struct {
 	BuildQueue
 	workers []*Worker
 	builder builder.Builder
 }
 
-// New returns a new Conveyor instance.
+// New returns a new Conveyor instance that spins up multiple workers consuming
+// from an in memory queue.
 func New(options Options) *Conveyor {
-	q := newBuildQueue(100)
+	q := newBuildQueue(options.Buffer)
 	b := builder.WithCancel(builder.CloseWriter(options.Builder))
 
 	numWorkers := options.Workers
