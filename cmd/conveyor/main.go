@@ -33,16 +33,22 @@ func newConveyor(c *cli.Context) (*conveyor.Conveyor, error) {
 	if err != nil {
 		return nil, err
 	}
-	cv, err := conveyor.New(b), nil
-	if err != nil {
-		return cv, err
-	}
+
 	r, err := newReporter(c.String("reporter"))
 	if err != nil {
-		return cv, err
+		return nil, err
 	}
-	cv.Reporter = r
-	return cv, nil
+
+	f, err := logFactory(c.String("logger"))
+	if err != nil {
+		return nil, err
+	}
+
+	return conveyor.New(conveyor.Options{
+		Builder:    b,
+		Reporter:   r,
+		LogFactory: f,
+	}), nil
 }
 
 func newBuilder(c *cli.Context) (builder.Builder, error) {
@@ -59,13 +65,6 @@ func newBuilder(c *cli.Context) (builder.Builder, error) {
 
 func newServer(c *cli.Context, b *conveyor.Conveyor) (http.Handler, error) {
 	s := conveyor.NewServer(b)
-
-	f, err := logFactory(c.String("logger"))
-	if err != nil {
-		return nil, err
-	}
-	s.LogFactory = f
-
 	return hookshot.Authorize(s, c.String("github.secret")), nil
 }
 
