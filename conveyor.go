@@ -61,6 +61,7 @@ func New(options Options) *Conveyor {
 				Reporter: options.Reporter,
 				Timeout:  DefaultTimeout,
 			},
+			LogFactory: options.LogFactory,
 			BuildQueue: q,
 		})
 	}
