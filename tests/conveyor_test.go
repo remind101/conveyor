@@ -17,11 +17,14 @@ import (
 func TestConveyor(t *testing.T) {
 	checkDocker(t)
 
-	c := newConveyor(t)
 	w := new(bytes.Buffer)
+	c := newConveyor(t)
+	c.LogFactory = func(builder.BuildOptions) (builder.Logger, error) {
+		return builder.NewLogger(w), nil
+	}
 
 	ctx := context.Background()
-	if _, err := c.Build(ctx, w, builder.BuildOptions{
+	if _, err := c.Build(ctx, builder.BuildOptions{
 		Repository: "remind101/acme-inc",
 		Branch:     "master",
 		Sha:        "827fecd2d36ebeaa2fd05aa8ef3eed1e56a8cd57",
@@ -39,13 +42,16 @@ func TestConveyor(t *testing.T) {
 func TestConveyor_WithTimeout(t *testing.T) {
 	checkDocker(t)
 
-	c := newConveyor(t)
 	w := new(bytes.Buffer)
+	c := newConveyor(t)
+	c.LogFactory = func(builder.BuildOptions) (builder.Logger, error) {
+		return builder.NewLogger(w), nil
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	if _, err := c.Build(ctx, w, builder.BuildOptions{
+	if _, err := c.Build(ctx, builder.BuildOptions{
 		Repository: "remind101/acme-inc",
 		Branch:     "master",
 		Sha:        "827fecd2d36ebeaa2fd05aa8ef3eed1e56a8cd57",

@@ -78,7 +78,8 @@ func (s *Server) Push(w http.ResponseWriter, r *http.Request) {
 		NoCache:    noCache(event.HeadCommit.Message),
 	}
 
-	if err := s.EnqueueBuild(ctx, opts); err != nil {
+	// Enqueue the build
+	if err := s.Conveyor.Push(ctx, opts); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

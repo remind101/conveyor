@@ -2,7 +2,6 @@ package conveyor
 
 import (
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"time"
@@ -23,6 +22,7 @@ const (
 type Conveyor struct {
 	Builder    builder.Builder
 	LogFactory builder.LogFactory
+	BuildQueue
 
 	// A Reporter to use to report errors.
 	Reporter reporter.Reporter
@@ -34,24 +34,38 @@ type Conveyor struct {
 
 // New returns a new Conveyor instance.
 func New(b builder.Builder) *Conveyor {
-	return &Conveyor{
-		Builder: builder.WithCancel(builder.CloseWriter(b)),
-		Timeout: DefaultTimeout,
+	c := &Conveyor{
+		Builder:    builder.WithCancel(builder.CloseWriter(b)),
+		BuildQueue: newBuildQueue(100),
+		Timeout:    DefaultTimeout,
+	}
+
+	go c.start()
+
+	return c
+}
+
+func (c *Conveyor) start() {
+	for {
+		ctx, options, err := c.Pop()
+		if err != nil {
+			log.Println(err)
+		}
+
+		_, err = c.Build(ctx, options)
+		if err != nil {
+			log.Println(err)
+		}
 	}
 }
 
-// EnqueueBuild enqueus a build to run at a later time.
-func (c *Conveyor) EnqueueBuild(ctx context.Context, opts builder.BuildOptions) error {
+// Build builds the image.
+func (c *Conveyor) Build(ctx context.Context, opts builder.BuildOptions) (image string, err error) {
 	w, err := c.newLogger(opts)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	go c.Build(ctx, w, opts)
-	return err
-}
-
-func (c *Conveyor) Build(ctx context.Context, w io.Writer, opts builder.BuildOptions) (image string, err error) {
 	log.Printf("Starting build: repository=%s branch=%s sha=%s",
 		opts.Repository,
 		opts.Branch,
