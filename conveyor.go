@@ -1,6 +1,7 @@
 package conveyor
 
 import (
+	"runtime"
 	"time"
 
 	"github.com/remind101/conveyor/builder"
@@ -10,9 +11,11 @@ const (
 	// DefaultTimeout is the default amount of time to wait for a build
 	// to complete before cancelling it.
 	DefaultTimeout = 20 * time.Minute
+)
 
+var (
 	// DefaultWorkers is the default number of workers to start.
-	DefaultWorkers = 100
+	DefaultWorkers = runtime.NumCPU()
 )
 
 // Options provided when initializing a new Conveyor instance.
