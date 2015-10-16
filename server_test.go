@@ -6,11 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"golang.org/x/net/context"
-
 	"github.com/remind101/conveyor/builder"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
 func TestServer_Ping(t *testing.T) {
@@ -110,19 +107,4 @@ func TestNoCache(t *testing.T) {
 			t.Fatalf("noCache(%q) => %v; want %v", tt.in, got, want)
 		}
 	}
-}
-
-// mockBuildQueue is an implementation of the BuildQueue interface for testing.
-type mockBuildQueue struct {
-	mock.Mock
-}
-
-func (q *mockBuildQueue) Push(ctx context.Context, options builder.BuildOptions) error {
-	args := q.Called(options)
-	return args.Error(0)
-}
-
-func (q *mockBuildQueue) Subscribe() chan BuildRequest {
-	args := q.Called()
-	return args.Get(0).(chan BuildRequest)
 }
