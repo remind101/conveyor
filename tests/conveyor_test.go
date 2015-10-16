@@ -3,7 +3,6 @@ package conveyor_test
 import (
 	"bytes"
 	"io"
-	"os"
 	"regexp"
 	"testing"
 	"time"
@@ -20,8 +19,8 @@ import (
 func TestConveyor(t *testing.T) {
 	checkDocker(t)
 
-	pr, pw := io.Pipe()
-	c := newConveyor(t, io.MultiWriter(pw, os.Stdout))
+	w := newLogger()
+	c := newConveyor(t, w)
 
 	ctx := context.Background()
 	err := c.Push(ctx, builder.BuildOptions{
@@ -31,9 +30,8 @@ func TestConveyor(t *testing.T) {
 	})
 	assert.NoError(t, err)
 
-	w := new(bytes.Buffer)
-	_, err = io.Copy(w, pr)
-	assert.NoError(t, err)
+	// Wait for logs to finish writing
+	<-w.closed
 
 	if !regexp.MustCompile(`Successfully built`).MatchString(w.String()) {
 		t.Log(w.String())
@@ -44,7 +42,7 @@ func TestConveyor(t *testing.T) {
 func TestConveyor_WithTimeout(t *testing.T) {
 	checkDocker(t)
 
-	w := new(bytes.Buffer)
+	w := newLogger()
 	c := newConveyor(t, w)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
@@ -72,7 +70,7 @@ func newConveyor(t *testing.T, w io.Writer) *conveyor.Conveyor {
 		LogFactory: func(builder.BuildOptions) (builder.Logger, error) {
 			return builder.NewLogger(w), nil
 		},
-		Builder: b,
+		Builder: conveyor.NewBuilder(b),
 	})
 }
 
@@ -80,4 +78,20 @@ func checkDocker(t testing.TB) {
 	if testing.Short() {
 		t.Skip("Skipping docker tests because they take a long time")
 	}
+}
+
+// logger implements the io.Closer interface on top of a bytes.Buffer. It sends
+// on the closed channel when Close is called.
+type logger struct {
+	bytes.Buffer
+	closed chan struct{}
+}
+
+func newLogger() *logger {
+	return &logger{closed: make(chan struct{})}
+}
+
+func (l *logger) Close() error {
+	close(l.closed)
+	return nil
 }
