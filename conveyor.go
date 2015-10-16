@@ -51,12 +51,11 @@ func New(options Options) *Conveyor {
 		numWorkers = DefaultWorkers
 	}
 
-	var workers Workers
-	for i := 0; i < numWorkers; i++ {
-		w := NewWorker(q, b)
-		w.LogFactory = options.LogFactory
-		workers = append(workers, w)
-	}
+	workers := NewWorkerPool(numWorkers, WorkerOptions{
+		Builder:    b,
+		BuildQueue: q,
+		LogFactory: options.LogFactory,
+	})
 
 	c := &Conveyor{
 		BuildQueue: q,
@@ -64,7 +63,8 @@ func New(options Options) *Conveyor {
 		builder:    b,
 	}
 
-	c.Start()
+	// Start the workers.
+	c.Workers.Start()
 
 	return c
 }

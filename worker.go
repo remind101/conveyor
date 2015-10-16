@@ -51,6 +51,27 @@ func (w Workers) Shutdown() error {
 	return errors[0]
 }
 
+// NewWorkerPool returns a new set of Worker instances.
+func NewWorkerPool(num int, options WorkerOptions) (workers Workers) {
+	for i := 0; i < num; i++ {
+		w := NewWorker(options)
+		workers = append(workers, w)
+	}
+	return
+}
+
+// WorkerOptions are options passed when building a new Worker instance.
+type WorkerOptions struct {
+	// Builder to use to perform the builds.
+	Builder builder.Builder
+
+	// BuildQueue to pull BuildRequests from.
+	BuildQueue BuildQueue
+
+	// LogFactory used to generate an io.Writer for each build.
+	LogFactory builder.LogFactory
+}
+
 // Worker pulls jobs off of a BuildQueue and performs the build.
 type Worker struct {
 	// Builder to use to build.
@@ -71,10 +92,11 @@ type Worker struct {
 
 // NewWorker returns a new Worker instance and subscribes to receive build
 // requests from the BuildQueue.
-func NewWorker(q BuildQueue, b builder.Builder) *Worker {
+func NewWorker(options WorkerOptions) *Worker {
 	return &Worker{
-		Builder:       builder.WithCancel(b),
-		buildRequests: q.Subscribe(),
+		Builder:       builder.WithCancel(options.Builder),
+		LogFactory:    options.LogFactory,
+		buildRequests: options.BuildQueue.Subscribe(),
 		shutdown:      make(chan struct{}),
 		done:          make(chan error),
 	}
