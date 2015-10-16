@@ -15,7 +15,7 @@ import (
 // Builder is an implementation of the builder.Builder interface that adds
 // timeouts and error reporting.
 type Builder struct {
-	builder *builder.CancelBuilder
+	builder builder.Builder
 
 	// A Reporter to use to report errors.
 	Reporter reporter.Reporter
@@ -29,7 +29,7 @@ type Builder struct {
 // cancellation and closes the logs when the build finishes.
 func NewBuilder(b builder.Builder) *Builder {
 	return &Builder{
-		builder: builder.WithCancel(builder.CloseWriter(b)),
+		builder: builder.CloseWriter(b),
 		Timeout: DefaultTimeout,
 	}
 }
@@ -62,10 +62,6 @@ func (b *Builder) Build(ctx context.Context, w io.Writer, opts builder.BuildOpti
 
 	image, err = b.builder.Build(ctx, w, opts)
 	return
-}
-
-func (b *Builder) Cancel() error {
-	return b.builder.Cancel()
 }
 
 func (b *Builder) reporter() reporter.Reporter {

@@ -1,7 +1,6 @@
 package conveyor
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/remind101/conveyor/builder"
@@ -74,12 +73,19 @@ func (c *Conveyor) Start() {
 	}
 }
 
-func (c *Conveyor) Cancel() error {
-	if b, ok := c.builder.(interface {
-		Cancel() error
-	}); ok {
-		return b.Cancel()
+func (c *Conveyor) Shutdown() error {
+	var errors []error
+
+	// TODO: Use a wait group
+	for _, w := range c.workers {
+		if err := w.Shutdown(); err != nil {
+			errors = append(errors, err)
+		}
 	}
 
-	return fmt.Errorf("Builder does not support Cancel()")
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors[0]
 }

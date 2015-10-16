@@ -74,7 +74,7 @@ func runServer(c *cli.Context) {
 		sig := <-quit
 
 		log.Printf("Signal %d received. Shutting down.\n", sig)
-		if err := b.Cancel(); err != nil {
+		if err := b.Shutdown(); err != nil {
 			log.Fatal(err)
 		}
 		os.Exit(0)
