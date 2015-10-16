@@ -77,7 +77,9 @@ func (c *Conveyor) Start() {
 }
 
 func (c *Conveyor) Cancel() error {
-	if b, ok := c.builder.(*Builder); ok {
+	if b, ok := c.builder.(interface {
+		Cancel() error
+	}); ok {
 		return b.Cancel()
 	}
 
