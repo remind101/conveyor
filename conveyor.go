@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/remind101/conveyor/builder"
-	"github.com/remind101/pkg/reporter"
 )
 
 const (
@@ -21,9 +20,6 @@ const (
 type Options struct {
 	// LogFactory used to generate a builder.Logger.
 	LogFactory builder.LogFactory
-
-	// Reporter used to reporter errors.
-	Reporter reporter.Reporter
 
 	// The backend used to perform the builds.
 	Builder builder.Builder
@@ -46,7 +42,7 @@ type Conveyor struct {
 // from an in memory queue.
 func New(options Options) *Conveyor {
 	q := newBuildQueue(options.Buffer)
-	b := builder.WithCancel(builder.CloseWriter(options.Builder))
+	b := options.Builder
 
 	numWorkers := options.Workers
 	if numWorkers == 0 {
@@ -56,11 +52,7 @@ func New(options Options) *Conveyor {
 	var workers []*Worker
 	for i := 0; i < numWorkers; i++ {
 		workers = append(workers, &Worker{
-			Builder: &Builder{
-				Builder:  b,
-				Reporter: options.Reporter,
-				Timeout:  DefaultTimeout,
-			},
+			Builder:    b,
 			LogFactory: options.LogFactory,
 			BuildQueue: q,
 		})
@@ -85,7 +77,7 @@ func (c *Conveyor) Start() {
 }
 
 func (c *Conveyor) Cancel() error {
-	if b, ok := c.builder.(*builder.CancelBuilder); ok {
+	if b, ok := c.builder.(*Builder); ok {
 		return b.Cancel()
 	}
 

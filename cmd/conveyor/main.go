@@ -36,11 +36,6 @@ func newConveyor(c *cli.Context) (*conveyor.Conveyor, error) {
 		return nil, err
 	}
 
-	r, err := newReporter(c.String("reporter"))
-	if err != nil {
-		return nil, err
-	}
-
 	f, err := logFactory(c.String("logger"))
 	if err != nil {
 		return nil, err
@@ -48,21 +43,28 @@ func newConveyor(c *cli.Context) (*conveyor.Conveyor, error) {
 
 	return conveyor.New(conveyor.Options{
 		Builder:    b,
-		Reporter:   r,
 		LogFactory: f,
 	}), nil
 }
 
-func newBuilder(c *cli.Context) (builder.Builder, error) {
-	b, err := docker.NewBuilderFromEnv()
+func newBuilder(c *cli.Context) (*conveyor.Builder, error) {
+	db, err := docker.NewBuilderFromEnv()
 	if err != nil {
 		return nil, err
 	}
-	b.DryRun = c.Bool("dry")
-	b.Image = c.String("builder.image")
+	db.DryRun = c.Bool("dry")
+	db.Image = c.String("builder.image")
 
 	g := builder.NewGitHubClient(c.String("github.token"))
-	return builder.UpdateGitHubCommitStatus(b, g), nil
+	b := conveyor.NewBuilder(builder.UpdateGitHubCommitStatus(db, g))
+
+	r, err := newReporter(c.String("reporter"))
+	if err != nil {
+		return nil, err
+	}
+	b.Reporter = r
+
+	return b, nil
 }
 
 func newServer(c *cli.Context, b *conveyor.Conveyor) (http.Handler, error) {
