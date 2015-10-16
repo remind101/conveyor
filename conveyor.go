@@ -51,11 +51,9 @@ func New(options Options) *Conveyor {
 
 	var workers []*Worker
 	for i := 0; i < numWorkers; i++ {
-		workers = append(workers, &Worker{
-			Builder:    b,
-			LogFactory: options.LogFactory,
-			BuildQueue: q,
-		})
+		w := NewWorker(q, b)
+		w.LogFactory = options.LogFactory
+		workers = append(workers, w)
 	}
 
 	c := &Conveyor{

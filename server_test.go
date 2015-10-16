@@ -122,7 +122,7 @@ func (q *mockBuildQueue) Push(ctx context.Context, options builder.BuildOptions)
 	return args.Error(0)
 }
 
-func (q *mockBuildQueue) Pop() (context.Context, builder.BuildOptions, error) {
+func (q *mockBuildQueue) Subscribe() chan BuildRequest {
 	args := q.Called()
-	return context.Background(), args.Get(0).(builder.BuildOptions), args.Error(1)
+	return args.Get(0).(chan BuildRequest)
 }

@@ -15,25 +15,28 @@ type Worker struct {
 	LogFactory builder.LogFactory
 
 	// Queue to pull jobs from.
-	BuildQueue
+	buildRequests chan BuildRequest
+}
+
+// NewWorker returns a new Worker instance and subscribes to receive build
+// requests from the BuildQueue.
+func NewWorker(q BuildQueue, b builder.Builder) *Worker {
+	return &Worker{
+		Builder:       b,
+		buildRequests: q.Subscribe(),
+	}
 }
 
 // Start starts the worker consuming for the BuildQueue.
 func (w *Worker) Start() {
-	for {
-		ctx, options, err := w.Pop()
+	for req := range w.buildRequests {
+		logger, err := w.newLogger(req.BuildOptions)
 		if err != nil {
 			log.Println(err)
 			continue
 		}
 
-		logger, err := w.newLogger(options)
-		if err != nil {
-			log.Println(err)
-			continue
-		}
-
-		_, err = w.Build(ctx, logger, options)
+		_, err = w.Build(req.Ctx, logger, req.BuildOptions)
 		if err != nil {
 			log.Println(err)
 			continue

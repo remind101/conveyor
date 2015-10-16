@@ -11,36 +11,37 @@ type BuildQueue interface {
 	// Push pushes the build request onto the queue.
 	Push(context.Context, builder.BuildOptions) error
 
-	// Pop returns the next build request from the queue.
-	Pop() (context.Context, builder.BuildOptions, error)
+	// Subscribe returns a channel that can be received on to fetch
+	// BuildRequests.
+	Subscribe() chan BuildRequest
 }
 
-type buildRequest struct {
-	ctx     context.Context
-	options builder.BuildOptions
+// BuildRequest adds a context.Context to build options.
+type BuildRequest struct {
+	builder.BuildOptions
+	Ctx context.Context
 }
 
 // buildQueue is an implementation of the BuildQueue interface that is in memory
 // using a channel.
 type buildQueue struct {
-	queue chan buildRequest
+	queue chan BuildRequest
 }
 
 func newBuildQueue(buffer int) *buildQueue {
 	return &buildQueue{
-		queue: make(chan buildRequest, buffer),
+		queue: make(chan BuildRequest, buffer),
 	}
 }
 
 func (q *buildQueue) Push(ctx context.Context, options builder.BuildOptions) error {
-	q.queue <- buildRequest{
-		ctx:     ctx,
-		options: options,
+	q.queue <- BuildRequest{
+		Ctx:          ctx,
+		BuildOptions: options,
 	}
 	return nil
 }
 
-func (q *buildQueue) Pop() (context.Context, builder.BuildOptions, error) {
-	req := <-q.queue
-	return req.ctx, req.options, nil
+func (q *buildQueue) Subscribe() chan BuildRequest {
+	return q.queue
 }

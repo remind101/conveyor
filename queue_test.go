@@ -11,7 +11,7 @@ import (
 
 func TestBuildQueue(t *testing.T) {
 	q := &buildQueue{
-		queue: make(chan buildRequest, 1),
+		queue: make(chan BuildRequest, 1),
 	}
 
 	background := context.Background()
@@ -19,7 +19,7 @@ func TestBuildQueue(t *testing.T) {
 	err := q.Push(background, options)
 	assert.NoError(t, err)
 
-	ctx, got, err := q.Pop()
-	assert.Equal(t, got, options)
-	assert.Equal(t, ctx, background)
+	req := <-q.Subscribe()
+	assert.Equal(t, req.BuildOptions, options)
+	assert.Equal(t, req.Ctx, background)
 }
