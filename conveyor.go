@@ -36,7 +36,7 @@ type Options struct {
 // Conveyor is a struct that represents something that can build docker images.
 type Conveyor struct {
 	BuildQueue
-	workers []*Worker
+	Workers
 	builder builder.Builder
 }
 
@@ -51,7 +51,7 @@ func New(options Options) *Conveyor {
 		numWorkers = DefaultWorkers
 	}
 
-	var workers []*Worker
+	var workers Workers
 	for i := 0; i < numWorkers; i++ {
 		w := NewWorker(q, b)
 		w.LogFactory = options.LogFactory
@@ -60,35 +60,11 @@ func New(options Options) *Conveyor {
 
 	c := &Conveyor{
 		BuildQueue: q,
-		workers:    workers,
+		Workers:    workers,
 		builder:    b,
 	}
 
 	c.Start()
 
 	return c
-}
-
-// Start each worker in it's own goroutine.
-func (c *Conveyor) Start() {
-	for _, w := range c.workers {
-		go w.Start()
-	}
-}
-
-func (c *Conveyor) Shutdown() error {
-	var errors []error
-
-	// TODO: Use a wait group
-	for _, w := range c.workers {
-		if err := w.Shutdown(); err != nil {
-			errors = append(errors, err)
-		}
-	}
-
-	if len(errors) == 0 {
-		return nil
-	}
-
-	return errors[0]
 }

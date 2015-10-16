@@ -2,9 +2,54 @@ package conveyor
 
 import (
 	"log"
+	"sync"
 
 	"github.com/remind101/conveyor/builder"
 )
+
+// Workers is a collection of workers.
+type Workers []*Worker
+
+// Start starts all of the workers in the pool.
+func (w Workers) Start() {
+	var wg sync.WaitGroup
+
+	for _, worker := range w {
+		wg.Add(1)
+		go func(worker *Worker) {
+			defer wg.Done()
+			worker.Start()
+		}(worker)
+	}
+
+	wg.Wait()
+}
+
+// Shutdown shuts down all of the workers in the pool.
+func (w Workers) Shutdown() error {
+	var (
+		wg     sync.WaitGroup
+		errors []error
+	)
+
+	for _, worker := range w {
+		wg.Add(1)
+		go func(worker *Worker) {
+			defer wg.Done()
+			if err := worker.Shutdown(); err != nil {
+				errors = append(errors, err)
+			}
+		}(worker)
+	}
+
+	wg.Wait()
+
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors[0]
+}
 
 // Worker pulls jobs off of a BuildQueue and performs the build.
 type Worker struct {
