@@ -84,7 +84,6 @@ func logFactory(uri string) (f builder.LogFactory, err error) {
 		f, err = builder.S3Logger(u.Host)
 	}
 
-	// f = conveyor.MultiLogger(conveyor.StdoutLogger, f)
 	return
 }
 

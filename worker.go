@@ -10,19 +10,11 @@ import (
 // Workers is a collection of workers.
 type Workers []*Worker
 
-// Start starts all of the workers in the pool.
+// Start starts all of the workers in the pool in their own goroutine.
 func (w Workers) Start() {
-	var wg sync.WaitGroup
-
 	for _, worker := range w {
-		wg.Add(1)
-		go func(worker *Worker) {
-			defer wg.Done()
-			worker.Start()
-		}(worker)
+		go worker.Start()
 	}
-
-	wg.Wait()
 }
 
 // Shutdown shuts down all of the workers in the pool.

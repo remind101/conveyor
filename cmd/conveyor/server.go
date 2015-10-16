@@ -84,6 +84,8 @@ func runServer(c *cli.Context) {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	log.Println("Listening on " + port)
+	b.Start()
 	log.Fatal(http.ListenAndServe(":"+port, s))
 }

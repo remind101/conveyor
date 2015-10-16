@@ -57,14 +57,16 @@ func New(options Options) *Conveyor {
 		LogFactory: options.LogFactory,
 	})
 
-	c := &Conveyor{
+	return &Conveyor{
 		BuildQueue: q,
 		Workers:    workers,
 		builder:    b,
 	}
+}
 
-	// Start the workers.
-	c.Workers.Start()
-
+// NewAndStart builds a new Conveyor instance and starts the workers.
+func NewAndStart(options Options) *Conveyor {
+	c := New(options)
+	c.Start()
 	return c
 }

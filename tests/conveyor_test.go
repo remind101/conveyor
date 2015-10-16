@@ -66,7 +66,7 @@ func newConveyor(t *testing.T, w io.Writer) *conveyor.Conveyor {
 	}
 	b.DryRun = true
 
-	return conveyor.New(conveyor.Options{
+	return conveyor.NewAndStart(conveyor.Options{
 		LogFactory: func(builder.BuildOptions) (builder.Logger, error) {
 			return builder.NewLogger(w), nil
 		},
