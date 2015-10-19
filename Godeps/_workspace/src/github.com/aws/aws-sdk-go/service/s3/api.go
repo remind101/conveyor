@@ -7,15 +7,15 @@ import (
 	"io"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awsutil"
+	"github.com/aws/aws-sdk-go/aws/request"
 )
 
 const opAbortMultipartUpload = "AbortMultipartUpload"
 
 // AbortMultipartUploadRequest generates a request for the AbortMultipartUpload operation.
-func (c *S3) AbortMultipartUploadRequest(input *AbortMultipartUploadInput) (req *aws.Request, output *AbortMultipartUploadOutput) {
-	op := &aws.Operation{
+func (c *S3) AbortMultipartUploadRequest(input *AbortMultipartUploadInput) (req *request.Request, output *AbortMultipartUploadOutput) {
+	op := &request.Operation{
 		Name:       opAbortMultipartUpload,
 		HTTPMethod: "DELETE",
 		HTTPPath:   "/{Bucket}/{Key+}",
@@ -45,8 +45,8 @@ func (c *S3) AbortMultipartUpload(input *AbortMultipartUploadInput) (*AbortMulti
 const opCompleteMultipartUpload = "CompleteMultipartUpload"
 
 // CompleteMultipartUploadRequest generates a request for the CompleteMultipartUpload operation.
-func (c *S3) CompleteMultipartUploadRequest(input *CompleteMultipartUploadInput) (req *aws.Request, output *CompleteMultipartUploadOutput) {
-	op := &aws.Operation{
+func (c *S3) CompleteMultipartUploadRequest(input *CompleteMultipartUploadInput) (req *request.Request, output *CompleteMultipartUploadOutput) {
+	op := &request.Operation{
 		Name:       opCompleteMultipartUpload,
 		HTTPMethod: "POST",
 		HTTPPath:   "/{Bucket}/{Key+}",
@@ -72,8 +72,8 @@ func (c *S3) CompleteMultipartUpload(input *CompleteMultipartUploadInput) (*Comp
 const opCopyObject = "CopyObject"
 
 // CopyObjectRequest generates a request for the CopyObject operation.
-func (c *S3) CopyObjectRequest(input *CopyObjectInput) (req *aws.Request, output *CopyObjectOutput) {
-	op := &aws.Operation{
+func (c *S3) CopyObjectRequest(input *CopyObjectInput) (req *request.Request, output *CopyObjectOutput) {
+	op := &request.Operation{
 		Name:       opCopyObject,
 		HTTPMethod: "PUT",
 		HTTPPath:   "/{Bucket}/{Key+}",
@@ -99,8 +99,8 @@ func (c *S3) CopyObject(input *CopyObjectInput) (*CopyObjectOutput, error) {
 const opCreateBucket = "CreateBucket"
 
 // CreateBucketRequest generates a request for the CreateBucket operation.
-func (c *S3) CreateBucketRequest(input *CreateBucketInput) (req *aws.Request, output *CreateBucketOutput) {
-	op := &aws.Operation{
+func (c *S3) CreateBucketRequest(input *CreateBucketInput) (req *request.Request, output *CreateBucketOutput) {
+	op := &request.Operation{
 		Name:       opCreateBucket,
 		HTTPMethod: "PUT",
 		HTTPPath:   "/{Bucket}",
@@ -126,8 +126,8 @@ func (c *S3) CreateBucket(input *CreateBucketInput) (*CreateBucketOutput, error)
 const opCreateMultipartUpload = "CreateMultipartUpload"
 
 // CreateMultipartUploadRequest generates a request for the CreateMultipartUpload operation.
-func (c *S3) CreateMultipartUploadRequest(input *CreateMultipartUploadInput) (req *aws.Request, output *CreateMultipartUploadOutput) {
-	op := &aws.Operation{
+func (c *S3) CreateMultipartUploadRequest(input *CreateMultipartUploadInput) (req *request.Request, output *CreateMultipartUploadOutput) {
+	op := &request.Operation{
 		Name:       opCreateMultipartUpload,
 		HTTPMethod: "POST",
 		HTTPPath:   "/{Bucket}/{Key+}?uploads",
@@ -159,8 +159,8 @@ func (c *S3) CreateMultipartUpload(input *CreateMultipartUploadInput) (*CreateMu
 const opDeleteBucket = "DeleteBucket"
 
 // DeleteBucketRequest generates a request for the DeleteBucket operation.
-func (c *S3) DeleteBucketRequest(input *DeleteBucketInput) (req *aws.Request, output *DeleteBucketOutput) {
-	op := &aws.Operation{
+func (c *S3) DeleteBucketRequest(input *DeleteBucketInput) (req *request.Request, output *DeleteBucketOutput) {
+	op := &request.Operation{
 		Name:       opDeleteBucket,
 		HTTPMethod: "DELETE",
 		HTTPPath:   "/{Bucket}",
@@ -184,29 +184,29 @@ func (c *S3) DeleteBucket(input *DeleteBucketInput) (*DeleteBucketOutput, error)
 	return out, err
 }
 
-const opDeleteBucketCORS = "DeleteBucketCors"
+const opDeleteBucketCors = "DeleteBucketCors"
 
-// DeleteBucketCORSRequest generates a request for the DeleteBucketCORS operation.
-func (c *S3) DeleteBucketCORSRequest(input *DeleteBucketCORSInput) (req *aws.Request, output *DeleteBucketCORSOutput) {
-	op := &aws.Operation{
-		Name:       opDeleteBucketCORS,
+// DeleteBucketCorsRequest generates a request for the DeleteBucketCors operation.
+func (c *S3) DeleteBucketCorsRequest(input *DeleteBucketCorsInput) (req *request.Request, output *DeleteBucketCorsOutput) {
+	op := &request.Operation{
+		Name:       opDeleteBucketCors,
 		HTTPMethod: "DELETE",
 		HTTPPath:   "/{Bucket}?cors",
 	}
 
 	if input == nil {
-		input = &DeleteBucketCORSInput{}
+		input = &DeleteBucketCorsInput{}
 	}
 
 	req = c.newRequest(op, input, output)
-	output = &DeleteBucketCORSOutput{}
+	output = &DeleteBucketCorsOutput{}
 	req.Data = output
 	return
 }
 
 // Deletes the cors configuration information set for the bucket.
-func (c *S3) DeleteBucketCORS(input *DeleteBucketCORSInput) (*DeleteBucketCORSOutput, error) {
-	req, out := c.DeleteBucketCORSRequest(input)
+func (c *S3) DeleteBucketCors(input *DeleteBucketCorsInput) (*DeleteBucketCorsOutput, error) {
+	req, out := c.DeleteBucketCorsRequest(input)
 	err := req.Send()
 	return out, err
 }
@@ -214,8 +214,8 @@ func (c *S3) DeleteBucketCORS(input *DeleteBucketCORSInput) (*DeleteBucketCORSOu
 const opDeleteBucketLifecycle = "DeleteBucketLifecycle"
 
 // DeleteBucketLifecycleRequest generates a request for the DeleteBucketLifecycle operation.
-func (c *S3) DeleteBucketLifecycleRequest(input *DeleteBucketLifecycleInput) (req *aws.Request, output *DeleteBucketLifecycleOutput) {
-	op := &aws.Operation{
+func (c *S3) DeleteBucketLifecycleRequest(input *DeleteBucketLifecycleInput) (req *request.Request, output *DeleteBucketLifecycleOutput) {
+	op := &request.Operation{
 		Name:       opDeleteBucketLifecycle,
 		HTTPMethod: "DELETE",
 		HTTPPath:   "/{Bucket}?lifecycle",
@@ -241,8 +241,8 @@ func (c *S3) DeleteBucketLifecycle(input *DeleteBucketLifecycleInput) (*DeleteBu
 const opDeleteBucketPolicy = "DeleteBucketPolicy"
 
 // DeleteBucketPolicyRequest generates a request for the DeleteBucketPolicy operation.
-func (c *S3) DeleteBucketPolicyRequest(input *DeleteBucketPolicyInput) (req *aws.Request, output *DeleteBucketPolicyOutput) {
-	op := &aws.Operation{
+func (c *S3) DeleteBucketPolicyRequest(input *DeleteBucketPolicyInput) (req *request.Request, output *DeleteBucketPolicyOutput) {
+	op := &request.Operation{
 		Name:       opDeleteBucketPolicy,
 		HTTPMethod: "DELETE",
 		HTTPPath:   "/{Bucket}?policy",
@@ -268,8 +268,8 @@ func (c *S3) DeleteBucketPolicy(input *DeleteBucketPolicyInput) (*DeleteBucketPo
 const opDeleteBucketReplication = "DeleteBucketReplication"
 
 // DeleteBucketReplicationRequest generates a request for the DeleteBucketReplication operation.
-func (c *S3) DeleteBucketReplicationRequest(input *DeleteBucketReplicationInput) (req *aws.Request, output *DeleteBucketReplicationOutput) {
-	op := &aws.Operation{
+func (c *S3) DeleteBucketReplicationRequest(input *DeleteBucketReplicationInput) (req *request.Request, output *DeleteBucketReplicationOutput) {
+	op := &request.Operation{
 		Name:       opDeleteBucketReplication,
 		HTTPMethod: "DELETE",
 		HTTPPath:   "/{Bucket}?replication",
@@ -294,8 +294,8 @@ func (c *S3) DeleteBucketReplication(input *DeleteBucketReplicationInput) (*Dele
 const opDeleteBucketTagging = "DeleteBucketTagging"
 
 // DeleteBucketTaggingRequest generates a request for the DeleteBucketTagging operation.
-func (c *S3) DeleteBucketTaggingRequest(input *DeleteBucketTaggingInput) (req *aws.Request, output *DeleteBucketTaggingOutput) {
-	op := &aws.Operation{
+func (c *S3) DeleteBucketTaggingRequest(input *DeleteBucketTaggingInput) (req *request.Request, output *DeleteBucketTaggingOutput) {
+	op := &request.Operation{
 		Name:       opDeleteBucketTagging,
 		HTTPMethod: "DELETE",
 		HTTPPath:   "/{Bucket}?tagging",
@@ -321,8 +321,8 @@ func (c *S3) DeleteBucketTagging(input *DeleteBucketTaggingInput) (*DeleteBucket
 const opDeleteBucketWebsite = "DeleteBucketWebsite"
 
 // DeleteBucketWebsiteRequest generates a request for the DeleteBucketWebsite operation.
-func (c *S3) DeleteBucketWebsiteRequest(input *DeleteBucketWebsiteInput) (req *aws.Request, output *DeleteBucketWebsiteOutput) {
-	op := &aws.Operation{
+func (c *S3) DeleteBucketWebsiteRequest(input *DeleteBucketWebsiteInput) (req *request.Request, output *DeleteBucketWebsiteOutput) {
+	op := &request.Operation{
 		Name:       opDeleteBucketWebsite,
 		HTTPMethod: "DELETE",
 		HTTPPath:   "/{Bucket}?website",
@@ -348,8 +348,8 @@ func (c *S3) DeleteBucketWebsite(input *DeleteBucketWebsiteInput) (*DeleteBucket
 const opDeleteObject = "DeleteObject"
 
 // DeleteObjectRequest generates a request for the DeleteObject operation.
-func (c *S3) DeleteObjectRequest(input *DeleteObjectInput) (req *aws.Request, output *DeleteObjectOutput) {
-	op := &aws.Operation{
+func (c *S3) DeleteObjectRequest(input *DeleteObjectInput) (req *request.Request, output *DeleteObjectOutput) {
+	op := &request.Operation{
 		Name:       opDeleteObject,
 		HTTPMethod: "DELETE",
 		HTTPPath:   "/{Bucket}/{Key+}",
@@ -377,8 +377,8 @@ func (c *S3) DeleteObject(input *DeleteObjectInput) (*DeleteObjectOutput, error)
 const opDeleteObjects = "DeleteObjects"
 
 // DeleteObjectsRequest generates a request for the DeleteObjects operation.
-func (c *S3) DeleteObjectsRequest(input *DeleteObjectsInput) (req *aws.Request, output *DeleteObjectsOutput) {
-	op := &aws.Operation{
+func (c *S3) DeleteObjectsRequest(input *DeleteObjectsInput) (req *request.Request, output *DeleteObjectsOutput) {
+	op := &request.Operation{
 		Name:       opDeleteObjects,
 		HTTPMethod: "POST",
 		HTTPPath:   "/{Bucket}?delete",
@@ -402,56 +402,56 @@ func (c *S3) DeleteObjects(input *DeleteObjectsInput) (*DeleteObjectsOutput, err
 	return out, err
 }
 
-const opGetBucketACL = "GetBucketAcl"
+const opGetBucketAcl = "GetBucketAcl"
 
-// GetBucketACLRequest generates a request for the GetBucketACL operation.
-func (c *S3) GetBucketACLRequest(input *GetBucketACLInput) (req *aws.Request, output *GetBucketACLOutput) {
-	op := &aws.Operation{
-		Name:       opGetBucketACL,
+// GetBucketAclRequest generates a request for the GetBucketAcl operation.
+func (c *S3) GetBucketAclRequest(input *GetBucketAclInput) (req *request.Request, output *GetBucketAclOutput) {
+	op := &request.Operation{
+		Name:       opGetBucketAcl,
 		HTTPMethod: "GET",
 		HTTPPath:   "/{Bucket}?acl",
 	}
 
 	if input == nil {
-		input = &GetBucketACLInput{}
+		input = &GetBucketAclInput{}
 	}
 
 	req = c.newRequest(op, input, output)
-	output = &GetBucketACLOutput{}
+	output = &GetBucketAclOutput{}
 	req.Data = output
 	return
 }
 
 // Gets the access control policy for the bucket.
-func (c *S3) GetBucketACL(input *GetBucketACLInput) (*GetBucketACLOutput, error) {
-	req, out := c.GetBucketACLRequest(input)
+func (c *S3) GetBucketAcl(input *GetBucketAclInput) (*GetBucketAclOutput, error) {
+	req, out := c.GetBucketAclRequest(input)
 	err := req.Send()
 	return out, err
 }
 
-const opGetBucketCORS = "GetBucketCors"
+const opGetBucketCors = "GetBucketCors"
 
-// GetBucketCORSRequest generates a request for the GetBucketCORS operation.
-func (c *S3) GetBucketCORSRequest(input *GetBucketCORSInput) (req *aws.Request, output *GetBucketCORSOutput) {
-	op := &aws.Operation{
-		Name:       opGetBucketCORS,
+// GetBucketCorsRequest generates a request for the GetBucketCors operation.
+func (c *S3) GetBucketCorsRequest(input *GetBucketCorsInput) (req *request.Request, output *GetBucketCorsOutput) {
+	op := &request.Operation{
+		Name:       opGetBucketCors,
 		HTTPMethod: "GET",
 		HTTPPath:   "/{Bucket}?cors",
 	}
 
 	if input == nil {
-		input = &GetBucketCORSInput{}
+		input = &GetBucketCorsInput{}
 	}
 
 	req = c.newRequest(op, input, output)
-	output = &GetBucketCORSOutput{}
+	output = &GetBucketCorsOutput{}
 	req.Data = output
 	return
 }
 
 // Returns the cors configuration for the bucket.
-func (c *S3) GetBucketCORS(input *GetBucketCORSInput) (*GetBucketCORSOutput, error) {
-	req, out := c.GetBucketCORSRequest(input)
+func (c *S3) GetBucketCors(input *GetBucketCorsInput) (*GetBucketCorsOutput, error) {
+	req, out := c.GetBucketCorsRequest(input)
 	err := req.Send()
 	return out, err
 }
@@ -459,8 +459,8 @@ func (c *S3) GetBucketCORS(input *GetBucketCORSInput) (*GetBucketCORSOutput, err
 const opGetBucketLifecycle = "GetBucketLifecycle"
 
 // GetBucketLifecycleRequest generates a request for the GetBucketLifecycle operation.
-func (c *S3) GetBucketLifecycleRequest(input *GetBucketLifecycleInput) (req *aws.Request, output *GetBucketLifecycleOutput) {
-	op := &aws.Operation{
+func (c *S3) GetBucketLifecycleRequest(input *GetBucketLifecycleInput) (req *request.Request, output *GetBucketLifecycleOutput) {
+	op := &request.Operation{
 		Name:       opGetBucketLifecycle,
 		HTTPMethod: "GET",
 		HTTPPath:   "/{Bucket}?lifecycle",
@@ -476,9 +476,36 @@ func (c *S3) GetBucketLifecycleRequest(input *GetBucketLifecycleInput) (req *aws
 	return
 }
 
-// Returns the lifecycle configuration information set on the bucket.
+// Deprecated, see the GetBucketLifecycleConfiguration operation.
 func (c *S3) GetBucketLifecycle(input *GetBucketLifecycleInput) (*GetBucketLifecycleOutput, error) {
 	req, out := c.GetBucketLifecycleRequest(input)
+	err := req.Send()
+	return out, err
+}
+
+const opGetBucketLifecycleConfiguration = "GetBucketLifecycleConfiguration"
+
+// GetBucketLifecycleConfigurationRequest generates a request for the GetBucketLifecycleConfiguration operation.
+func (c *S3) GetBucketLifecycleConfigurationRequest(input *GetBucketLifecycleConfigurationInput) (req *request.Request, output *GetBucketLifecycleConfigurationOutput) {
+	op := &request.Operation{
+		Name:       opGetBucketLifecycleConfiguration,
+		HTTPMethod: "GET",
+		HTTPPath:   "/{Bucket}?lifecycle",
+	}
+
+	if input == nil {
+		input = &GetBucketLifecycleConfigurationInput{}
+	}
+
+	req = c.newRequest(op, input, output)
+	output = &GetBucketLifecycleConfigurationOutput{}
+	req.Data = output
+	return
+}
+
+// Returns the lifecycle configuration information set on the bucket.
+func (c *S3) GetBucketLifecycleConfiguration(input *GetBucketLifecycleConfigurationInput) (*GetBucketLifecycleConfigurationOutput, error) {
+	req, out := c.GetBucketLifecycleConfigurationRequest(input)
 	err := req.Send()
 	return out, err
 }
@@ -486,8 +513,8 @@ func (c *S3) GetBucketLifecycle(input *GetBucketLifecycleInput) (*GetBucketLifec
 const opGetBucketLocation = "GetBucketLocation"
 
 // GetBucketLocationRequest generates a request for the GetBucketLocation operation.
-func (c *S3) GetBucketLocationRequest(input *GetBucketLocationInput) (req *aws.Request, output *GetBucketLocationOutput) {
-	op := &aws.Operation{
+func (c *S3) GetBucketLocationRequest(input *GetBucketLocationInput) (req *request.Request, output *GetBucketLocationOutput) {
+	op := &request.Operation{
 		Name:       opGetBucketLocation,
 		HTTPMethod: "GET",
 		HTTPPath:   "/{Bucket}?location",
@@ -513,8 +540,8 @@ func (c *S3) GetBucketLocation(input *GetBucketLocationInput) (*GetBucketLocatio
 const opGetBucketLogging = "GetBucketLogging"
 
 // GetBucketLoggingRequest generates a request for the GetBucketLogging operation.
-func (c *S3) GetBucketLoggingRequest(input *GetBucketLoggingInput) (req *aws.Request, output *GetBucketLoggingOutput) {
-	op := &aws.Operation{
+func (c *S3) GetBucketLoggingRequest(input *GetBucketLoggingInput) (req *request.Request, output *GetBucketLoggingOutput) {
+	op := &request.Operation{
 		Name:       opGetBucketLogging,
 		HTTPMethod: "GET",
 		HTTPPath:   "/{Bucket}?logging",
@@ -541,8 +568,8 @@ func (c *S3) GetBucketLogging(input *GetBucketLoggingInput) (*GetBucketLoggingOu
 const opGetBucketNotification = "GetBucketNotification"
 
 // GetBucketNotificationRequest generates a request for the GetBucketNotification operation.
-func (c *S3) GetBucketNotificationRequest(input *GetBucketNotificationConfigurationRequest) (req *aws.Request, output *NotificationConfigurationDeprecated) {
-	op := &aws.Operation{
+func (c *S3) GetBucketNotificationRequest(input *GetBucketNotificationConfigurationRequest) (req *request.Request, output *NotificationConfigurationDeprecated) {
+	op := &request.Operation{
 		Name:       opGetBucketNotification,
 		HTTPMethod: "GET",
 		HTTPPath:   "/{Bucket}?notification",
@@ -568,8 +595,8 @@ func (c *S3) GetBucketNotification(input *GetBucketNotificationConfigurationRequ
 const opGetBucketNotificationConfiguration = "GetBucketNotificationConfiguration"
 
 // GetBucketNotificationConfigurationRequest generates a request for the GetBucketNotificationConfiguration operation.
-func (c *S3) GetBucketNotificationConfigurationRequest(input *GetBucketNotificationConfigurationRequest) (req *aws.Request, output *NotificationConfiguration) {
-	op := &aws.Operation{
+func (c *S3) GetBucketNotificationConfigurationRequest(input *GetBucketNotificationConfigurationRequest) (req *request.Request, output *NotificationConfiguration) {
+	op := &request.Operation{
 		Name:       opGetBucketNotificationConfiguration,
 		HTTPMethod: "GET",
 		HTTPPath:   "/{Bucket}?notification",
@@ -595,8 +622,8 @@ func (c *S3) GetBucketNotificationConfiguration(input *GetBucketNotificationConf
 const opGetBucketPolicy = "GetBucketPolicy"
 
 // GetBucketPolicyRequest generates a request for the GetBucketPolicy operation.
-func (c *S3) GetBucketPolicyRequest(input *GetBucketPolicyInput) (req *aws.Request, output *GetBucketPolicyOutput) {
-	op := &aws.Operation{
+func (c *S3) GetBucketPolicyRequest(input *GetBucketPolicyInput) (req *request.Request, output *GetBucketPolicyOutput) {
+	op := &request.Operation{
 		Name:       opGetBucketPolicy,
 		HTTPMethod: "GET",
 		HTTPPath:   "/{Bucket}?policy",
@@ -622,8 +649,8 @@ func (c *S3) GetBucketPolicy(input *GetBucketPolicyInput) (*GetBucketPolicyOutpu
 const opGetBucketReplication = "GetBucketReplication"
 
 // GetBucketReplicationRequest generates a request for the GetBucketReplication operation.
-func (c *S3) GetBucketReplicationRequest(input *GetBucketReplicationInput) (req *aws.Request, output *GetBucketReplicationOutput) {
-	op := &aws.Operation{
+func (c *S3) GetBucketReplicationRequest(input *GetBucketReplicationInput) (req *request.Request, output *GetBucketReplicationOutput) {
+	op := &request.Operation{
 		Name:       opGetBucketReplication,
 		HTTPMethod: "GET",
 		HTTPPath:   "/{Bucket}?replication",
@@ -648,8 +675,8 @@ func (c *S3) GetBucketReplication(input *GetBucketReplicationInput) (*GetBucketR
 const opGetBucketRequestPayment = "GetBucketRequestPayment"
 
 // GetBucketRequestPaymentRequest generates a request for the GetBucketRequestPayment operation.
-func (c *S3) GetBucketRequestPaymentRequest(input *GetBucketRequestPaymentInput) (req *aws.Request, output *GetBucketRequestPaymentOutput) {
-	op := &aws.Operation{
+func (c *S3) GetBucketRequestPaymentRequest(input *GetBucketRequestPaymentInput) (req *request.Request, output *GetBucketRequestPaymentOutput) {
+	op := &request.Operation{
 		Name:       opGetBucketRequestPayment,
 		HTTPMethod: "GET",
 		HTTPPath:   "/{Bucket}?requestPayment",
@@ -675,8 +702,8 @@ func (c *S3) GetBucketRequestPayment(input *GetBucketRequestPaymentInput) (*GetB
 const opGetBucketTagging = "GetBucketTagging"
 
 // GetBucketTaggingRequest generates a request for the GetBucketTagging operation.
-func (c *S3) GetBucketTaggingRequest(input *GetBucketTaggingInput) (req *aws.Request, output *GetBucketTaggingOutput) {
-	op := &aws.Operation{
+func (c *S3) GetBucketTaggingRequest(input *GetBucketTaggingInput) (req *request.Request, output *GetBucketTaggingOutput) {
+	op := &request.Operation{
 		Name:       opGetBucketTagging,
 		HTTPMethod: "GET",
 		HTTPPath:   "/{Bucket}?tagging",
@@ -702,8 +729,8 @@ func (c *S3) GetBucketTagging(input *GetBucketTaggingInput) (*GetBucketTaggingOu
 const opGetBucketVersioning = "GetBucketVersioning"
 
 // GetBucketVersioningRequest generates a request for the GetBucketVersioning operation.
-func (c *S3) GetBucketVersioningRequest(input *GetBucketVersioningInput) (req *aws.Request, output *GetBucketVersioningOutput) {
-	op := &aws.Operation{
+func (c *S3) GetBucketVersioningRequest(input *GetBucketVersioningInput) (req *request.Request, output *GetBucketVersioningOutput) {
+	op := &request.Operation{
 		Name:       opGetBucketVersioning,
 		HTTPMethod: "GET",
 		HTTPPath:   "/{Bucket}?versioning",
@@ -729,8 +756,8 @@ func (c *S3) GetBucketVersioning(input *GetBucketVersioningInput) (*GetBucketVer
 const opGetBucketWebsite = "GetBucketWebsite"
 
 // GetBucketWebsiteRequest generates a request for the GetBucketWebsite operation.
-func (c *S3) GetBucketWebsiteRequest(input *GetBucketWebsiteInput) (req *aws.Request, output *GetBucketWebsiteOutput) {
-	op := &aws.Operation{
+func (c *S3) GetBucketWebsiteRequest(input *GetBucketWebsiteInput) (req *request.Request, output *GetBucketWebsiteOutput) {
+	op := &request.Operation{
 		Name:       opGetBucketWebsite,
 		HTTPMethod: "GET",
 		HTTPPath:   "/{Bucket}?website",
@@ -756,8 +783,8 @@ func (c *S3) GetBucketWebsite(input *GetBucketWebsiteInput) (*GetBucketWebsiteOu
 const opGetObject = "GetObject"
 
 // GetObjectRequest generates a request for the GetObject operation.
-func (c *S3) GetObjectRequest(input *GetObjectInput) (req *aws.Request, output *GetObjectOutput) {
-	op := &aws.Operation{
+func (c *S3) GetObjectRequest(input *GetObjectInput) (req *request.Request, output *GetObjectOutput) {
+	op := &request.Operation{
 		Name:       opGetObject,
 		HTTPMethod: "GET",
 		HTTPPath:   "/{Bucket}/{Key+}",
@@ -780,29 +807,29 @@ func (c *S3) GetObject(input *GetObjectInput) (*GetObjectOutput, error) {
 	return out, err
 }
 
-const opGetObjectACL = "GetObjectAcl"
+const opGetObjectAcl = "GetObjectAcl"
 
-// GetObjectACLRequest generates a request for the GetObjectACL operation.
-func (c *S3) GetObjectACLRequest(input *GetObjectACLInput) (req *aws.Request, output *GetObjectACLOutput) {
-	op := &aws.Operation{
-		Name:       opGetObjectACL,
+// GetObjectAclRequest generates a request for the GetObjectAcl operation.
+func (c *S3) GetObjectAclRequest(input *GetObjectAclInput) (req *request.Request, output *GetObjectAclOutput) {
+	op := &request.Operation{
+		Name:       opGetObjectAcl,
 		HTTPMethod: "GET",
 		HTTPPath:   "/{Bucket}/{Key+}?acl",
 	}
 
 	if input == nil {
-		input = &GetObjectACLInput{}
+		input = &GetObjectAclInput{}
 	}
 
 	req = c.newRequest(op, input, output)
-	output = &GetObjectACLOutput{}
+	output = &GetObjectAclOutput{}
 	req.Data = output
 	return
 }
 
 // Returns the access control list (ACL) of an object.
-func (c *S3) GetObjectACL(input *GetObjectACLInput) (*GetObjectACLOutput, error) {
-	req, out := c.GetObjectACLRequest(input)
+func (c *S3) GetObjectAcl(input *GetObjectAclInput) (*GetObjectAclOutput, error) {
+	req, out := c.GetObjectAclRequest(input)
 	err := req.Send()
 	return out, err
 }
@@ -810,8 +837,8 @@ func (c *S3) GetObjectACL(input *GetObjectACLInput) (*GetObjectACLOutput, error)
 const opGetObjectTorrent = "GetObjectTorrent"
 
 // GetObjectTorrentRequest generates a request for the GetObjectTorrent operation.
-func (c *S3) GetObjectTorrentRequest(input *GetObjectTorrentInput) (req *aws.Request, output *GetObjectTorrentOutput) {
-	op := &aws.Operation{
+func (c *S3) GetObjectTorrentRequest(input *GetObjectTorrentInput) (req *request.Request, output *GetObjectTorrentOutput) {
+	op := &request.Operation{
 		Name:       opGetObjectTorrent,
 		HTTPMethod: "GET",
 		HTTPPath:   "/{Bucket}/{Key+}?torrent",
@@ -837,8 +864,8 @@ func (c *S3) GetObjectTorrent(input *GetObjectTorrentInput) (*GetObjectTorrentOu
 const opHeadBucket = "HeadBucket"
 
 // HeadBucketRequest generates a request for the HeadBucket operation.
-func (c *S3) HeadBucketRequest(input *HeadBucketInput) (req *aws.Request, output *HeadBucketOutput) {
-	op := &aws.Operation{
+func (c *S3) HeadBucketRequest(input *HeadBucketInput) (req *request.Request, output *HeadBucketOutput) {
+	op := &request.Operation{
 		Name:       opHeadBucket,
 		HTTPMethod: "HEAD",
 		HTTPPath:   "/{Bucket}",
@@ -865,8 +892,8 @@ func (c *S3) HeadBucket(input *HeadBucketInput) (*HeadBucketOutput, error) {
 const opHeadObject = "HeadObject"
 
 // HeadObjectRequest generates a request for the HeadObject operation.
-func (c *S3) HeadObjectRequest(input *HeadObjectInput) (req *aws.Request, output *HeadObjectOutput) {
-	op := &aws.Operation{
+func (c *S3) HeadObjectRequest(input *HeadObjectInput) (req *request.Request, output *HeadObjectOutput) {
+	op := &request.Operation{
 		Name:       opHeadObject,
 		HTTPMethod: "HEAD",
 		HTTPPath:   "/{Bucket}/{Key+}",
@@ -894,8 +921,8 @@ func (c *S3) HeadObject(input *HeadObjectInput) (*HeadObjectOutput, error) {
 const opListBuckets = "ListBuckets"
 
 // ListBucketsRequest generates a request for the ListBuckets operation.
-func (c *S3) ListBucketsRequest(input *ListBucketsInput) (req *aws.Request, output *ListBucketsOutput) {
-	op := &aws.Operation{
+func (c *S3) ListBucketsRequest(input *ListBucketsInput) (req *request.Request, output *ListBucketsOutput) {
+	op := &request.Operation{
 		Name:       opListBuckets,
 		HTTPMethod: "GET",
 		HTTPPath:   "/",
@@ -921,12 +948,12 @@ func (c *S3) ListBuckets(input *ListBucketsInput) (*ListBucketsOutput, error) {
 const opListMultipartUploads = "ListMultipartUploads"
 
 // ListMultipartUploadsRequest generates a request for the ListMultipartUploads operation.
-func (c *S3) ListMultipartUploadsRequest(input *ListMultipartUploadsInput) (req *aws.Request, output *ListMultipartUploadsOutput) {
-	op := &aws.Operation{
+func (c *S3) ListMultipartUploadsRequest(input *ListMultipartUploadsInput) (req *request.Request, output *ListMultipartUploadsOutput) {
+	op := &request.Operation{
 		Name:       opListMultipartUploads,
 		HTTPMethod: "GET",
 		HTTPPath:   "/{Bucket}?uploads",
-		Paginator: &aws.Paginator{
+		Paginator: &request.Paginator{
 			InputTokens:     []string{"KeyMarker", "UploadIdMarker"},
 			OutputTokens:    []string{"NextKeyMarker", "NextUploadIdMarker"},
 			LimitToken:      "MaxUploads",
@@ -961,12 +988,12 @@ func (c *S3) ListMultipartUploadsPages(input *ListMultipartUploadsInput, fn func
 const opListObjectVersions = "ListObjectVersions"
 
 // ListObjectVersionsRequest generates a request for the ListObjectVersions operation.
-func (c *S3) ListObjectVersionsRequest(input *ListObjectVersionsInput) (req *aws.Request, output *ListObjectVersionsOutput) {
-	op := &aws.Operation{
+func (c *S3) ListObjectVersionsRequest(input *ListObjectVersionsInput) (req *request.Request, output *ListObjectVersionsOutput) {
+	op := &request.Operation{
 		Name:       opListObjectVersions,
 		HTTPMethod: "GET",
 		HTTPPath:   "/{Bucket}?versions",
-		Paginator: &aws.Paginator{
+		Paginator: &request.Paginator{
 			InputTokens:     []string{"KeyMarker", "VersionIdMarker"},
 			OutputTokens:    []string{"NextKeyMarker", "NextVersionIdMarker"},
 			LimitToken:      "MaxKeys",
@@ -1001,12 +1028,12 @@ func (c *S3) ListObjectVersionsPages(input *ListObjectVersionsInput, fn func(p *
 const opListObjects = "ListObjects"
 
 // ListObjectsRequest generates a request for the ListObjects operation.
-func (c *S3) ListObjectsRequest(input *ListObjectsInput) (req *aws.Request, output *ListObjectsOutput) {
-	op := &aws.Operation{
+func (c *S3) ListObjectsRequest(input *ListObjectsInput) (req *request.Request, output *ListObjectsOutput) {
+	op := &request.Operation{
 		Name:       opListObjects,
 		HTTPMethod: "GET",
 		HTTPPath:   "/{Bucket}",
-		Paginator: &aws.Paginator{
+		Paginator: &request.Paginator{
 			InputTokens:     []string{"Marker"},
 			OutputTokens:    []string{"NextMarker || Contents[-1].Key"},
 			LimitToken:      "MaxKeys",
@@ -1043,12 +1070,12 @@ func (c *S3) ListObjectsPages(input *ListObjectsInput, fn func(p *ListObjectsOut
 const opListParts = "ListParts"
 
 // ListPartsRequest generates a request for the ListParts operation.
-func (c *S3) ListPartsRequest(input *ListPartsInput) (req *aws.Request, output *ListPartsOutput) {
-	op := &aws.Operation{
+func (c *S3) ListPartsRequest(input *ListPartsInput) (req *request.Request, output *ListPartsOutput) {
+	op := &request.Operation{
 		Name:       opListParts,
 		HTTPMethod: "GET",
 		HTTPPath:   "/{Bucket}/{Key+}",
-		Paginator: &aws.Paginator{
+		Paginator: &request.Paginator{
 			InputTokens:     []string{"PartNumberMarker"},
 			OutputTokens:    []string{"NextPartNumberMarker"},
 			LimitToken:      "MaxParts",
@@ -1080,56 +1107,56 @@ func (c *S3) ListPartsPages(input *ListPartsInput, fn func(p *ListPartsOutput, l
 	})
 }
 
-const opPutBucketACL = "PutBucketAcl"
+const opPutBucketAcl = "PutBucketAcl"
 
-// PutBucketACLRequest generates a request for the PutBucketACL operation.
-func (c *S3) PutBucketACLRequest(input *PutBucketACLInput) (req *aws.Request, output *PutBucketACLOutput) {
-	op := &aws.Operation{
-		Name:       opPutBucketACL,
+// PutBucketAclRequest generates a request for the PutBucketAcl operation.
+func (c *S3) PutBucketAclRequest(input *PutBucketAclInput) (req *request.Request, output *PutBucketAclOutput) {
+	op := &request.Operation{
+		Name:       opPutBucketAcl,
 		HTTPMethod: "PUT",
 		HTTPPath:   "/{Bucket}?acl",
 	}
 
 	if input == nil {
-		input = &PutBucketACLInput{}
+		input = &PutBucketAclInput{}
 	}
 
 	req = c.newRequest(op, input, output)
-	output = &PutBucketACLOutput{}
+	output = &PutBucketAclOutput{}
 	req.Data = output
 	return
 }
 
 // Sets the permissions on a bucket using access control lists (ACL).
-func (c *S3) PutBucketACL(input *PutBucketACLInput) (*PutBucketACLOutput, error) {
-	req, out := c.PutBucketACLRequest(input)
+func (c *S3) PutBucketAcl(input *PutBucketAclInput) (*PutBucketAclOutput, error) {
+	req, out := c.PutBucketAclRequest(input)
 	err := req.Send()
 	return out, err
 }
 
-const opPutBucketCORS = "PutBucketCors"
+const opPutBucketCors = "PutBucketCors"
 
-// PutBucketCORSRequest generates a request for the PutBucketCORS operation.
-func (c *S3) PutBucketCORSRequest(input *PutBucketCORSInput) (req *aws.Request, output *PutBucketCORSOutput) {
-	op := &aws.Operation{
-		Name:       opPutBucketCORS,
+// PutBucketCorsRequest generates a request for the PutBucketCors operation.
+func (c *S3) PutBucketCorsRequest(input *PutBucketCorsInput) (req *request.Request, output *PutBucketCorsOutput) {
+	op := &request.Operation{
+		Name:       opPutBucketCors,
 		HTTPMethod: "PUT",
 		HTTPPath:   "/{Bucket}?cors",
 	}
 
 	if input == nil {
-		input = &PutBucketCORSInput{}
+		input = &PutBucketCorsInput{}
 	}
 
 	req = c.newRequest(op, input, output)
-	output = &PutBucketCORSOutput{}
+	output = &PutBucketCorsOutput{}
 	req.Data = output
 	return
 }
 
 // Sets the cors configuration for a bucket.
-func (c *S3) PutBucketCORS(input *PutBucketCORSInput) (*PutBucketCORSOutput, error) {
-	req, out := c.PutBucketCORSRequest(input)
+func (c *S3) PutBucketCors(input *PutBucketCorsInput) (*PutBucketCorsOutput, error) {
+	req, out := c.PutBucketCorsRequest(input)
 	err := req.Send()
 	return out, err
 }
@@ -1137,8 +1164,8 @@ func (c *S3) PutBucketCORS(input *PutBucketCORSInput) (*PutBucketCORSOutput, err
 const opPutBucketLifecycle = "PutBucketLifecycle"
 
 // PutBucketLifecycleRequest generates a request for the PutBucketLifecycle operation.
-func (c *S3) PutBucketLifecycleRequest(input *PutBucketLifecycleInput) (req *aws.Request, output *PutBucketLifecycleOutput) {
-	op := &aws.Operation{
+func (c *S3) PutBucketLifecycleRequest(input *PutBucketLifecycleInput) (req *request.Request, output *PutBucketLifecycleOutput) {
+	op := &request.Operation{
 		Name:       opPutBucketLifecycle,
 		HTTPMethod: "PUT",
 		HTTPPath:   "/{Bucket}?lifecycle",
@@ -1154,10 +1181,37 @@ func (c *S3) PutBucketLifecycleRequest(input *PutBucketLifecycleInput) (req *aws
 	return
 }
 
-// Sets lifecycle configuration for your bucket. If a lifecycle configuration
-// exists, it replaces it.
+// Deprecated, see the PutBucketLifecycleConfiguration operation.
 func (c *S3) PutBucketLifecycle(input *PutBucketLifecycleInput) (*PutBucketLifecycleOutput, error) {
 	req, out := c.PutBucketLifecycleRequest(input)
+	err := req.Send()
+	return out, err
+}
+
+const opPutBucketLifecycleConfiguration = "PutBucketLifecycleConfiguration"
+
+// PutBucketLifecycleConfigurationRequest generates a request for the PutBucketLifecycleConfiguration operation.
+func (c *S3) PutBucketLifecycleConfigurationRequest(input *PutBucketLifecycleConfigurationInput) (req *request.Request, output *PutBucketLifecycleConfigurationOutput) {
+	op := &request.Operation{
+		Name:       opPutBucketLifecycleConfiguration,
+		HTTPMethod: "PUT",
+		HTTPPath:   "/{Bucket}?lifecycle",
+	}
+
+	if input == nil {
+		input = &PutBucketLifecycleConfigurationInput{}
+	}
+
+	req = c.newRequest(op, input, output)
+	output = &PutBucketLifecycleConfigurationOutput{}
+	req.Data = output
+	return
+}
+
+// Sets lifecycle configuration for your bucket. If a lifecycle configuration
+// exists, it replaces it.
+func (c *S3) PutBucketLifecycleConfiguration(input *PutBucketLifecycleConfigurationInput) (*PutBucketLifecycleConfigurationOutput, error) {
+	req, out := c.PutBucketLifecycleConfigurationRequest(input)
 	err := req.Send()
 	return out, err
 }
@@ -1165,8 +1219,8 @@ func (c *S3) PutBucketLifecycle(input *PutBucketLifecycleInput) (*PutBucketLifec
 const opPutBucketLogging = "PutBucketLogging"
 
 // PutBucketLoggingRequest generates a request for the PutBucketLogging operation.
-func (c *S3) PutBucketLoggingRequest(input *PutBucketLoggingInput) (req *aws.Request, output *PutBucketLoggingOutput) {
-	op := &aws.Operation{
+func (c *S3) PutBucketLoggingRequest(input *PutBucketLoggingInput) (req *request.Request, output *PutBucketLoggingOutput) {
+	op := &request.Operation{
 		Name:       opPutBucketLogging,
 		HTTPMethod: "PUT",
 		HTTPPath:   "/{Bucket}?logging",
@@ -1194,8 +1248,8 @@ func (c *S3) PutBucketLogging(input *PutBucketLoggingInput) (*PutBucketLoggingOu
 const opPutBucketNotification = "PutBucketNotification"
 
 // PutBucketNotificationRequest generates a request for the PutBucketNotification operation.
-func (c *S3) PutBucketNotificationRequest(input *PutBucketNotificationInput) (req *aws.Request, output *PutBucketNotificationOutput) {
-	op := &aws.Operation{
+func (c *S3) PutBucketNotificationRequest(input *PutBucketNotificationInput) (req *request.Request, output *PutBucketNotificationOutput) {
+	op := &request.Operation{
 		Name:       opPutBucketNotification,
 		HTTPMethod: "PUT",
 		HTTPPath:   "/{Bucket}?notification",
@@ -1221,8 +1275,8 @@ func (c *S3) PutBucketNotification(input *PutBucketNotificationInput) (*PutBucke
 const opPutBucketNotificationConfiguration = "PutBucketNotificationConfiguration"
 
 // PutBucketNotificationConfigurationRequest generates a request for the PutBucketNotificationConfiguration operation.
-func (c *S3) PutBucketNotificationConfigurationRequest(input *PutBucketNotificationConfigurationInput) (req *aws.Request, output *PutBucketNotificationConfigurationOutput) {
-	op := &aws.Operation{
+func (c *S3) PutBucketNotificationConfigurationRequest(input *PutBucketNotificationConfigurationInput) (req *request.Request, output *PutBucketNotificationConfigurationOutput) {
+	op := &request.Operation{
 		Name:       opPutBucketNotificationConfiguration,
 		HTTPMethod: "PUT",
 		HTTPPath:   "/{Bucket}?notification",
@@ -1248,8 +1302,8 @@ func (c *S3) PutBucketNotificationConfiguration(input *PutBucketNotificationConf
 const opPutBucketPolicy = "PutBucketPolicy"
 
 // PutBucketPolicyRequest generates a request for the PutBucketPolicy operation.
-func (c *S3) PutBucketPolicyRequest(input *PutBucketPolicyInput) (req *aws.Request, output *PutBucketPolicyOutput) {
-	op := &aws.Operation{
+func (c *S3) PutBucketPolicyRequest(input *PutBucketPolicyInput) (req *request.Request, output *PutBucketPolicyOutput) {
+	op := &request.Operation{
 		Name:       opPutBucketPolicy,
 		HTTPMethod: "PUT",
 		HTTPPath:   "/{Bucket}?policy",
@@ -1276,8 +1330,8 @@ func (c *S3) PutBucketPolicy(input *PutBucketPolicyInput) (*PutBucketPolicyOutpu
 const opPutBucketReplication = "PutBucketReplication"
 
 // PutBucketReplicationRequest generates a request for the PutBucketReplication operation.
-func (c *S3) PutBucketReplicationRequest(input *PutBucketReplicationInput) (req *aws.Request, output *PutBucketReplicationOutput) {
-	op := &aws.Operation{
+func (c *S3) PutBucketReplicationRequest(input *PutBucketReplicationInput) (req *request.Request, output *PutBucketReplicationOutput) {
+	op := &request.Operation{
 		Name:       opPutBucketReplication,
 		HTTPMethod: "PUT",
 		HTTPPath:   "/{Bucket}?replication",
@@ -1304,8 +1358,8 @@ func (c *S3) PutBucketReplication(input *PutBucketReplicationInput) (*PutBucketR
 const opPutBucketRequestPayment = "PutBucketRequestPayment"
 
 // PutBucketRequestPaymentRequest generates a request for the PutBucketRequestPayment operation.
-func (c *S3) PutBucketRequestPaymentRequest(input *PutBucketRequestPaymentInput) (req *aws.Request, output *PutBucketRequestPaymentOutput) {
-	op := &aws.Operation{
+func (c *S3) PutBucketRequestPaymentRequest(input *PutBucketRequestPaymentInput) (req *request.Request, output *PutBucketRequestPaymentOutput) {
+	op := &request.Operation{
 		Name:       opPutBucketRequestPayment,
 		HTTPMethod: "PUT",
 		HTTPPath:   "/{Bucket}?requestPayment",
@@ -1335,8 +1389,8 @@ func (c *S3) PutBucketRequestPayment(input *PutBucketRequestPaymentInput) (*PutB
 const opPutBucketTagging = "PutBucketTagging"
 
 // PutBucketTaggingRequest generates a request for the PutBucketTagging operation.
-func (c *S3) PutBucketTaggingRequest(input *PutBucketTaggingInput) (req *aws.Request, output *PutBucketTaggingOutput) {
-	op := &aws.Operation{
+func (c *S3) PutBucketTaggingRequest(input *PutBucketTaggingInput) (req *request.Request, output *PutBucketTaggingOutput) {
+	op := &request.Operation{
 		Name:       opPutBucketTagging,
 		HTTPMethod: "PUT",
 		HTTPPath:   "/{Bucket}?tagging",
@@ -1362,8 +1416,8 @@ func (c *S3) PutBucketTagging(input *PutBucketTaggingInput) (*PutBucketTaggingOu
 const opPutBucketVersioning = "PutBucketVersioning"
 
 // PutBucketVersioningRequest generates a request for the PutBucketVersioning operation.
-func (c *S3) PutBucketVersioningRequest(input *PutBucketVersioningInput) (req *aws.Request, output *PutBucketVersioningOutput) {
-	op := &aws.Operation{
+func (c *S3) PutBucketVersioningRequest(input *PutBucketVersioningInput) (req *request.Request, output *PutBucketVersioningOutput) {
+	op := &request.Operation{
 		Name:       opPutBucketVersioning,
 		HTTPMethod: "PUT",
 		HTTPPath:   "/{Bucket}?versioning",
@@ -1390,8 +1444,8 @@ func (c *S3) PutBucketVersioning(input *PutBucketVersioningInput) (*PutBucketVer
 const opPutBucketWebsite = "PutBucketWebsite"
 
 // PutBucketWebsiteRequest generates a request for the PutBucketWebsite operation.
-func (c *S3) PutBucketWebsiteRequest(input *PutBucketWebsiteInput) (req *aws.Request, output *PutBucketWebsiteOutput) {
-	op := &aws.Operation{
+func (c *S3) PutBucketWebsiteRequest(input *PutBucketWebsiteInput) (req *request.Request, output *PutBucketWebsiteOutput) {
+	op := &request.Operation{
 		Name:       opPutBucketWebsite,
 		HTTPMethod: "PUT",
 		HTTPPath:   "/{Bucket}?website",
@@ -1417,8 +1471,8 @@ func (c *S3) PutBucketWebsite(input *PutBucketWebsiteInput) (*PutBucketWebsiteOu
 const opPutObject = "PutObject"
 
 // PutObjectRequest generates a request for the PutObject operation.
-func (c *S3) PutObjectRequest(input *PutObjectInput) (req *aws.Request, output *PutObjectOutput) {
-	op := &aws.Operation{
+func (c *S3) PutObjectRequest(input *PutObjectInput) (req *request.Request, output *PutObjectOutput) {
+	op := &request.Operation{
 		Name:       opPutObject,
 		HTTPMethod: "PUT",
 		HTTPPath:   "/{Bucket}/{Key+}",
@@ -1441,30 +1495,30 @@ func (c *S3) PutObject(input *PutObjectInput) (*PutObjectOutput, error) {
 	return out, err
 }
 
-const opPutObjectACL = "PutObjectAcl"
+const opPutObjectAcl = "PutObjectAcl"
 
-// PutObjectACLRequest generates a request for the PutObjectACL operation.
-func (c *S3) PutObjectACLRequest(input *PutObjectACLInput) (req *aws.Request, output *PutObjectACLOutput) {
-	op := &aws.Operation{
-		Name:       opPutObjectACL,
+// PutObjectAclRequest generates a request for the PutObjectAcl operation.
+func (c *S3) PutObjectAclRequest(input *PutObjectAclInput) (req *request.Request, output *PutObjectAclOutput) {
+	op := &request.Operation{
+		Name:       opPutObjectAcl,
 		HTTPMethod: "PUT",
 		HTTPPath:   "/{Bucket}/{Key+}?acl",
 	}
 
 	if input == nil {
-		input = &PutObjectACLInput{}
+		input = &PutObjectAclInput{}
 	}
 
 	req = c.newRequest(op, input, output)
-	output = &PutObjectACLOutput{}
+	output = &PutObjectAclOutput{}
 	req.Data = output
 	return
 }
 
 // uses the acl subresource to set the access control list (ACL) permissions
 // for an object that already exists in a bucket
-func (c *S3) PutObjectACL(input *PutObjectACLInput) (*PutObjectACLOutput, error) {
-	req, out := c.PutObjectACLRequest(input)
+func (c *S3) PutObjectAcl(input *PutObjectAclInput) (*PutObjectAclOutput, error) {
+	req, out := c.PutObjectAclRequest(input)
 	err := req.Send()
 	return out, err
 }
@@ -1472,8 +1526,8 @@ func (c *S3) PutObjectACL(input *PutObjectACLInput) (*PutObjectACLOutput, error)
 const opRestoreObject = "RestoreObject"
 
 // RestoreObjectRequest generates a request for the RestoreObject operation.
-func (c *S3) RestoreObjectRequest(input *RestoreObjectInput) (req *aws.Request, output *RestoreObjectOutput) {
-	op := &aws.Operation{
+func (c *S3) RestoreObjectRequest(input *RestoreObjectInput) (req *request.Request, output *RestoreObjectOutput) {
+	op := &request.Operation{
 		Name:       opRestoreObject,
 		HTTPMethod: "POST",
 		HTTPPath:   "/{Bucket}/{Key+}?restore",
@@ -1499,8 +1553,8 @@ func (c *S3) RestoreObject(input *RestoreObjectInput) (*RestoreObjectOutput, err
 const opUploadPart = "UploadPart"
 
 // UploadPartRequest generates a request for the UploadPart operation.
-func (c *S3) UploadPartRequest(input *UploadPartInput) (req *aws.Request, output *UploadPartOutput) {
-	op := &aws.Operation{
+func (c *S3) UploadPartRequest(input *UploadPartInput) (req *request.Request, output *UploadPartOutput) {
+	op := &request.Operation{
 		Name:       opUploadPart,
 		HTTPMethod: "PUT",
 		HTTPPath:   "/{Bucket}/{Key+}",
@@ -1532,8 +1586,8 @@ func (c *S3) UploadPart(input *UploadPartInput) (*UploadPartOutput, error) {
 const opUploadPartCopy = "UploadPartCopy"
 
 // UploadPartCopyRequest generates a request for the UploadPartCopy operation.
-func (c *S3) UploadPartCopyRequest(input *UploadPartCopyInput) (req *aws.Request, output *UploadPartCopyOutput) {
-	op := &aws.Operation{
+func (c *S3) UploadPartCopyRequest(input *UploadPartCopyInput) (req *request.Request, output *UploadPartCopyOutput) {
+	op := &request.Operation{
 		Name:       opUploadPartCopy,
 		HTTPMethod: "PUT",
 		HTTPPath:   "/{Bucket}/{Key+}",
@@ -1559,7 +1613,7 @@ func (c *S3) UploadPartCopy(input *UploadPartCopyInput) (*UploadPartCopyOutput, 
 type AbortMultipartUploadInput struct {
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	Key *string `location:"uri" locationName:"Key" type:"string" required:"true"`
+	Key *string `location:"uri" locationName:"Key" min:"1" type:"string" required:"true"`
 
 	// Confirms that the requester knows that she or he will be charged for the
 	// request. Bucket owners need not specify this parameter in their requests.
@@ -1567,7 +1621,7 @@ type AbortMultipartUploadInput struct {
 	// at http://docs.aws.amazon.com/AmazonS3/latest/dev/ObjectsinRequesterPaysBuckets.html
 	RequestPayer *string `location:"header" locationName:"x-amz-request-payer" type:"string" enum:"RequestPayer"`
 
-	UploadID *string `location:"querystring" locationName:"uploadId" type:"string" required:"true"`
+	UploadId *string `location:"querystring" locationName:"uploadId" type:"string" required:"true"`
 
 	metadataAbortMultipartUploadInput `json:"-" xml:"-"`
 }
@@ -1655,6 +1709,26 @@ func (s Bucket) GoString() string {
 	return s.String()
 }
 
+type BucketLifecycleConfiguration struct {
+	Rules []*LifecycleRule `locationName:"Rule" type:"list" flattened:"true" required:"true"`
+
+	metadataBucketLifecycleConfiguration `json:"-" xml:"-"`
+}
+
+type metadataBucketLifecycleConfiguration struct {
+	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s BucketLifecycleConfiguration) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s BucketLifecycleConfiguration) GoString() string {
+	return s.String()
+}
+
 type BucketLoggingStatus struct {
 	LoggingEnabled *LoggingEnabled `type:"structure"`
 
@@ -1676,7 +1750,7 @@ func (s BucketLoggingStatus) GoString() string {
 }
 
 type CORSConfiguration struct {
-	CORSRules []*CORSRule `locationName:"CORSRule" type:"list" flattened:"true"`
+	CORSRules []*CORSRule `locationName:"CORSRule" type:"list" flattened:"true" required:"true"`
 
 	metadataCORSConfiguration `json:"-" xml:"-"`
 }
@@ -1701,10 +1775,10 @@ type CORSRule struct {
 
 	// Identifies HTTP methods that the domain/origin specified in the rule is allowed
 	// to execute.
-	AllowedMethods []*string `locationName:"AllowedMethod" type:"list" flattened:"true"`
+	AllowedMethods []*string `locationName:"AllowedMethod" type:"list" flattened:"true" required:"true"`
 
 	// One or more origins you want customers to be able to access the bucket from.
-	AllowedOrigins []*string `locationName:"AllowedOrigin" type:"list" flattened:"true"`
+	AllowedOrigins []*string `locationName:"AllowedOrigin" type:"list" flattened:"true" required:"true"`
 
 	// One or more headers in the response that you want customers to be able to
 	// access from their applications (for example, from a JavaScript XMLHttpRequest
@@ -1742,7 +1816,7 @@ type CloudFunctionConfiguration struct {
 
 	// Optional unique identifier for configurations in a notification configuration.
 	// If you don't provide one, Amazon S3 will assign an ID.
-	ID *string `locationName:"Id" type:"string"`
+	Id *string `type:"string"`
 
 	InvocationRole *string `type:"string"`
 
@@ -1786,7 +1860,7 @@ func (s CommonPrefix) GoString() string {
 type CompleteMultipartUploadInput struct {
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	Key *string `location:"uri" locationName:"Key" type:"string" required:"true"`
+	Key *string `location:"uri" locationName:"Key" min:"1" type:"string" required:"true"`
 
 	MultipartUpload *CompletedMultipartUpload `locationName:"CompleteMultipartUpload" type:"structure"`
 
@@ -1796,7 +1870,7 @@ type CompleteMultipartUploadInput struct {
 	// at http://docs.aws.amazon.com/AmazonS3/latest/dev/ObjectsinRequesterPaysBuckets.html
 	RequestPayer *string `location:"header" locationName:"x-amz-request-payer" type:"string" enum:"RequestPayer"`
 
-	UploadID *string `location:"querystring" locationName:"uploadId" type:"string" required:"true"`
+	UploadId *string `location:"querystring" locationName:"uploadId" type:"string" required:"true"`
 
 	metadataCompleteMultipartUploadInput `json:"-" xml:"-"`
 }
@@ -1825,7 +1899,7 @@ type CompleteMultipartUploadOutput struct {
 	// date (expiry-date) and rule ID (rule-id). The value of rule-id is URL encoded.
 	Expiration *string `location:"header" locationName:"x-amz-expiration" type:"string"`
 
-	Key *string `type:"string"`
+	Key *string `min:"1" type:"string"`
 
 	Location *string `type:"string"`
 
@@ -1835,14 +1909,14 @@ type CompleteMultipartUploadOutput struct {
 
 	// If present, specifies the ID of the AWS Key Management Service (KMS) master
 	// encryption key that was used for the object.
-	SSEKMSKeyID *string `location:"header" locationName:"x-amz-server-side-encryption-aws-kms-key-id" type:"string"`
+	SSEKMSKeyId *string `location:"header" locationName:"x-amz-server-side-encryption-aws-kms-key-id" type:"string"`
 
 	// The Server-side encryption algorithm used when storing this object in S3
 	// (e.g., AES256, aws:kms).
 	ServerSideEncryption *string `location:"header" locationName:"x-amz-server-side-encryption" type:"string" enum:"ServerSideEncryption"`
 
 	// Version of the object.
-	VersionID *string `location:"header" locationName:"x-amz-version-id" type:"string"`
+	VersionId *string `location:"header" locationName:"x-amz-version-id" type:"string"`
 
 	metadataCompleteMultipartUploadOutput `json:"-" xml:"-"`
 }
@@ -1912,7 +1986,7 @@ type Condition struct {
 	// Required when parent element Condition is specified and sibling KeyPrefixEquals
 	// is not specified. If both are specified, then both must be true for the redirect
 	// to be applied.
-	HTTPErrorCodeReturnedEquals *string `locationName:"HttpErrorCodeReturnedEquals" type:"string"`
+	HttpErrorCodeReturnedEquals *string `type:"string"`
 
 	// The object key name prefix when the redirect is applied. For example, to
 	// redirect requests for ExamplePage.html, the key prefix will be ExamplePage.html.
@@ -2008,7 +2082,7 @@ type CopyObjectInput struct {
 	// Allows grantee to write the ACL for the applicable object.
 	GrantWriteACP *string `location:"header" locationName:"x-amz-grant-write-acp" type:"string"`
 
-	Key *string `location:"uri" locationName:"Key" type:"string" required:"true"`
+	Key *string `location:"uri" locationName:"Key" min:"1" type:"string" required:"true"`
 
 	// A map of metadata to store with the object in S3.
 	Metadata map[string]*string `location:"headers" locationName:"x-amz-meta-" type:"map"`
@@ -2042,7 +2116,7 @@ type CopyObjectInput struct {
 	// requests for an object protected by AWS KMS will fail if not made via SSL
 	// or using SigV4. Documentation on configuring any of the officially supported
 	// AWS SDKs and CLI can be found at http://docs.aws.amazon.com/AmazonS3/latest/dev/UsingAWSSDK.html#specify-signature-version
-	SSEKMSKeyID *string `location:"header" locationName:"x-amz-server-side-encryption-aws-kms-key-id" type:"string"`
+	SSEKMSKeyId *string `location:"header" locationName:"x-amz-server-side-encryption-aws-kms-key-id" type:"string"`
 
 	// The Server-side encryption algorithm used when storing this object in S3
 	// (e.g., AES256, aws:kms).
@@ -2076,7 +2150,7 @@ func (s CopyObjectInput) GoString() string {
 type CopyObjectOutput struct {
 	CopyObjectResult *CopyObjectResult `type:"structure"`
 
-	CopySourceVersionID *string `location:"header" locationName:"x-amz-copy-source-version-id" type:"string"`
+	CopySourceVersionId *string `location:"header" locationName:"x-amz-copy-source-version-id" type:"string"`
 
 	// If the object expiration is configured, the response includes this header.
 	Expiration *string `location:"header" locationName:"x-amz-expiration" type:"string"`
@@ -2097,11 +2171,14 @@ type CopyObjectOutput struct {
 
 	// If present, specifies the ID of the AWS Key Management Service (KMS) master
 	// encryption key that was used for the object.
-	SSEKMSKeyID *string `location:"header" locationName:"x-amz-server-side-encryption-aws-kms-key-id" type:"string"`
+	SSEKMSKeyId *string `location:"header" locationName:"x-amz-server-side-encryption-aws-kms-key-id" type:"string"`
 
 	// The Server-side encryption algorithm used when storing this object in S3
 	// (e.g., AES256, aws:kms).
 	ServerSideEncryption *string `location:"header" locationName:"x-amz-server-side-encryption" type:"string" enum:"ServerSideEncryption"`
+
+	// Version ID of the newly created copy.
+	VersionId *string `location:"header" locationName:"x-amz-version-id" type:"string"`
 
 	metadataCopyObjectOutput `json:"-" xml:"-"`
 }
@@ -2287,7 +2364,7 @@ type CreateMultipartUploadInput struct {
 	// Allows grantee to write the ACL for the applicable object.
 	GrantWriteACP *string `location:"header" locationName:"x-amz-grant-write-acp" type:"string"`
 
-	Key *string `location:"uri" locationName:"Key" type:"string" required:"true"`
+	Key *string `location:"uri" locationName:"Key" min:"1" type:"string" required:"true"`
 
 	// A map of metadata to store with the object in S3.
 	Metadata map[string]*string `location:"headers" locationName:"x-amz-meta-" type:"map"`
@@ -2317,7 +2394,7 @@ type CreateMultipartUploadInput struct {
 	// requests for an object protected by AWS KMS will fail if not made via SSL
 	// or using SigV4. Documentation on configuring any of the officially supported
 	// AWS SDKs and CLI can be found at http://docs.aws.amazon.com/AmazonS3/latest/dev/UsingAWSSDK.html#specify-signature-version
-	SSEKMSKeyID *string `location:"header" locationName:"x-amz-server-side-encryption-aws-kms-key-id" type:"string"`
+	SSEKMSKeyId *string `location:"header" locationName:"x-amz-server-side-encryption-aws-kms-key-id" type:"string"`
 
 	// The Server-side encryption algorithm used when storing this object in S3
 	// (e.g., AES256, aws:kms).
@@ -2353,7 +2430,7 @@ type CreateMultipartUploadOutput struct {
 	Bucket *string `locationName:"Bucket" type:"string"`
 
 	// Object key for which the multipart upload was initiated.
-	Key *string `type:"string"`
+	Key *string `min:"1" type:"string"`
 
 	// If present, indicates that the requester was successfully charged for the
 	// request.
@@ -2371,14 +2448,14 @@ type CreateMultipartUploadOutput struct {
 
 	// If present, specifies the ID of the AWS Key Management Service (KMS) master
 	// encryption key that was used for the object.
-	SSEKMSKeyID *string `location:"header" locationName:"x-amz-server-side-encryption-aws-kms-key-id" type:"string"`
+	SSEKMSKeyId *string `location:"header" locationName:"x-amz-server-side-encryption-aws-kms-key-id" type:"string"`
 
 	// The Server-side encryption algorithm used when storing this object in S3
 	// (e.g., AES256, aws:kms).
 	ServerSideEncryption *string `location:"header" locationName:"x-amz-server-side-encryption" type:"string" enum:"ServerSideEncryption"`
 
 	// ID for the initiated multipart upload.
-	UploadID *string `locationName:"UploadId" type:"string"`
+	UploadId *string `type:"string"`
 
 	metadataCreateMultipartUploadOutput `json:"-" xml:"-"`
 }
@@ -2421,41 +2498,41 @@ func (s Delete) GoString() string {
 	return s.String()
 }
 
-type DeleteBucketCORSInput struct {
+type DeleteBucketCorsInput struct {
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	metadataDeleteBucketCORSInput `json:"-" xml:"-"`
+	metadataDeleteBucketCorsInput `json:"-" xml:"-"`
 }
 
-type metadataDeleteBucketCORSInput struct {
+type metadataDeleteBucketCorsInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
-func (s DeleteBucketCORSInput) String() string {
+func (s DeleteBucketCorsInput) String() string {
 	return awsutil.Prettify(s)
 }
 
 // GoString returns the string representation
-func (s DeleteBucketCORSInput) GoString() string {
+func (s DeleteBucketCorsInput) GoString() string {
 	return s.String()
 }
 
-type DeleteBucketCORSOutput struct {
-	metadataDeleteBucketCORSOutput `json:"-" xml:"-"`
+type DeleteBucketCorsOutput struct {
+	metadataDeleteBucketCorsOutput `json:"-" xml:"-"`
 }
 
-type metadataDeleteBucketCORSOutput struct {
+type metadataDeleteBucketCorsOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
-func (s DeleteBucketCORSOutput) String() string {
+func (s DeleteBucketCorsOutput) String() string {
 	return awsutil.Prettify(s)
 }
 
 // GoString returns the string representation
-func (s DeleteBucketCORSOutput) GoString() string {
+func (s DeleteBucketCorsOutput) GoString() string {
 	return s.String()
 }
 
@@ -2693,7 +2770,7 @@ type DeleteMarkerEntry struct {
 	IsLatest *bool `type:"boolean"`
 
 	// The object key.
-	Key *string `type:"string"`
+	Key *string `min:"1" type:"string"`
 
 	// Date and time the object was last modified.
 	LastModified *time.Time `type:"timestamp" timestampFormat:"iso8601"`
@@ -2701,7 +2778,7 @@ type DeleteMarkerEntry struct {
 	Owner *Owner `type:"structure"`
 
 	// Version ID of an object.
-	VersionID *string `locationName:"VersionId" type:"string"`
+	VersionId *string `type:"string"`
 
 	metadataDeleteMarkerEntry `json:"-" xml:"-"`
 }
@@ -2723,7 +2800,7 @@ func (s DeleteMarkerEntry) GoString() string {
 type DeleteObjectInput struct {
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	Key *string `location:"uri" locationName:"Key" type:"string" required:"true"`
+	Key *string `location:"uri" locationName:"Key" min:"1" type:"string" required:"true"`
 
 	// The concatenation of the authentication device's serial number, a space,
 	// and the value that is displayed on your authentication device.
@@ -2736,7 +2813,7 @@ type DeleteObjectInput struct {
 	RequestPayer *string `location:"header" locationName:"x-amz-request-payer" type:"string" enum:"RequestPayer"`
 
 	// VersionId used to reference a specific version of the object.
-	VersionID *string `location:"querystring" locationName:"versionId" type:"string"`
+	VersionId *string `location:"querystring" locationName:"versionId" type:"string"`
 
 	metadataDeleteObjectInput `json:"-" xml:"-"`
 }
@@ -2766,7 +2843,7 @@ type DeleteObjectOutput struct {
 
 	// Returns the version ID of the delete marker created as a result of the DELETE
 	// operation.
-	VersionID *string `location:"header" locationName:"x-amz-version-id" type:"string"`
+	VersionId *string `location:"header" locationName:"x-amz-version-id" type:"string"`
 
 	metadataDeleteObjectOutput `json:"-" xml:"-"`
 }
@@ -2846,11 +2923,11 @@ func (s DeleteObjectsOutput) GoString() string {
 type DeletedObject struct {
 	DeleteMarker *bool `type:"boolean"`
 
-	DeleteMarkerVersionID *string `locationName:"DeleteMarkerVersionId" type:"string"`
+	DeleteMarkerVersionId *string `type:"string"`
 
-	Key *string `type:"string"`
+	Key *string `min:"1" type:"string"`
 
-	VersionID *string `locationName:"VersionId" type:"string"`
+	VersionId *string `type:"string"`
 
 	metadataDeletedObject `json:"-" xml:"-"`
 }
@@ -2874,6 +2951,9 @@ type Destination struct {
 	// replicas of the object identified by the rule.
 	Bucket *string `type:"string" required:"true"`
 
+	// The class of storage used to store the object.
+	StorageClass *string `type:"string" enum:"StorageClass"`
+
 	metadataDestination `json:"-" xml:"-"`
 }
 
@@ -2894,11 +2974,11 @@ func (s Destination) GoString() string {
 type Error struct {
 	Code *string `type:"string"`
 
-	Key *string `type:"string"`
+	Key *string `min:"1" type:"string"`
 
 	Message *string `type:"string"`
 
-	VersionID *string `locationName:"VersionId" type:"string"`
+	VersionId *string `type:"string"`
 
 	metadataError `json:"-" xml:"-"`
 }
@@ -2919,7 +2999,7 @@ func (s Error) GoString() string {
 
 type ErrorDocument struct {
 	// The object key name to use when a 4XX class error occurs.
-	Key *string `type:"string" required:"true"`
+	Key *string `min:"1" type:"string" required:"true"`
 
 	metadataErrorDocument `json:"-" xml:"-"`
 }
@@ -2938,86 +3018,154 @@ func (s ErrorDocument) GoString() string {
 	return s.String()
 }
 
-type GetBucketACLInput struct {
-	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
+// Container for key value pair that defines the criteria for the filter rule.
+type FilterRule struct {
+	// Object key name prefix or suffix identifying one or more objects to which
+	// the filtering rule applies. Maximum prefix length can be up to 1,024 characters.
+	// Overlapping prefixes and suffixes are not supported. For more information,
+	// go to Configuring Event Notifications (http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html)
+	// in the Amazon Simple Storage Service Developer Guide.
+	Name *string `type:"string" enum:"FilterRuleName"`
 
-	metadataGetBucketACLInput `json:"-" xml:"-"`
+	Value *string `type:"string"`
+
+	metadataFilterRule `json:"-" xml:"-"`
 }
 
-type metadataGetBucketACLInput struct {
+type metadataFilterRule struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
-func (s GetBucketACLInput) String() string {
+func (s FilterRule) String() string {
 	return awsutil.Prettify(s)
 }
 
 // GoString returns the string representation
-func (s GetBucketACLInput) GoString() string {
+func (s FilterRule) GoString() string {
 	return s.String()
 }
 
-type GetBucketACLOutput struct {
+type GetBucketAclInput struct {
+	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
+
+	metadataGetBucketAclInput `json:"-" xml:"-"`
+}
+
+type metadataGetBucketAclInput struct {
+	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s GetBucketAclInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetBucketAclInput) GoString() string {
+	return s.String()
+}
+
+type GetBucketAclOutput struct {
 	// A list of grants.
 	Grants []*Grant `locationName:"AccessControlList" locationNameList:"Grant" type:"list"`
 
 	Owner *Owner `type:"structure"`
 
-	metadataGetBucketACLOutput `json:"-" xml:"-"`
+	metadataGetBucketAclOutput `json:"-" xml:"-"`
 }
 
-type metadataGetBucketACLOutput struct {
+type metadataGetBucketAclOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
-func (s GetBucketACLOutput) String() string {
+func (s GetBucketAclOutput) String() string {
 	return awsutil.Prettify(s)
 }
 
 // GoString returns the string representation
-func (s GetBucketACLOutput) GoString() string {
+func (s GetBucketAclOutput) GoString() string {
 	return s.String()
 }
 
-type GetBucketCORSInput struct {
+type GetBucketCorsInput struct {
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	metadataGetBucketCORSInput `json:"-" xml:"-"`
+	metadataGetBucketCorsInput `json:"-" xml:"-"`
 }
 
-type metadataGetBucketCORSInput struct {
+type metadataGetBucketCorsInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
-func (s GetBucketCORSInput) String() string {
+func (s GetBucketCorsInput) String() string {
 	return awsutil.Prettify(s)
 }
 
 // GoString returns the string representation
-func (s GetBucketCORSInput) GoString() string {
+func (s GetBucketCorsInput) GoString() string {
 	return s.String()
 }
 
-type GetBucketCORSOutput struct {
+type GetBucketCorsOutput struct {
 	CORSRules []*CORSRule `locationName:"CORSRule" type:"list" flattened:"true"`
 
-	metadataGetBucketCORSOutput `json:"-" xml:"-"`
+	metadataGetBucketCorsOutput `json:"-" xml:"-"`
 }
 
-type metadataGetBucketCORSOutput struct {
+type metadataGetBucketCorsOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
-func (s GetBucketCORSOutput) String() string {
+func (s GetBucketCorsOutput) String() string {
 	return awsutil.Prettify(s)
 }
 
 // GoString returns the string representation
-func (s GetBucketCORSOutput) GoString() string {
+func (s GetBucketCorsOutput) GoString() string {
+	return s.String()
+}
+
+type GetBucketLifecycleConfigurationInput struct {
+	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
+
+	metadataGetBucketLifecycleConfigurationInput `json:"-" xml:"-"`
+}
+
+type metadataGetBucketLifecycleConfigurationInput struct {
+	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s GetBucketLifecycleConfigurationInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetBucketLifecycleConfigurationInput) GoString() string {
+	return s.String()
+}
+
+type GetBucketLifecycleConfigurationOutput struct {
+	Rules []*LifecycleRule `locationName:"Rule" type:"list" flattened:"true"`
+
+	metadataGetBucketLifecycleConfigurationOutput `json:"-" xml:"-"`
+}
+
+type metadataGetBucketLifecycleConfigurationOutput struct {
+	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s GetBucketLifecycleConfigurationOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetBucketLifecycleConfigurationOutput) GoString() string {
 	return s.String()
 }
 
@@ -3042,7 +3190,7 @@ func (s GetBucketLifecycleInput) GoString() string {
 }
 
 type GetBucketLifecycleOutput struct {
-	Rules []*LifecycleRule `locationName:"Rule" type:"list" flattened:"true"`
+	Rules []*Rule `locationName:"Rule" type:"list" flattened:"true"`
 
 	metadataGetBucketLifecycleOutput `json:"-" xml:"-"`
 }
@@ -3418,10 +3566,10 @@ func (s GetBucketWebsiteOutput) GoString() string {
 	return s.String()
 }
 
-type GetObjectACLInput struct {
+type GetObjectAclInput struct {
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	Key *string `location:"uri" locationName:"Key" type:"string" required:"true"`
+	Key *string `location:"uri" locationName:"Key" min:"1" type:"string" required:"true"`
 
 	// Confirms that the requester knows that she or he will be charged for the
 	// request. Bucket owners need not specify this parameter in their requests.
@@ -3430,26 +3578,26 @@ type GetObjectACLInput struct {
 	RequestPayer *string `location:"header" locationName:"x-amz-request-payer" type:"string" enum:"RequestPayer"`
 
 	// VersionId used to reference a specific version of the object.
-	VersionID *string `location:"querystring" locationName:"versionId" type:"string"`
+	VersionId *string `location:"querystring" locationName:"versionId" type:"string"`
 
-	metadataGetObjectACLInput `json:"-" xml:"-"`
+	metadataGetObjectAclInput `json:"-" xml:"-"`
 }
 
-type metadataGetObjectACLInput struct {
+type metadataGetObjectAclInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
-func (s GetObjectACLInput) String() string {
+func (s GetObjectAclInput) String() string {
 	return awsutil.Prettify(s)
 }
 
 // GoString returns the string representation
-func (s GetObjectACLInput) GoString() string {
+func (s GetObjectAclInput) GoString() string {
 	return s.String()
 }
 
-type GetObjectACLOutput struct {
+type GetObjectAclOutput struct {
 	// A list of grants.
 	Grants []*Grant `locationName:"AccessControlList" locationNameList:"Grant" type:"list"`
 
@@ -3459,20 +3607,20 @@ type GetObjectACLOutput struct {
 	// request.
 	RequestCharged *string `location:"header" locationName:"x-amz-request-charged" type:"string" enum:"RequestCharged"`
 
-	metadataGetObjectACLOutput `json:"-" xml:"-"`
+	metadataGetObjectAclOutput `json:"-" xml:"-"`
 }
 
-type metadataGetObjectACLOutput struct {
+type metadataGetObjectAclOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
-func (s GetObjectACLOutput) String() string {
+func (s GetObjectAclOutput) String() string {
 	return awsutil.Prettify(s)
 }
 
 // GoString returns the string representation
-func (s GetObjectACLOutput) GoString() string {
+func (s GetObjectAclOutput) GoString() string {
 	return s.String()
 }
 
@@ -3495,7 +3643,7 @@ type GetObjectInput struct {
 	// otherwise return a 412 (precondition failed).
 	IfUnmodifiedSince *time.Time `location:"header" locationName:"If-Unmodified-Since" type:"timestamp" timestampFormat:"rfc822"`
 
-	Key *string `location:"uri" locationName:"Key" type:"string" required:"true"`
+	Key *string `location:"uri" locationName:"Key" min:"1" type:"string" required:"true"`
 
 	// Downloads the specified range bytes of an object. For more information about
 	// the HTTP Range header, go to http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.35.
@@ -3541,7 +3689,7 @@ type GetObjectInput struct {
 	SSECustomerKeyMD5 *string `location:"header" locationName:"x-amz-server-side-encryption-customer-key-MD5" type:"string"`
 
 	// VersionId used to reference a specific version of the object.
-	VersionID *string `location:"querystring" locationName:"versionId" type:"string"`
+	VersionId *string `location:"querystring" locationName:"versionId" type:"string"`
 
 	metadataGetObjectInput `json:"-" xml:"-"`
 }
@@ -3640,7 +3788,7 @@ type GetObjectOutput struct {
 
 	// If present, specifies the ID of the AWS Key Management Service (KMS) master
 	// encryption key that was used for the object.
-	SSEKMSKeyID *string `location:"header" locationName:"x-amz-server-side-encryption-aws-kms-key-id" type:"string"`
+	SSEKMSKeyId *string `location:"header" locationName:"x-amz-server-side-encryption-aws-kms-key-id" type:"string"`
 
 	// The Server-side encryption algorithm used when storing this object in S3
 	// (e.g., AES256, aws:kms).
@@ -3649,7 +3797,7 @@ type GetObjectOutput struct {
 	StorageClass *string `location:"header" locationName:"x-amz-storage-class" type:"string" enum:"StorageClass"`
 
 	// Version of the object.
-	VersionID *string `location:"header" locationName:"x-amz-version-id" type:"string"`
+	VersionId *string `location:"header" locationName:"x-amz-version-id" type:"string"`
 
 	// If the bucket is configured as a website, redirects requests for this object
 	// to another object in the same bucket or to an external URL. Amazon S3 stores
@@ -3676,7 +3824,7 @@ func (s GetObjectOutput) GoString() string {
 type GetObjectTorrentInput struct {
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	Key *string `location:"uri" locationName:"Key" type:"string" required:"true"`
+	Key *string `location:"uri" locationName:"Key" min:"1" type:"string" required:"true"`
 
 	// Confirms that the requester knows that she or he will be charged for the
 	// request. Bucket owners need not specify this parameter in their requests.
@@ -3838,7 +3986,7 @@ type HeadObjectInput struct {
 	// otherwise return a 412 (precondition failed).
 	IfUnmodifiedSince *time.Time `location:"header" locationName:"If-Unmodified-Since" type:"timestamp" timestampFormat:"rfc822"`
 
-	Key *string `location:"uri" locationName:"Key" type:"string" required:"true"`
+	Key *string `location:"uri" locationName:"Key" min:"1" type:"string" required:"true"`
 
 	// Downloads the specified range bytes of an object. For more information about
 	// the HTTP Range header, go to http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.35.
@@ -3866,7 +4014,7 @@ type HeadObjectInput struct {
 	SSECustomerKeyMD5 *string `location:"header" locationName:"x-amz-server-side-encryption-customer-key-MD5" type:"string"`
 
 	// VersionId used to reference a specific version of the object.
-	VersionID *string `location:"querystring" locationName:"versionId" type:"string"`
+	VersionId *string `location:"querystring" locationName:"versionId" type:"string"`
 
 	metadataHeadObjectInput `json:"-" xml:"-"`
 }
@@ -3959,7 +4107,7 @@ type HeadObjectOutput struct {
 
 	// If present, specifies the ID of the AWS Key Management Service (KMS) master
 	// encryption key that was used for the object.
-	SSEKMSKeyID *string `location:"header" locationName:"x-amz-server-side-encryption-aws-kms-key-id" type:"string"`
+	SSEKMSKeyId *string `location:"header" locationName:"x-amz-server-side-encryption-aws-kms-key-id" type:"string"`
 
 	// The Server-side encryption algorithm used when storing this object in S3
 	// (e.g., AES256, aws:kms).
@@ -3968,7 +4116,7 @@ type HeadObjectOutput struct {
 	StorageClass *string `location:"header" locationName:"x-amz-storage-class" type:"string" enum:"StorageClass"`
 
 	// Version of the object.
-	VersionID *string `location:"header" locationName:"x-amz-version-id" type:"string"`
+	VersionId *string `location:"header" locationName:"x-amz-version-id" type:"string"`
 
 	// If the bucket is configured as a website, redirects requests for this object
 	// to another object in the same bucket or to an external URL. Amazon S3 stores
@@ -4041,17 +4189,45 @@ func (s Initiator) GoString() string {
 	return s.String()
 }
 
+// Container for object key name prefix and suffix filtering rules.
+type KeyFilter struct {
+	// A list of containers for key value pair that defines the criteria for the
+	// filter rule.
+	FilterRules []*FilterRule `locationName:"FilterRule" type:"list" flattened:"true"`
+
+	metadataKeyFilter `json:"-" xml:"-"`
+}
+
+type metadataKeyFilter struct {
+	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s KeyFilter) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s KeyFilter) GoString() string {
+	return s.String()
+}
+
 // Container for specifying the AWS Lambda notification configuration.
 type LambdaFunctionConfiguration struct {
 	Events []*string `locationName:"Event" type:"list" flattened:"true" required:"true"`
 
+	// Container for object key name filtering rules. For information about key
+	// name filtering, go to Configuring Event Notifications (http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html)
+	// in the Amazon Simple Storage Service Developer Guide.
+	Filter *NotificationConfigurationFilter `type:"structure"`
+
 	// Optional unique identifier for configurations in a notification configuration.
 	// If you don't provide one, Amazon S3 will assign an ID.
-	ID *string `locationName:"Id" type:"string"`
+	Id *string `type:"string"`
 
 	// Lambda cloud function ARN that Amazon S3 can invoke when it detects events
 	// of the specified type.
-	LambdaFunctionARN *string `locationName:"CloudFunction" type:"string" required:"true"`
+	LambdaFunctionArn *string `locationName:"CloudFunction" type:"string" required:"true"`
 
 	metadataLambdaFunctionConfiguration `json:"-" xml:"-"`
 }
@@ -4071,7 +4247,7 @@ func (s LambdaFunctionConfiguration) GoString() string {
 }
 
 type LifecycleConfiguration struct {
-	Rules []*LifecycleRule `locationName:"Rule" type:"list" flattened:"true" required:"true"`
+	Rules []*Rule `locationName:"Rule" type:"list" flattened:"true" required:"true"`
 
 	metadataLifecycleConfiguration `json:"-" xml:"-"`
 }
@@ -4129,12 +4305,7 @@ type LifecycleRule struct {
 	// period in the object's lifetime.
 	NoncurrentVersionExpiration *NoncurrentVersionExpiration `type:"structure"`
 
-	// Container for the transition rule that describes when noncurrent objects
-	// transition to the GLACIER storage class. If your bucket is versioning-enabled
-	// (or versioning is suspended), you can set this action to request that Amazon
-	// S3 transition noncurrent object versions to the GLACIER storage class at
-	// a specific period in the object's lifetime.
-	NoncurrentVersionTransition *NoncurrentVersionTransition `type:"structure"`
+	NoncurrentVersionTransitions []*NoncurrentVersionTransition `locationName:"NoncurrentVersionTransition" type:"list" flattened:"true"`
 
 	// Prefix identifying one or more objects to which the rule applies.
 	Prefix *string `type:"string" required:"true"`
@@ -4143,7 +4314,7 @@ type LifecycleRule struct {
 	// is not currently being applied.
 	Status *string `type:"string" required:"true" enum:"ExpirationStatus"`
 
-	Transition *Transition `type:"structure"`
+	Transitions []*Transition `locationName:"Transition" type:"list" flattened:"true"`
 
 	metadataLifecycleRule `json:"-" xml:"-"`
 }
@@ -4232,7 +4403,7 @@ type ListMultipartUploadsInput struct {
 	// Together with key-marker, specifies the multipart upload after which listing
 	// should begin. If key-marker is not specified, the upload-id-marker parameter
 	// is ignored.
-	UploadIDMarker *string `location:"querystring" locationName:"upload-id-marker" type:"string"`
+	UploadIdMarker *string `location:"querystring" locationName:"upload-id-marker" type:"string"`
 
 	metadataListMultipartUploadsInput `json:"-" xml:"-"`
 }
@@ -4281,14 +4452,14 @@ type ListMultipartUploadsOutput struct {
 
 	// When a list is truncated, this element specifies the value that should be
 	// used for the upload-id-marker request parameter in a subsequent request.
-	NextUploadIDMarker *string `locationName:"NextUploadIdMarker" type:"string"`
+	NextUploadIdMarker *string `type:"string"`
 
 	// When a prefix is provided in the request, this field contains the specified
 	// prefix. The result contains only keys starting with the specified prefix.
 	Prefix *string `type:"string"`
 
 	// Upload ID after which listing began.
-	UploadIDMarker *string `locationName:"UploadIdMarker" type:"string"`
+	UploadIdMarker *string `type:"string"`
 
 	Uploads []*MultipartUpload `locationName:"Upload" type:"list" flattened:"true"`
 
@@ -4334,7 +4505,7 @@ type ListObjectVersionsInput struct {
 	Prefix *string `location:"querystring" locationName:"prefix" type:"string"`
 
 	// Specifies the object version you want to start listing from.
-	VersionIDMarker *string `location:"querystring" locationName:"version-id-marker" type:"string"`
+	VersionIdMarker *string `location:"querystring" locationName:"version-id-marker" type:"string"`
 
 	metadataListObjectVersionsInput `json:"-" xml:"-"`
 }
@@ -4381,11 +4552,11 @@ type ListObjectVersionsOutput struct {
 	NextKeyMarker *string `type:"string"`
 
 	// Use this value for the next version id marker parameter in a subsequent request.
-	NextVersionIDMarker *string `locationName:"NextVersionIdMarker" type:"string"`
+	NextVersionIdMarker *string `type:"string"`
 
 	Prefix *string `type:"string"`
 
-	VersionIDMarker *string `locationName:"VersionIdMarker" type:"string"`
+	VersionIdMarker *string `type:"string"`
 
 	Versions []*ObjectVersion `locationName:"Version" type:"list" flattened:"true"`
 
@@ -4498,7 +4669,7 @@ func (s ListObjectsOutput) GoString() string {
 type ListPartsInput struct {
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	Key *string `location:"uri" locationName:"Key" type:"string" required:"true"`
+	Key *string `location:"uri" locationName:"Key" min:"1" type:"string" required:"true"`
 
 	// Sets the maximum number of parts to return.
 	MaxParts *int64 `location:"querystring" locationName:"max-parts" type:"integer"`
@@ -4514,7 +4685,7 @@ type ListPartsInput struct {
 	RequestPayer *string `location:"header" locationName:"x-amz-request-payer" type:"string" enum:"RequestPayer"`
 
 	// Upload ID identifying the multipart upload whose parts are being listed.
-	UploadID *string `location:"querystring" locationName:"uploadId" type:"string" required:"true"`
+	UploadId *string `location:"querystring" locationName:"uploadId" type:"string" required:"true"`
 
 	metadataListPartsInput `json:"-" xml:"-"`
 }
@@ -4544,7 +4715,7 @@ type ListPartsOutput struct {
 	IsTruncated *bool `type:"boolean"`
 
 	// Object key for which the multipart upload was initiated.
-	Key *string `type:"string"`
+	Key *string `min:"1" type:"string"`
 
 	// Maximum number of parts that were allowed in the response.
 	MaxParts *int64 `type:"integer"`
@@ -4569,7 +4740,7 @@ type ListPartsOutput struct {
 	StorageClass *string `type:"string" enum:"StorageClass"`
 
 	// Upload ID identifying the multipart upload whose parts are being listed.
-	UploadID *string `locationName:"UploadId" type:"string"`
+	UploadId *string `type:"string"`
 
 	metadataListPartsOutput `json:"-" xml:"-"`
 }
@@ -4628,7 +4799,7 @@ type MultipartUpload struct {
 	Initiator *Initiator `type:"structure"`
 
 	// Key of the object for which the multipart upload was initiated.
-	Key *string `type:"string"`
+	Key *string `min:"1" type:"string"`
 
 	Owner *Owner `type:"structure"`
 
@@ -4636,7 +4807,7 @@ type MultipartUpload struct {
 	StorageClass *string `type:"string" enum:"StorageClass"`
 
 	// Upload ID that identifies the multipart upload.
-	UploadID *string `locationName:"UploadId" type:"string"`
+	UploadId *string `type:"string"`
 
 	metadataMultipartUpload `json:"-" xml:"-"`
 }
@@ -4686,10 +4857,10 @@ func (s NoncurrentVersionExpiration) GoString() string {
 }
 
 // Container for the transition rule that describes when noncurrent objects
-// transition to the GLACIER storage class. If your bucket is versioning-enabled
-// (or versioning is suspended), you can set this action to request that Amazon
-// S3 transition noncurrent object versions to the GLACIER storage class at
-// a specific period in the object's lifetime.
+// transition to the STANDARD_IA or GLACIER storage class. If your bucket is
+// versioning-enabled (or versioning is suspended), you can set this action
+// to request that Amazon S3 transition noncurrent object versions to the STANDARD_IA
+// or GLACIER storage class at a specific period in the object's lifetime.
 type NoncurrentVersionTransition struct {
 	// Specifies the number of days an object is noncurrent before Amazon S3 can
 	// perform the associated action. For information about the noncurrent days
@@ -4768,10 +4939,34 @@ func (s NotificationConfigurationDeprecated) GoString() string {
 	return s.String()
 }
 
+// Container for object key name filtering rules. For information about key
+// name filtering, go to Configuring Event Notifications (http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html)
+// in the Amazon Simple Storage Service Developer Guide.
+type NotificationConfigurationFilter struct {
+	// Container for object key name prefix and suffix filtering rules.
+	Key *KeyFilter `locationName:"S3Key" type:"structure"`
+
+	metadataNotificationConfigurationFilter `json:"-" xml:"-"`
+}
+
+type metadataNotificationConfigurationFilter struct {
+	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s NotificationConfigurationFilter) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s NotificationConfigurationFilter) GoString() string {
+	return s.String()
+}
+
 type Object struct {
 	ETag *string `type:"string"`
 
-	Key *string `type:"string"`
+	Key *string `min:"1" type:"string"`
 
 	LastModified *time.Time `type:"timestamp" timestampFormat:"iso8601"`
 
@@ -4801,10 +4996,10 @@ func (s Object) GoString() string {
 
 type ObjectIdentifier struct {
 	// Key name of the object to delete.
-	Key *string `type:"string" required:"true"`
+	Key *string `min:"1" type:"string" required:"true"`
 
 	// VersionId for the specific version of the object to delete.
-	VersionID *string `locationName:"VersionId" type:"string"`
+	VersionId *string `type:"string"`
 
 	metadataObjectIdentifier `json:"-" xml:"-"`
 }
@@ -4831,7 +5026,7 @@ type ObjectVersion struct {
 	IsLatest *bool `type:"boolean"`
 
 	// The object key.
-	Key *string `type:"string"`
+	Key *string `min:"1" type:"string"`
 
 	// Date and time the object was last modified.
 	LastModified *time.Time `type:"timestamp" timestampFormat:"iso8601"`
@@ -4845,7 +5040,7 @@ type ObjectVersion struct {
 	StorageClass *string `type:"string" enum:"ObjectVersionStorageClass"`
 
 	// Version ID of an object.
-	VersionID *string `locationName:"VersionId" type:"string"`
+	VersionId *string `type:"string"`
 
 	metadataObjectVersion `json:"-" xml:"-"`
 }
@@ -4917,7 +5112,7 @@ func (s Part) GoString() string {
 	return s.String()
 }
 
-type PutBucketACLInput struct {
+type PutBucketAclInput struct {
 	// The canned ACL to apply to the bucket.
 	ACL *string `location:"header" locationName:"x-amz-acl" type:"string" enum:"BucketCannedACL"`
 
@@ -4941,78 +5136,118 @@ type PutBucketACLInput struct {
 	// Allows grantee to write the ACL for the applicable bucket.
 	GrantWriteACP *string `location:"header" locationName:"x-amz-grant-write-acp" type:"string"`
 
-	metadataPutBucketACLInput `json:"-" xml:"-"`
+	metadataPutBucketAclInput `json:"-" xml:"-"`
 }
 
-type metadataPutBucketACLInput struct {
+type metadataPutBucketAclInput struct {
 	SDKShapeTraits bool `type:"structure" payload:"AccessControlPolicy"`
 }
 
 // String returns the string representation
-func (s PutBucketACLInput) String() string {
+func (s PutBucketAclInput) String() string {
 	return awsutil.Prettify(s)
 }
 
 // GoString returns the string representation
-func (s PutBucketACLInput) GoString() string {
+func (s PutBucketAclInput) GoString() string {
 	return s.String()
 }
 
-type PutBucketACLOutput struct {
-	metadataPutBucketACLOutput `json:"-" xml:"-"`
+type PutBucketAclOutput struct {
+	metadataPutBucketAclOutput `json:"-" xml:"-"`
 }
 
-type metadataPutBucketACLOutput struct {
+type metadataPutBucketAclOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
-func (s PutBucketACLOutput) String() string {
+func (s PutBucketAclOutput) String() string {
 	return awsutil.Prettify(s)
 }
 
 // GoString returns the string representation
-func (s PutBucketACLOutput) GoString() string {
+func (s PutBucketAclOutput) GoString() string {
 	return s.String()
 }
 
-type PutBucketCORSInput struct {
+type PutBucketCorsInput struct {
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	CORSConfiguration *CORSConfiguration `locationName:"CORSConfiguration" type:"structure"`
+	CORSConfiguration *CORSConfiguration `locationName:"CORSConfiguration" type:"structure" required:"true"`
 
-	metadataPutBucketCORSInput `json:"-" xml:"-"`
+	metadataPutBucketCorsInput `json:"-" xml:"-"`
 }
 
-type metadataPutBucketCORSInput struct {
+type metadataPutBucketCorsInput struct {
 	SDKShapeTraits bool `type:"structure" payload:"CORSConfiguration"`
 }
 
 // String returns the string representation
-func (s PutBucketCORSInput) String() string {
+func (s PutBucketCorsInput) String() string {
 	return awsutil.Prettify(s)
 }
 
 // GoString returns the string representation
-func (s PutBucketCORSInput) GoString() string {
+func (s PutBucketCorsInput) GoString() string {
 	return s.String()
 }
 
-type PutBucketCORSOutput struct {
-	metadataPutBucketCORSOutput `json:"-" xml:"-"`
+type PutBucketCorsOutput struct {
+	metadataPutBucketCorsOutput `json:"-" xml:"-"`
 }
 
-type metadataPutBucketCORSOutput struct {
+type metadataPutBucketCorsOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
-func (s PutBucketCORSOutput) String() string {
+func (s PutBucketCorsOutput) String() string {
 	return awsutil.Prettify(s)
 }
 
 // GoString returns the string representation
-func (s PutBucketCORSOutput) GoString() string {
+func (s PutBucketCorsOutput) GoString() string {
+	return s.String()
+}
+
+type PutBucketLifecycleConfigurationInput struct {
+	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
+
+	LifecycleConfiguration *BucketLifecycleConfiguration `locationName:"LifecycleConfiguration" type:"structure"`
+
+	metadataPutBucketLifecycleConfigurationInput `json:"-" xml:"-"`
+}
+
+type metadataPutBucketLifecycleConfigurationInput struct {
+	SDKShapeTraits bool `type:"structure" payload:"LifecycleConfiguration"`
+}
+
+// String returns the string representation
+func (s PutBucketLifecycleConfigurationInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s PutBucketLifecycleConfigurationInput) GoString() string {
+	return s.String()
+}
+
+type PutBucketLifecycleConfigurationOutput struct {
+	metadataPutBucketLifecycleConfigurationOutput `json:"-" xml:"-"`
+}
+
+type metadataPutBucketLifecycleConfigurationOutput struct {
+	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s PutBucketLifecycleConfigurationOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s PutBucketLifecycleConfigurationOutput) GoString() string {
 	return s.String()
 }
 
@@ -5425,7 +5660,7 @@ func (s PutBucketWebsiteOutput) GoString() string {
 	return s.String()
 }
 
-type PutObjectACLInput struct {
+type PutObjectAclInput struct {
 	// The canned ACL to apply to the object.
 	ACL *string `location:"header" locationName:"x-amz-acl" type:"string" enum:"ObjectCannedACL"`
 
@@ -5449,7 +5684,7 @@ type PutObjectACLInput struct {
 	// Allows grantee to write the ACL for the applicable bucket.
 	GrantWriteACP *string `location:"header" locationName:"x-amz-grant-write-acp" type:"string"`
 
-	Key *string `location:"uri" locationName:"Key" type:"string" required:"true"`
+	Key *string `location:"uri" locationName:"Key" min:"1" type:"string" required:"true"`
 
 	// Confirms that the requester knows that she or he will be charged for the
 	// request. Bucket owners need not specify this parameter in their requests.
@@ -5457,42 +5692,42 @@ type PutObjectACLInput struct {
 	// at http://docs.aws.amazon.com/AmazonS3/latest/dev/ObjectsinRequesterPaysBuckets.html
 	RequestPayer *string `location:"header" locationName:"x-amz-request-payer" type:"string" enum:"RequestPayer"`
 
-	metadataPutObjectACLInput `json:"-" xml:"-"`
+	metadataPutObjectAclInput `json:"-" xml:"-"`
 }
 
-type metadataPutObjectACLInput struct {
+type metadataPutObjectAclInput struct {
 	SDKShapeTraits bool `type:"structure" payload:"AccessControlPolicy"`
 }
 
 // String returns the string representation
-func (s PutObjectACLInput) String() string {
+func (s PutObjectAclInput) String() string {
 	return awsutil.Prettify(s)
 }
 
 // GoString returns the string representation
-func (s PutObjectACLInput) GoString() string {
+func (s PutObjectAclInput) GoString() string {
 	return s.String()
 }
 
-type PutObjectACLOutput struct {
+type PutObjectAclOutput struct {
 	// If present, indicates that the requester was successfully charged for the
 	// request.
 	RequestCharged *string `location:"header" locationName:"x-amz-request-charged" type:"string" enum:"RequestCharged"`
 
-	metadataPutObjectACLOutput `json:"-" xml:"-"`
+	metadataPutObjectAclOutput `json:"-" xml:"-"`
 }
 
-type metadataPutObjectACLOutput struct {
+type metadataPutObjectAclOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
-func (s PutObjectACLOutput) String() string {
+func (s PutObjectAclOutput) String() string {
 	return awsutil.Prettify(s)
 }
 
 // GoString returns the string representation
-func (s PutObjectACLOutput) GoString() string {
+func (s PutObjectAclOutput) GoString() string {
 	return s.String()
 }
 
@@ -5541,7 +5776,7 @@ type PutObjectInput struct {
 	// Allows grantee to write the ACL for the applicable object.
 	GrantWriteACP *string `location:"header" locationName:"x-amz-grant-write-acp" type:"string"`
 
-	Key *string `location:"uri" locationName:"Key" type:"string" required:"true"`
+	Key *string `location:"uri" locationName:"Key" min:"1" type:"string" required:"true"`
 
 	// A map of metadata to store with the object in S3.
 	Metadata map[string]*string `location:"headers" locationName:"x-amz-meta-" type:"map"`
@@ -5571,7 +5806,7 @@ type PutObjectInput struct {
 	// requests for an object protected by AWS KMS will fail if not made via SSL
 	// or using SigV4. Documentation on configuring any of the officially supported
 	// AWS SDKs and CLI can be found at http://docs.aws.amazon.com/AmazonS3/latest/dev/UsingAWSSDK.html#specify-signature-version
-	SSEKMSKeyID *string `location:"header" locationName:"x-amz-server-side-encryption-aws-kms-key-id" type:"string"`
+	SSEKMSKeyId *string `location:"header" locationName:"x-amz-server-side-encryption-aws-kms-key-id" type:"string"`
 
 	// The Server-side encryption algorithm used when storing this object in S3
 	// (e.g., AES256, aws:kms).
@@ -5626,14 +5861,14 @@ type PutObjectOutput struct {
 
 	// If present, specifies the ID of the AWS Key Management Service (KMS) master
 	// encryption key that was used for the object.
-	SSEKMSKeyID *string `location:"header" locationName:"x-amz-server-side-encryption-aws-kms-key-id" type:"string"`
+	SSEKMSKeyId *string `location:"header" locationName:"x-amz-server-side-encryption-aws-kms-key-id" type:"string"`
 
 	// The Server-side encryption algorithm used when storing this object in S3
 	// (e.g., AES256, aws:kms).
 	ServerSideEncryption *string `location:"header" locationName:"x-amz-server-side-encryption" type:"string" enum:"ServerSideEncryption"`
 
 	// Version of the object.
-	VersionID *string `location:"header" locationName:"x-amz-version-id" type:"string"`
+	VersionId *string `location:"header" locationName:"x-amz-version-id" type:"string"`
 
 	metadataPutObjectOutput `json:"-" xml:"-"`
 }
@@ -5657,13 +5892,18 @@ func (s PutObjectOutput) GoString() string {
 type QueueConfiguration struct {
 	Events []*string `locationName:"Event" type:"list" flattened:"true" required:"true"`
 
+	// Container for object key name filtering rules. For information about key
+	// name filtering, go to Configuring Event Notifications (http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html)
+	// in the Amazon Simple Storage Service Developer Guide.
+	Filter *NotificationConfigurationFilter `type:"structure"`
+
 	// Optional unique identifier for configurations in a notification configuration.
 	// If you don't provide one, Amazon S3 will assign an ID.
-	ID *string `locationName:"Id" type:"string"`
+	Id *string `type:"string"`
 
 	// Amazon SQS queue ARN to which Amazon S3 will publish a message when it detects
 	// events of specified type.
-	QueueARN *string `locationName:"Queue" type:"string" required:"true"`
+	QueueArn *string `locationName:"Queue" type:"string" required:"true"`
 
 	metadataQueueConfiguration `json:"-" xml:"-"`
 }
@@ -5690,7 +5930,7 @@ type QueueConfigurationDeprecated struct {
 
 	// Optional unique identifier for configurations in a notification configuration.
 	// If you don't provide one, Amazon S3 will assign an ID.
-	ID *string `locationName:"Id" type:"string"`
+	Id *string `type:"string"`
 
 	Queue *string `type:"string"`
 
@@ -5712,12 +5952,12 @@ func (s QueueConfigurationDeprecated) GoString() string {
 }
 
 type Redirect struct {
-	// The HTTP redirect code to use on the response. Not required if one of the
-	// siblings is present.
-	HTTPRedirectCode *string `locationName:"HttpRedirectCode" type:"string"`
-
 	// The host name to use in the redirect request.
 	HostName *string `type:"string"`
+
+	// The HTTP redirect code to use on the response. Not required if one of the
+	// siblings is present.
+	HttpRedirectCode *string `type:"string"`
 
 	// Protocol to use (http, https) when redirecting requests. The default is the
 	// protocol that is used in the original request.
@@ -5861,7 +6101,7 @@ func (s RequestPaymentConfiguration) GoString() string {
 type RestoreObjectInput struct {
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	Key *string `location:"uri" locationName:"Key" type:"string" required:"true"`
+	Key *string `location:"uri" locationName:"Key" min:"1" type:"string" required:"true"`
 
 	// Confirms that the requester knows that she or he will be charged for the
 	// request. Bucket owners need not specify this parameter in their requests.
@@ -5871,7 +6111,7 @@ type RestoreObjectInput struct {
 
 	RestoreRequest *RestoreRequest `locationName:"RestoreRequest" type:"structure"`
 
-	VersionID *string `location:"querystring" locationName:"versionId" type:"string"`
+	VersionId *string `location:"querystring" locationName:"versionId" type:"string"`
 
 	metadataRestoreObjectInput `json:"-" xml:"-"`
 }
@@ -5962,9 +6202,55 @@ func (s RoutingRule) GoString() string {
 	return s.String()
 }
 
+type Rule struct {
+	Expiration *LifecycleExpiration `type:"structure"`
+
+	// Unique identifier for the rule. The value cannot be longer than 255 characters.
+	ID *string `type:"string"`
+
+	// Specifies when noncurrent object versions expire. Upon expiration, Amazon
+	// S3 permanently deletes the noncurrent object versions. You set this lifecycle
+	// configuration action on a bucket that has versioning enabled (or suspended)
+	// to request that Amazon S3 delete noncurrent object versions at a specific
+	// period in the object's lifetime.
+	NoncurrentVersionExpiration *NoncurrentVersionExpiration `type:"structure"`
+
+	// Container for the transition rule that describes when noncurrent objects
+	// transition to the STANDARD_IA or GLACIER storage class. If your bucket is
+	// versioning-enabled (or versioning is suspended), you can set this action
+	// to request that Amazon S3 transition noncurrent object versions to the STANDARD_IA
+	// or GLACIER storage class at a specific period in the object's lifetime.
+	NoncurrentVersionTransition *NoncurrentVersionTransition `type:"structure"`
+
+	// Prefix identifying one or more objects to which the rule applies.
+	Prefix *string `type:"string" required:"true"`
+
+	// If 'Enabled', the rule is currently being applied. If 'Disabled', the rule
+	// is not currently being applied.
+	Status *string `type:"string" required:"true" enum:"ExpirationStatus"`
+
+	Transition *Transition `type:"structure"`
+
+	metadataRule `json:"-" xml:"-"`
+}
+
+type metadataRule struct {
+	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s Rule) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s Rule) GoString() string {
+	return s.String()
+}
+
 type Tag struct {
 	// Name of the tag.
-	Key *string `type:"string" required:"true"`
+	Key *string `min:"1" type:"string" required:"true"`
 
 	// Value of the tag.
 	Value *string `type:"string" required:"true"`
@@ -6034,13 +6320,18 @@ func (s TargetGrant) GoString() string {
 type TopicConfiguration struct {
 	Events []*string `locationName:"Event" type:"list" flattened:"true" required:"true"`
 
+	// Container for object key name filtering rules. For information about key
+	// name filtering, go to Configuring Event Notifications (http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html)
+	// in the Amazon Simple Storage Service Developer Guide.
+	Filter *NotificationConfigurationFilter `type:"structure"`
+
 	// Optional unique identifier for configurations in a notification configuration.
 	// If you don't provide one, Amazon S3 will assign an ID.
-	ID *string `locationName:"Id" type:"string"`
+	Id *string `type:"string"`
 
 	// Amazon SNS topic ARN to which Amazon S3 will publish a message when it detects
 	// events of specified type.
-	TopicARN *string `locationName:"Topic" type:"string" required:"true"`
+	TopicArn *string `locationName:"Topic" type:"string" required:"true"`
 
 	metadataTopicConfiguration `json:"-" xml:"-"`
 }
@@ -6067,7 +6358,7 @@ type TopicConfigurationDeprecated struct {
 
 	// Optional unique identifier for configurations in a notification configuration.
 	// If you don't provide one, Amazon S3 will assign an ID.
-	ID *string `locationName:"Id" type:"string"`
+	Id *string `type:"string"`
 
 	// Amazon SNS topic to which Amazon S3 will publish a message to report the
 	// specified events for the bucket.
@@ -6159,7 +6450,7 @@ type UploadPartCopyInput struct {
 	// key was transmitted without error.
 	CopySourceSSECustomerKeyMD5 *string `location:"header" locationName:"x-amz-copy-source-server-side-encryption-customer-key-MD5" type:"string"`
 
-	Key *string `location:"uri" locationName:"Key" type:"string" required:"true"`
+	Key *string `location:"uri" locationName:"Key" min:"1" type:"string" required:"true"`
 
 	// Part number of part being copied. This is a positive integer between 1 and
 	// 10,000.
@@ -6188,7 +6479,7 @@ type UploadPartCopyInput struct {
 	SSECustomerKeyMD5 *string `location:"header" locationName:"x-amz-server-side-encryption-customer-key-MD5" type:"string"`
 
 	// Upload ID identifying the multipart upload whose part is being copied.
-	UploadID *string `location:"querystring" locationName:"uploadId" type:"string" required:"true"`
+	UploadId *string `location:"querystring" locationName:"uploadId" type:"string" required:"true"`
 
 	metadataUploadPartCopyInput `json:"-" xml:"-"`
 }
@@ -6212,7 +6503,7 @@ type UploadPartCopyOutput struct {
 
 	// The version of the source object that was copied, if you have enabled versioning
 	// on the source bucket.
-	CopySourceVersionID *string `location:"header" locationName:"x-amz-copy-source-version-id" type:"string"`
+	CopySourceVersionId *string `location:"header" locationName:"x-amz-copy-source-version-id" type:"string"`
 
 	// If present, indicates that the requester was successfully charged for the
 	// request.
@@ -6230,7 +6521,7 @@ type UploadPartCopyOutput struct {
 
 	// If present, specifies the ID of the AWS Key Management Service (KMS) master
 	// encryption key that was used for the object.
-	SSEKMSKeyID *string `location:"header" locationName:"x-amz-server-side-encryption-aws-kms-key-id" type:"string"`
+	SSEKMSKeyId *string `location:"header" locationName:"x-amz-server-side-encryption-aws-kms-key-id" type:"string"`
 
 	// The Server-side encryption algorithm used when storing this object in S3
 	// (e.g., AES256, aws:kms).
@@ -6262,7 +6553,7 @@ type UploadPartInput struct {
 	// body cannot be determined automatically.
 	ContentLength *int64 `location:"header" locationName:"Content-Length" type:"integer"`
 
-	Key *string `location:"uri" locationName:"Key" type:"string" required:"true"`
+	Key *string `location:"uri" locationName:"Key" min:"1" type:"string" required:"true"`
 
 	// Part number of part being uploaded. This is a positive integer between 1
 	// and 10,000.
@@ -6290,8 +6581,12 @@ type UploadPartInput struct {
 	// key was transmitted without error.
 	SSECustomerKeyMD5 *string `location:"header" locationName:"x-amz-server-side-encryption-customer-key-MD5" type:"string"`
 
+	// The Server-side encryption algorithm used when storing this object in S3
+	// (e.g., AES256).
+	ServerSideEncryption *string `location:"header" locationName:"x-amz-server-side-encryption" type:"string" enum:"UploadPartRequestServerSideEncryption"`
+
 	// Upload ID identifying the multipart upload whose part is being uploaded.
-	UploadID *string `location:"querystring" locationName:"uploadId" type:"string" required:"true"`
+	UploadId *string `location:"querystring" locationName:"uploadId" type:"string" required:"true"`
 
 	metadataUploadPartInput `json:"-" xml:"-"`
 }
@@ -6330,7 +6625,7 @@ type UploadPartOutput struct {
 
 	// If present, specifies the ID of the AWS Key Management Service (KMS) master
 	// encryption key that was used for the object.
-	SSEKMSKeyID *string `location:"header" locationName:"x-amz-server-side-encryption-aws-kms-key-id" type:"string"`
+	SSEKMSKeyId *string `location:"header" locationName:"x-amz-server-side-encryption-aws-kms-key-id" type:"string"`
 
 	// The Server-side encryption algorithm used when storing this object in S3
 	// (e.g., AES256, aws:kms).
@@ -6496,6 +6791,13 @@ const (
 )
 
 const (
+	// @enum FilterRuleName
+	FilterRuleNamePrefix = "prefix"
+	// @enum FilterRuleName
+	FilterRuleNameSuffix = "suffix"
+)
+
+const (
 	// @enum MFADelete
 	MFADeleteEnabled = "Enabled"
 	// @enum MFADelete
@@ -6619,12 +6921,14 @@ const (
 	// @enum StorageClass
 	StorageClassReducedRedundancy = "REDUCED_REDUNDANCY"
 	// @enum StorageClass
-	StorageClassLt = "LT"
+	StorageClassStandardIa = "STANDARD_IA"
 )
 
 const (
 	// @enum TransitionStorageClass
 	TransitionStorageClassGlacier = "GLACIER"
+	// @enum TransitionStorageClass
+	TransitionStorageClassStandardIa = "STANDARD_IA"
 )
 
 const (
@@ -6634,4 +6938,11 @@ const (
 	TypeAmazonCustomerByEmail = "AmazonCustomerByEmail"
 	// @enum Type
 	TypeGroup = "Group"
+)
+
+// The Server-side encryption algorithm used when storing this object in S3
+// (e.g., AES256).
+const (
+	// @enum UploadPartRequestServerSideEncryption
+	UploadPartRequestServerSideEncryptionAes256 = "AES256"
 )
