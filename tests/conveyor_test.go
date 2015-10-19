@@ -2,6 +2,7 @@ package conveyor_test
 
 import (
 	"bytes"
+	"io"
 	"regexp"
 	"testing"
 	"time"
@@ -11,24 +12,26 @@ import (
 	"github.com/remind101/conveyor"
 	"github.com/remind101/conveyor/builder"
 	"github.com/remind101/conveyor/builder/docker"
+	"github.com/stretchr/testify/assert"
 )
 
 // This is just a highlevel sanity test.
 func TestConveyor(t *testing.T) {
 	checkDocker(t)
 
-	c := newConveyor(t)
-	w := new(bytes.Buffer)
+	w := newLogger()
+	c := newConveyor(t, w)
 
 	ctx := context.Background()
-	if _, err := c.Build(ctx, w, builder.BuildOptions{
+	err := c.Push(ctx, builder.BuildOptions{
 		Repository: "remind101/acme-inc",
 		Branch:     "master",
 		Sha:        "827fecd2d36ebeaa2fd05aa8ef3eed1e56a8cd57",
-	}); err != nil {
-		t.Log(w.String())
-		t.Fatal(err)
-	}
+	})
+	assert.NoError(t, err)
+
+	// Wait for logs to finish writing
+	<-w.closed
 
 	if !regexp.MustCompile(`Successfully built`).MatchString(w.String()) {
 		t.Log(w.String())
@@ -39,13 +42,13 @@ func TestConveyor(t *testing.T) {
 func TestConveyor_WithTimeout(t *testing.T) {
 	checkDocker(t)
 
-	c := newConveyor(t)
-	w := new(bytes.Buffer)
+	w := newLogger()
+	c := newConveyor(t, w)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	if _, err := c.Build(ctx, w, builder.BuildOptions{
+	if err := c.Push(ctx, builder.BuildOptions{
 		Repository: "remind101/acme-inc",
 		Branch:     "master",
 		Sha:        "827fecd2d36ebeaa2fd05aa8ef3eed1e56a8cd57",
@@ -56,18 +59,39 @@ func TestConveyor_WithTimeout(t *testing.T) {
 	}
 }
 
-func newConveyor(t *testing.T) *conveyor.Conveyor {
+func newConveyor(t *testing.T, w io.Writer) *conveyor.Conveyor {
 	b, err := docker.NewBuilderFromEnv()
 	if err != nil {
 		t.Fatal(err)
 	}
 	b.DryRun = true
-	c := conveyor.New(b)
-	return c
+
+	return conveyor.NewAndStart(conveyor.Options{
+		LogFactory: func(builder.BuildOptions) (builder.Logger, error) {
+			return builder.NewLogger(w), nil
+		},
+		Builder: conveyor.NewBuilder(b),
+	})
 }
 
 func checkDocker(t testing.TB) {
 	if testing.Short() {
 		t.Skip("Skipping docker tests because they take a long time")
 	}
+}
+
+// logger implements the io.Closer interface on top of a bytes.Buffer. It sends
+// on the closed channel when Close is called.
+type logger struct {
+	bytes.Buffer
+	closed chan struct{}
+}
+
+func newLogger() *logger {
+	return &logger{closed: make(chan struct{})}
+}
+
+func (l *logger) Close() error {
+	close(l.closed)
+	return nil
 }

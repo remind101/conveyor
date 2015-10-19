@@ -28,44 +28,47 @@ func main() {
 	}
 }
 
+// newConveyor builds a new Conveyor instance backed by in memory queue and
+// workers.
 func newConveyor(c *cli.Context) (*conveyor.Conveyor, error) {
 	b, err := newBuilder(c)
 	if err != nil {
 		return nil, err
 	}
-	cv, err := conveyor.New(b), nil
-	if err != nil {
-		return cv, err
-	}
-	r, err := newReporter(c.String("reporter"))
-	if err != nil {
-		return cv, err
-	}
-	cv.Reporter = r
-	return cv, nil
-}
-
-func newBuilder(c *cli.Context) (builder.Builder, error) {
-	b, err := docker.NewBuilderFromEnv()
-	if err != nil {
-		return nil, err
-	}
-	b.DryRun = c.Bool("dry")
-	b.Image = c.String("builder.image")
-
-	g := builder.NewGitHubClient(c.String("github.token"))
-	return builder.UpdateGitHubCommitStatus(b, g), nil
-}
-
-func newServer(c *cli.Context, b *conveyor.Conveyor) (http.Handler, error) {
-	s := conveyor.NewServer(b)
 
 	f, err := logFactory(c.String("logger"))
 	if err != nil {
 		return nil, err
 	}
-	s.LogFactory = f
 
+	return conveyor.New(conveyor.Options{
+		Builder:    b,
+		LogFactory: f,
+	}), nil
+}
+
+func newBuilder(c *cli.Context) (*conveyor.Builder, error) {
+	db, err := docker.NewBuilderFromEnv()
+	if err != nil {
+		return nil, err
+	}
+	db.DryRun = c.Bool("dry")
+	db.Image = c.String("builder.image")
+
+	g := builder.NewGitHubClient(c.String("github.token"))
+	b := conveyor.NewBuilder(builder.UpdateGitHubCommitStatus(db, g))
+
+	r, err := newReporter(c.String("reporter"))
+	if err != nil {
+		return nil, err
+	}
+	b.Reporter = r
+
+	return b, nil
+}
+
+func newServer(c *cli.Context, b *conveyor.Conveyor) (http.Handler, error) {
+	s := conveyor.NewServer(b)
 	return hookshot.Authorize(s, c.String("github.secret")), nil
 }
 
@@ -81,7 +84,6 @@ func logFactory(uri string) (f builder.LogFactory, err error) {
 		f, err = builder.S3Logger(u.Host)
 	}
 
-	// f = conveyor.MultiLogger(conveyor.StdoutLogger, f)
 	return
 }
 

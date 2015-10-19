@@ -1,50 +1,29 @@
 package conveyor
 
 import (
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/remind101/conveyor/builder"
-
-	"golang.org/x/net/context"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestServer_Ping(t *testing.T) {
-	b := func(ctx context.Context, w io.Writer, opts builder.BuildOptions) (string, error) {
-		return "", nil
-	}
-	s := NewServer(New(builder.BuilderFunc(b)))
+	s := NewServer(nil)
 
 	resp := httptest.NewRecorder()
 	req, _ := http.NewRequest("POST", "/", nil)
 	req.Header.Set("X-GitHub-Event", "ping")
 
 	s.ServeHTTP(resp, req)
-
-	if resp.Code != http.StatusOK {
-		t.Fatal("Expected 200 OK")
-	}
+	assert.Equal(t, http.StatusOK, resp.Code)
 }
 
 func TestServer_Push(t *testing.T) {
-	called := make(chan struct{})
-	b := func(ctx context.Context, w io.Writer, opts builder.BuildOptions) (string, error) {
-		close(called)
-		expected := builder.BuildOptions{
-			Repository: "remind101/acme-inc",
-			Branch:     "master",
-			Sha:        "abcd",
-		}
-		if got, want := opts, expected; got != want {
-			t.Fatalf("BuildOptions => %v; want %v", got, want)
-		}
-		return "", nil
-	}
-	s := NewServer(New(builder.BuilderFunc(b)))
+	q := new(mockBuildQueue)
+	s := NewServer(q)
 
 	resp := httptest.NewRecorder()
 	req, _ := http.NewRequest("POST", "/", strings.NewReader(`{
@@ -58,26 +37,19 @@ func TestServer_Push(t *testing.T) {
 }`))
 	req.Header.Set("X-GitHub-Event", "push")
 
+	q.On("Push", builder.BuildOptions{
+		Repository: "remind101/acme-inc",
+		Branch:     "master",
+		Sha:        "abcd",
+	}).Return(nil)
+
 	s.ServeHTTP(resp, req)
-
-	if resp.Code != http.StatusOK {
-		t.Fatal("Expected 200 OK")
-	}
-
-	select {
-	case <-called:
-	case <-time.After(time.Second):
-		t.Fatal("Expected builder to have been called")
-	}
+	assert.Equal(t, http.StatusOK, resp.Code)
 }
 
 func TestServer_Push_Fork(t *testing.T) {
-	var called bool
-	b := func(ctx context.Context, w io.Writer, opts builder.BuildOptions) (string, error) {
-		called = true
-		return "", nil
-	}
-	s := NewServer(New(builder.BuilderFunc(b)))
+	q := new(mockBuildQueue)
+	s := NewServer(q)
 
 	resp := httptest.NewRecorder()
 	req, _ := http.NewRequest("POST", "/", strings.NewReader(`{
@@ -93,23 +65,12 @@ func TestServer_Push_Fork(t *testing.T) {
 	req.Header.Set("X-GitHub-Event", "push")
 
 	s.ServeHTTP(resp, req)
-
-	if resp.Code != http.StatusOK {
-		t.Fatal("Expected 200 OK")
-	}
-
-	if called {
-		t.Fatal("Expected builder to have not been called")
-	}
+	assert.Equal(t, http.StatusOK, resp.Code)
 }
 
 func TestServer_Push_Deleted(t *testing.T) {
-	var called bool
-	b := func(ctx context.Context, w io.Writer, opts builder.BuildOptions) (string, error) {
-		called = true
-		return "", nil
-	}
-	s := NewServer(New(builder.BuilderFunc(b)))
+	q := new(mockBuildQueue)
+	s := NewServer(q)
 
 	resp := httptest.NewRecorder()
 	req, _ := http.NewRequest("POST", "/", strings.NewReader(`{
@@ -125,14 +86,7 @@ func TestServer_Push_Deleted(t *testing.T) {
 	req.Header.Set("X-GitHub-Event", "push")
 
 	s.ServeHTTP(resp, req)
-
-	if resp.Code != http.StatusOK {
-		t.Fatal("Expected 200 OK")
-	}
-
-	if called {
-		t.Fatal("Expected builder to have not been called")
-	}
+	assert.Equal(t, http.StatusOK, resp.Code)
 }
 
 func TestNoCache(t *testing.T) {

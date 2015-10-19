@@ -18,15 +18,15 @@ import (
 // Server implements the http.Handler interface for serving build requests via
 // GitHub webhooks.
 type Server struct {
-	*Conveyor
+	Queue BuildQueue
 
 	// mux contains the routes.
 	mux http.Handler
 }
 
 // NewServer returns a new Server instance
-func NewServer(c *Conveyor) *Server {
-	s := &Server{Conveyor: c}
+func NewServer(q BuildQueue) *Server {
+	s := &Server{Queue: q}
 
 	r := hookshot.NewRouter()
 	r.HandleFunc("ping", s.Ping)
@@ -78,7 +78,8 @@ func (s *Server) Push(w http.ResponseWriter, r *http.Request) {
 		NoCache:    noCache(event.HeadCommit.Message),
 	}
 
-	if err := s.EnqueueBuild(ctx, opts); err != nil {
+	// Enqueue the build
+	if err := s.Queue.Push(ctx, opts); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

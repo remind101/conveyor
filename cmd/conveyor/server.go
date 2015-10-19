@@ -74,7 +74,7 @@ func runServer(c *cli.Context) {
 		sig := <-quit
 
 		log.Printf("Signal %d received. Shutting down.\n", sig)
-		if err := b.Cancel(); err != nil {
+		if err := b.Shutdown(); err != nil {
 			log.Fatal(err)
 		}
 		os.Exit(0)
@@ -84,6 +84,8 @@ func runServer(c *cli.Context) {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	log.Println("Listening on " + port)
+	b.Start()
 	log.Fatal(http.ListenAndServe(":"+port, s))
 }
