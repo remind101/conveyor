@@ -1,26 +1,35 @@
 package main
 
 import (
+	"fmt"
 	"log"
-	"net/http"
-	"net/url"
 	"os"
 
 	"github.com/codegangsta/cli"
-	"github.com/ejholmes/hookshot"
-	"github.com/remind101/conveyor"
-	"github.com/remind101/conveyor/builder"
-	"github.com/remind101/conveyor/builder/docker"
-	"github.com/remind101/pkg/reporter"
-	"github.com/remind101/pkg/reporter/hb2"
 )
+
+// flags shared between the server and worker subcommands.
+var sharedFlags = []cli.Flag{
+	cli.StringFlag{
+		Name:   "queue",
+		Value:  "memory://",
+		Usage:  "Build queue to use. Defaults to an in memory queue.",
+		EnvVar: "QUEUE",
+	},
+}
 
 func main() {
 	app := cli.NewApp()
 	app.Name = "conveyor"
 	app.Usage = "Build docker images from GitHub repositories"
+	app.Action = mainAction
+	app.Flags = append(
+		sharedFlags,
+		append(workerFlags, serverFlags...)...,
+	)
 	app.Commands = []cli.Command{
 		cmdServer,
+		cmdWorker,
 	}
 
 	if err := app.Run(os.Args); err != nil {
@@ -28,80 +37,28 @@ func main() {
 	}
 }
 
-// newConveyor builds a new Conveyor instance backed by in memory queue and
-// workers.
-func newConveyor(c *cli.Context) (*conveyor.Conveyor, error) {
-	b, err := newBuilder(c)
-	if err != nil {
-		return nil, err
-	}
+func mainAction(c *cli.Context) {
+	q := newBuildQueue(c)
 
-	f, err := logFactory(c.String("logger"))
-	if err != nil {
-		return nil, err
-	}
+	worker := make(chan error)
+	server := make(chan error)
 
-	return conveyor.New(conveyor.Options{
-		Builder:    b,
-		LogFactory: f,
-	}), nil
+	go func() {
+		worker <- runWorker(q, c)
+	}()
+
+	go func() {
+		server <- runServer(q, c)
+	}()
+
+	<-worker
+	<-server
 }
 
-func newBuilder(c *cli.Context) (*conveyor.Builder, error) {
-	db, err := docker.NewBuilderFromEnv()
+func must(err error) {
 	if err != nil {
-		return nil, err
+		fmt.Fprintf(os.Stderr, "%v\n", err)
 	}
-	db.DryRun = c.Bool("dry")
-	db.Image = c.String("builder.image")
-
-	g := builder.NewGitHubClient(c.String("github.token"))
-	b := conveyor.NewBuilder(builder.UpdateGitHubCommitStatus(db, g))
-
-	r, err := newReporter(c.String("reporter"))
-	if err != nil {
-		return nil, err
-	}
-	b.Reporter = r
-
-	return b, nil
 }
 
-func newServer(c *cli.Context, b *conveyor.Conveyor) (http.Handler, error) {
-	s := conveyor.NewServer(b)
-	return hookshot.Authorize(s, c.String("github.secret")), nil
-}
-
-func logFactory(uri string) (f builder.LogFactory, err error) {
-	var u *url.URL
-	u, err = url.Parse(uri)
-	if err != nil {
-		return nil, err
-	}
-
-	switch u.Scheme {
-	case "s3":
-		f, err = builder.S3Logger(u.Host)
-	}
-
-	return
-}
-
-func newReporter(uri string) (r reporter.Reporter, err error) {
-	var u *url.URL
-	u, err = url.Parse(uri)
-	if err != nil {
-		return nil, err
-	}
-
-	switch u.Scheme {
-	case "hb":
-		q := u.Query()
-		r = hb2.NewReporter(hb2.Config{
-			ApiKey:      q.Get("key"),
-			Environment: q.Get("environment"),
-		})
-	}
-
-	return
-}
+var info = fmt.Printf

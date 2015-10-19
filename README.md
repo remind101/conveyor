@@ -53,7 +53,21 @@ By default, conveyor will pull the last built image for the branch. This isn't a
 
 ## Scale Out
 
-Conveyor only needs to talk to the docker daemon API. The easiest way to scale out is to scale out Docker using [Docker Swarm](https://github.com/docker/swarm).
+Conveyor supports two methods to scale out to multiple machines.
+
+### Docker Swarm
+
+The first method to scale out Conveyor is to scale out using [Docker Swarm](https://github.com/docker/swarm). Using this method, Conveyor runs it's builds across a cluster of Docker daemons. The advantage of using this method is that you don't need to provide a `queue` flag since Conveyor can use an in memory queue.
+
+### Queue
+
+The recommended way to scale out is to scale out using a build queue. Using this method, you run the `conveyor worker` subcommand on a machine that hosts a local Docker daemon. The worker process will pull build requests off of the queue and perform the build. The `conveyor server` command can then run completely separate from the worker nodes.
+
+![](https://dl.dropboxusercontent.com/u/1906634/GitHub/Conveyor%20-%20Split.png)
+
+Conveyor currently supports the following build queues:
+
+1. SQS
 
 ## API (Soon)
 
