@@ -22,7 +22,9 @@ func TestBuildQueue(t *testing.T) {
 	err := q.Push(background, options)
 	assert.NoError(t, err)
 
-	req := <-q.Subscribe()
+	ch := make(chan BuildRequest)
+	go q.Subscribe(ch)
+	req := <-ch
 	assert.Equal(t, req.BuildOptions, options)
 	assert.Equal(t, req.Ctx, background)
 }

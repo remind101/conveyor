@@ -58,7 +58,7 @@ type WorkerOptions struct {
 	Builder builder.Builder
 
 	// BuildQueue to pull BuildRequests from.
-	BuildQueue BuildQueue
+	BuildRequests chan BuildRequest
 
 	// LogFactory used to generate an io.Writer for each build.
 	LogFactory builder.LogFactory
@@ -74,6 +74,7 @@ type Worker struct {
 
 	// Queue to pull jobs from.
 	buildRequests chan BuildRequest
+	buildQueue    BuildQueue
 
 	// Channel used to request a shutdown.
 	shutdown chan struct{}
@@ -88,14 +89,14 @@ func NewWorker(options WorkerOptions) *Worker {
 	return &Worker{
 		Builder:       builder.WithCancel(options.Builder),
 		LogFactory:    options.LogFactory,
-		buildRequests: options.BuildQueue.Subscribe(),
+		buildRequests: options.BuildRequests,
 		shutdown:      make(chan struct{}),
 		done:          make(chan error),
 	}
 }
 
 // Start starts the worker consuming for the BuildQueue.
-func (w *Worker) Start() {
+func (w *Worker) Start() error {
 	for {
 		select {
 		case <-w.shutdown:
@@ -130,6 +131,8 @@ func (w *Worker) Start() {
 
 		break
 	}
+
+	return nil
 }
 
 // Shutdown stops this worker for processing any build requests. If the Builder

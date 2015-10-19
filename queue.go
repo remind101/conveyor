@@ -16,9 +16,9 @@ type BuildQueue interface {
 	// Push pushes the build request onto the queue.
 	Push(context.Context, builder.BuildOptions) error
 
-	// Subscribe returns a channel that can be received on to fetch
-	// BuildRequests.
-	Subscribe() chan BuildRequest
+	// Subscribe starts sending build requests on the channel. This method
+	// should block until all messages have been consumed.
+	Subscribe(chan BuildRequest) error
 }
 
 // BuildRequest adds a context.Context to build options.
@@ -52,8 +52,11 @@ func (q *buildQueue) Push(ctx context.Context, options builder.BuildOptions) err
 	return nil
 }
 
-func (q *buildQueue) Subscribe() chan BuildRequest {
-	return q.queue
+func (q *buildQueue) Subscribe(ch chan BuildRequest) error {
+	for req := range q.queue {
+		ch <- req
+	}
+	return nil
 }
 
 type sqsClient interface {

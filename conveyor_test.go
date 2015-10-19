@@ -38,7 +38,7 @@ func (q *mockBuildQueue) Push(ctx context.Context, options builder.BuildOptions)
 	return args.Error(0)
 }
 
-func (q *mockBuildQueue) Subscribe() chan BuildRequest {
-	args := q.Called()
-	return args.Get(0).(chan BuildRequest)
+func (q *mockBuildQueue) Subscribe(ch chan BuildRequest) error {
+	args := q.Called(ch)
+	return args.Error(0)
 }
