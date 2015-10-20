@@ -58,6 +58,7 @@ func mainAction(c *cli.Context) {
 func must(err error) {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
+		os.Exit(1)
 	}
 }
 

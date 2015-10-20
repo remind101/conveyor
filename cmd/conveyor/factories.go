@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"net/url"
 
@@ -14,7 +15,15 @@ import (
 )
 
 func newBuildQueue(c *cli.Context) conveyor.BuildQueue {
-	return conveyor.NewBuildQueue(100)
+	u := urlParse(c.String("queue"))
+
+	switch u.Scheme {
+	case "memory":
+		return conveyor.NewBuildQueue(100)
+	default:
+		must(fmt.Errorf("Unknown queue: %v", u.Scheme))
+		return nil
+	}
 }
 
 func newServer(q conveyor.BuildQueue, c *cli.Context) http.Handler {
@@ -39,10 +48,7 @@ func newBuilder(c *cli.Context) builder.Builder {
 }
 
 func newReporter(c *cli.Context) reporter.Reporter {
-	u, err := url.Parse(c.String("reporter"))
-	if err != nil {
-		must(err)
-	}
+	u := urlParse(c.String("reporter"))
 
 	switch u.Scheme {
 	case "hb":
@@ -52,16 +58,12 @@ func newReporter(c *cli.Context) reporter.Reporter {
 			Environment: q.Get("environment"),
 		})
 	default:
-		must(err)
 		return nil
 	}
 }
 
 func newLogFactory(c *cli.Context) builder.LogFactory {
-	u, err := url.Parse(c.String("logger"))
-	if err != nil {
-		must(err)
-	}
+	u := urlParse(c.String("logger"))
 
 	switch u.Scheme {
 	case "s3":
@@ -70,8 +72,18 @@ func newLogFactory(c *cli.Context) builder.LogFactory {
 			must(err)
 		}
 		return f
+	case "stdout":
+		return nil
 	default:
-		must(err)
+		must(fmt.Errorf("Unknown logger: %v", u.Scheme))
 		return nil
 	}
+}
+
+func urlParse(uri string) *url.URL {
+	u, err := url.Parse(uri)
+	if err != nil {
+		must(err)
+	}
+	return u
 }
