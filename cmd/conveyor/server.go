@@ -19,12 +19,6 @@ var serverFlags = []cli.Flag{
 		EnvVar: "PORT",
 	},
 	cli.StringFlag{
-		Name:   "github.token",
-		Value:  "",
-		Usage:  "GitHub API token to use when updating commit statuses on repositories.",
-		EnvVar: "GITHUB_TOKEN",
-	},
-	cli.StringFlag{
 		Name:   "github.secret",
 		Value:  "",
 		Usage:  "Shared secret used by GitHub to sign webhook payloads. This secret will be used to verify that the request came from GitHub.",

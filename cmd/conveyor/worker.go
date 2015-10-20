@@ -13,6 +13,12 @@ import (
 
 // flags for the worker.
 var workerFlags = []cli.Flag{
+	cli.StringFlag{
+		Name:   "github.token",
+		Value:  "",
+		Usage:  "GitHub API token to use when updating commit statuses on repositories.",
+		EnvVar: "GITHUB_TOKEN",
+	},
 	cli.BoolFlag{
 		Name:   "dry",
 		Usage:  "Enable dry run mode.",
