@@ -74,7 +74,7 @@ func runWorker(q conveyor.BuildQueue, c *cli.Context) error {
 	go func() {
 		for {
 			if err := q.Subscribe(ch); err != nil {
-				info("queue error: %v", err)
+				info("queue error: %v\n", err)
 			}
 		}
 	}()
