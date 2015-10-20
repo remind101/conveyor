@@ -57,7 +57,7 @@ Conveyor supports two methods to scale out to multiple machines.
 
 ### Docker Swarm
 
-The first method to scale out Conveyor is to scale out using [Docker Swarm](https://github.com/docker/swarm). Using this method, Conveyor runs it's builds across a cluster of Docker daemons. The advantage of using this method is that you don't need to provide a `queue` flag since Conveyor can use an in memory queue.
+The first method to scale out Conveyor is to scale out using [Docker Swarm](https://github.com/docker/swarm). Using this method, Conveyor runs its builds across a cluster of Docker daemons. The advantage of using this method is that you don't need to provide a `queue` flag since Conveyor can use an in memory queue.
 
 ### Queue
 
