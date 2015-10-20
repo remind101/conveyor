@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 
+	"github.com/aws/aws-sdk-go/aws/defaults"
 	"github.com/codegangsta/cli"
 	"github.com/ejholmes/hookshot"
 	"github.com/remind101/conveyor"
@@ -20,6 +22,16 @@ func newBuildQueue(c *cli.Context) conveyor.BuildQueue {
 	switch u.Scheme {
 	case "memory":
 		return conveyor.NewBuildQueue(100)
+	case "sqs":
+		q := conveyor.NewSQSBuildQueue(defaults.DefaultConfig)
+		if u.Host == "" {
+			q.QueueURL = os.Getenv("SQS_QUEUE_URL")
+		} else {
+			url := *u
+			url.Scheme = "https"
+			q.QueueURL = url.String()
+		}
+		return q
 	default:
 		must(fmt.Errorf("Unknown queue: %v", u.Scheme))
 		return nil

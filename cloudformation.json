@@ -245,6 +245,11 @@
       }
     },
 
+    "Queue": {
+      "Type": "AWS::SQS::Queue",
+      "Properties": { }
+    },
+
     "InstancePolicies": {
       "Type": "AWS::IAM::Policy",
       "Properties": {
@@ -256,15 +261,9 @@
             {
               "Effect": "Allow",
               "Action": [
-                "ec2:Describe*",
-                "elasticloadbalancing:*",
-                "ecs:*",
-                "iam:ListInstanceProfiles",
-                "iam:ListRoles",
-                "iam:PassRole",
-                "iam:UploadServerCertificate",
-                "iam:DeleteServerCertificate",
-                "route53:*"
+                "sqs:SendMessage",
+                "sqs:ReceiveMessage",
+                "sqs:DeleteMessageBatch"
               ],
               "Resource": [
                 "*"
@@ -284,52 +283,6 @@
       }
     },
 
-    "ServiceRole": {
-      "Type": "AWS::IAM::Role",
-      "Properties": {
-        "Path": "/",
-        "AssumeRolePolicyDocument": {
-          "Version": "2008-10-17",
-          "Statement": [
-            {
-              "Effect": "Allow",
-              "Principal": {
-                "Service": [ "ecs.amazonaws.com" ]
-              },
-              "Action": [ "sts:AssumeRole" ]
-            }
-          ]
-        }
-      }
-    },
-
-    "ServiceRolePolicies": {
-      "Type": "AWS::IAM::Policy",
-      "Properties": {
-        "PolicyName": "ecsServiceRole",
-        "Roles": [ { "Ref": "ServiceRole" } ],
-        "PolicyDocument": {
-          "Version": "2012-10-17",
-          "Statement": [
-            {
-              "Effect": "Allow",
-              "Action": [
-                "ec2:Describe*",
-                "elasticloadbalancing:*",
-                "ecs:*",
-                "iam:ListInstanceProfiles",
-                "iam:ListRoles",
-                "iam:PassRole",
-                "route53:*"
-              ],
-              "Resource": [
-                "*"
-              ]
-            }
-          ]
-        }
-      }
-    },
 
     "InstanceProfile": {
       "Type": "AWS::IAM::InstanceProfile",
@@ -341,7 +294,6 @@
 
     "LaunchConfiguration": {
       "Type": "AWS::AutoScaling::LaunchConfiguration",
-      "DependsOn": "Cluster",
       "Metadata": {
         "AWS::CloudFormation::Authentication": {
           "S3AccessCreds": {
@@ -353,11 +305,16 @@
         "AWS::CloudFormation::Init": {
           "config": {
             "files": {
-              "/etc/env/ecs.env": {
+              "/etc/env/conveyor.env": {
                 "content": { "Fn::Join": ["", [
-                  "ECS_CLUSTER=", { "Ref": "Cluster" }, "\n",
-                  "ECS_ENGINE_AUTH_TYPE=dockercfg\n",
-                  "ECS_ENGINE_AUTH_DATA=", { "Ref": "DockerCfg" }, "\n"
+                  "GITHUB_TOKEN=", { "Ref": "GitHubToken" }, "\n",
+                  "GITHUB_SECRET=", { "Ref": "GitHubSecret" }, "\n",
+                  "SQS_QUEUE_URL", { "Ref": "Queue" }, "\n",
+                  "QUEUE", "sqs://\n",
+                  "LOGGER=", { "Fn::Join": ["", ["s3://", { "Ref": "Bucket" }]] }, "\n",
+                  "AWS_REGION=", { "Ref": "AWS::Region" }, "\n",
+                  "DRY=", { "Ref": "DryRun" }, "\n",
+                  "REPORTER=", { "Ref": "Reporter" }, "\n"
                 ]] },
                 "mode": "000644",
                 "owner": "root",
@@ -434,6 +391,9 @@
         "DesiredCapacity": { "Ref": "DesiredCapacity" },
         "Tags": [
           { "Key": "Name", "Value": "conveyor", "PropagateAtLaunch": true }
+        ],
+        "LoadBalancerNames": [
+          { "Ref": "LoadBalancer" }
         ]
       },
       "UpdatePolicy": {
@@ -446,92 +406,6 @@
           "WaitOnResourceSignals": "false",
           "PauseTime": "PT2M"
         }
-      }
-    },
-
-    "Cluster": {
-      "Type": "AWS::ECS::Cluster"
-    },
-
-    "TaskDefinition": {
-      "Type": "AWS::ECS::TaskDefinition",
-      "Properties": {
-        "ContainerDefinitions": [
-          {
-            "Name": "conveyor",
-            "Image": { "Fn::Join": ["", ["remind101/conveyor:", { "Ref": "Version" }]] },
-            "Cpu": 512,
-            "Memory": 256,
-            "EntryPoint": [],
-            "Environment": [
-              {
-                "Name": "GITHUB_TOKEN",
-                "Value": { "Ref": "GitHubToken" }
-              },
-              {
-                "Name": "GITHUB_SECRET",
-                "Value": { "Ref": "GitHubSecret" }
-              },
-              {
-                "Name": "LOGGER",
-                "Value": { "Fn::Join": ["", ["s3://", { "Ref": "Bucket" }]] }
-              },
-              {
-                "Name": "AWS_REGION",
-                "Value": { "Ref": "AWS::Region" }
-              },
-              {
-                "Name": "DRY",
-                "Value": { "Ref": "DryRun" }
-              },
-              {
-                "Name": "REPORTER",
-                "Value": { "Ref": "Reporter" }
-              }
-            ],
-            "PortMappings": [
-              {
-                "HostPort": 8080,
-                "ContainerPort": 8080
-              }
-            ],
-            "VolumesFrom": [],
-            "MountPoints": [
-              {
-                "SourceVolume": "dockerSocket",
-                "ContainerPath": "/var/run/docker.sock",
-                "ReadOnly": false
-              }
-            ],
-            "Essential": true
-          }
-        ],
-        "Volumes": [
-          {
-            "Name": "dockerSocket",
-            "Host": {
-              "SourcePath": "/var/run/docker.sock"
-            }
-          }
-        ]
-      }
-    },
-
-    "Service": {
-      "Type" : "AWS::ECS::Service",
-      "DependsOn": ["Cluster","ServiceRole","ServiceRolePolicies"],
-      "Properties" : {
-        "Cluster" : { "Ref": "Cluster" },
-        "DesiredCount" : 1,
-        "LoadBalancers" : [
-          {
-            "ContainerName": "conveyor",
-            "ContainerPort": 8080,
-            "LoadBalancerName": { "Ref": "LoadBalancer" }
-          }
-        ],
-        "Role" : { "Ref": "ServiceRole" },
-        "TaskDefinition" : { "Ref": "TaskDefinition" }
       }
     }
   }
