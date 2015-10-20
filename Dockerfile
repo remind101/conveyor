@@ -10,5 +10,3 @@ WORKDIR /go/src/github.com/remind101/conveyor
 RUN godep go install ./cmd/conveyor
 
 ENTRYPOINT ["/go/bin/conveyor"]
-
-CMD ["server"]

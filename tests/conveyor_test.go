@@ -19,11 +19,13 @@ import (
 func TestConveyor(t *testing.T) {
 	checkDocker(t)
 
-	w := newLogger()
-	c := newConveyor(t, w)
+	q := conveyor.NewBuildQueue(1)
+	l := newLogger()
+	w := newWorker(t, q, l)
+	w.Start()
 
 	ctx := context.Background()
-	err := c.Push(ctx, builder.BuildOptions{
+	err := q.Push(ctx, builder.BuildOptions{
 		Repository: "remind101/acme-inc",
 		Branch:     "master",
 		Sha:        "827fecd2d36ebeaa2fd05aa8ef3eed1e56a8cd57",
@@ -31,10 +33,10 @@ func TestConveyor(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Wait for logs to finish writing
-	<-w.closed
+	<-l.closed
 
-	if !regexp.MustCompile(`Successfully built`).MatchString(w.String()) {
-		t.Log(w.String())
+	if !regexp.MustCompile(`Successfully built`).MatchString(l.String()) {
+		t.Log(l.String())
 		t.Fatal("Expected image to be built")
 	}
 }
@@ -42,13 +44,15 @@ func TestConveyor(t *testing.T) {
 func TestConveyor_WithTimeout(t *testing.T) {
 	checkDocker(t)
 
-	w := newLogger()
-	c := newConveyor(t, w)
+	q := conveyor.NewBuildQueue(1)
+	l := newLogger()
+	w := newWorker(t, q, l)
+	w.Start()
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	if err := c.Push(ctx, builder.BuildOptions{
+	if err := q.Push(ctx, builder.BuildOptions{
 		Repository: "remind101/acme-inc",
 		Branch:     "master",
 		Sha:        "827fecd2d36ebeaa2fd05aa8ef3eed1e56a8cd57",
@@ -59,18 +63,19 @@ func TestConveyor_WithTimeout(t *testing.T) {
 	}
 }
 
-func newConveyor(t *testing.T, w io.Writer) *conveyor.Conveyor {
+func newWorker(t *testing.T, q conveyor.BuildQueue, w io.Writer) conveyor.Workers {
 	b, err := docker.NewBuilderFromEnv()
 	if err != nil {
 		t.Fatal(err)
 	}
 	b.DryRun = true
 
-	return conveyor.NewAndStart(conveyor.Options{
+	return conveyor.NewWorkerPool(1, conveyor.WorkerOptions{
 		LogFactory: func(builder.BuildOptions) (builder.Logger, error) {
 			return builder.NewLogger(w), nil
 		},
-		Builder: conveyor.NewBuilder(b),
+		BuildQueue: q,
+		Builder:    conveyor.NewBuilder(b),
 	})
 }
 

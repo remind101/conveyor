@@ -1,91 +1,60 @@
 package main
 
 import (
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/codegangsta/cli"
-	dockerbuilder "github.com/remind101/conveyor/builder/docker"
+	"github.com/remind101/conveyor"
 )
 
-var cmdServer = cli.Command{
-	Name:   "server",
-	Usage:  "Run an http server to build Docker images whenever a push event happens on GitHub",
-	Action: runServer,
-	Flags: []cli.Flag{
-		cli.StringFlag{
-			Name:   "port",
-			Value:  "8080",
-			Usage:  "Port to run the server on",
-			EnvVar: "PORT",
-		},
-		cli.StringFlag{
-			Name:   "github.token",
-			Value:  "",
-			Usage:  "GitHub API token to use when updating commit statuses on repositories.",
-			EnvVar: "GITHUB_TOKEN",
-		},
-		cli.StringFlag{
-			Name:   "github.secret",
-			Value:  "",
-			Usage:  "Shared secret used by GitHub to sign webhook payloads. This secret will be used to verify that the request came from GitHub.",
-			EnvVar: "GITHUB_SECRET",
-		},
-		cli.BoolFlag{
-			Name:   "dry",
-			Usage:  "Enable dry run mode.",
-			EnvVar: "DRY",
-		},
-		cli.StringFlag{
-			Name:   "builder.image",
-			Value:  dockerbuilder.DefaultBuilderImage,
-			Usage:  "A docker image to use to perform the build.",
-			EnvVar: "BUILDER_IMAGE",
-		},
-		cli.StringFlag{
-			Name:   "logger",
-			Value:  "stdout://",
-			Usage:  "The logger to use. Available options are `stdout://`, or `s3://bucket`.",
-			EnvVar: "LOGGER",
-		},
-		cli.StringFlag{
-			Name:   "reporter",
-			Value:  "",
-			Usage:  "The reporter to use to report errors. Available options are `hb://api.honeybadger.io?key=<key>&environment=<environment>",
-			EnvVar: "REPORTER",
-		},
+// flags for the http server.
+var serverFlags = []cli.Flag{
+	cli.StringFlag{
+		Name:   "port",
+		Value:  "8080",
+		Usage:  "Port to run the server on",
+		EnvVar: "PORT",
+	},
+	cli.StringFlag{
+		Name:   "github.secret",
+		Value:  "",
+		Usage:  "Shared secret used by GitHub to sign webhook payloads. This secret will be used to verify that the request came from GitHub.",
+		EnvVar: "GITHUB_SECRET",
 	},
 }
 
-func runServer(c *cli.Context) {
-	port := c.String("port")
+var cmdServer = cli.Command{
+	Name:   "server",
+	Usage:  "Run only the http server component.",
+	Action: serverAction,
+	Flags:  append(sharedFlags, serverFlags...),
+}
 
-	b, err := newConveyor(c)
-	if err != nil {
-		log.Fatal(err)
-	}
+func serverAction(c *cli.Context) {
+	q := newBuildQueue(c)
 
+	runServer(q, c)
+}
+
+func runServer(q conveyor.BuildQueue, c *cli.Context) error {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
-	go func() {
-		sig := <-quit
 
-		log.Printf("Signal %d received. Shutting down.\n", sig)
-		if err := b.Shutdown(); err != nil {
-			log.Fatal(err)
-		}
-		os.Exit(0)
+	port := c.String("port")
+	info("Starting server on %s\n", port)
+
+	errCh := make(chan error)
+	go func() {
+		errCh <- http.ListenAndServe(":"+port, newServer(q, c))
 	}()
 
-	s, err := newServer(c, b)
-	if err != nil {
-		log.Fatal(err)
+	select {
+	case err := <-errCh:
+		return err
+	case <-quit:
+		return nil
 	}
-
-	log.Println("Listening on " + port)
-	b.Start()
-	log.Fatal(http.ListenAndServe(":"+port, s))
 }

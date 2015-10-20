@@ -34,6 +34,11 @@ func newBuildQueue(buffer int) *buildQueue {
 	}
 }
 
+// NewBuildQueue returns a new in memory BuildQueue.
+func NewBuildQueue(buffer int) BuildQueue {
+	return newBuildQueue(buffer)
+}
+
 func (q *buildQueue) Push(ctx context.Context, options builder.BuildOptions) error {
 	q.queue <- BuildRequest{
 		Ctx:          ctx,
