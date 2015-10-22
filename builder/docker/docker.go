@@ -23,6 +23,21 @@ const (
 	DefaultDataVolume = "data"
 )
 
+// newUUID returns a new string UUID. This is set to a variable for easy mocking
+// in tests.
+var newUUID = uuid.New
+
+// dockerClient defines the interface from the go-dockerclient package that we
+// use.
+type dockerClient interface {
+	CreateContainer(docker.CreateContainerOptions) (*docker.Container, error)
+	RemoveContainer(docker.RemoveContainerOptions) error
+	StartContainer(string, *docker.HostConfig) error
+	AttachToContainer(docker.AttachToContainerOptions) error
+	StopContainer(string, uint) error
+	WaitContainer(string) (int, error)
+}
+
 // Builder is a builder.Builder implementation that runs the build in a docker
 // container.
 type Builder struct {
@@ -38,7 +53,7 @@ type Builder struct {
 	// variable.
 	DryRun bool
 
-	client *docker.Client
+	client dockerClient
 }
 
 // NewBuilder returns a new Builder backed by the docker client.
@@ -58,7 +73,13 @@ func NewBuilderFromEnv() (*Builder, error) {
 }
 
 // Build executes the docker image.
-func (b *Builder) Build(ctx context.Context, w io.Writer, opts builder.BuildOptions) (string, error) {
+func (b *Builder) Build(ctx context.Context, w io.Writer, opts builder.BuildOptions) (image string, err error) {
+	image = fmt.Sprintf("%s:%s", opts.Repository, opts.Sha)
+	err = b.build(ctx, w, opts)
+	return
+}
+
+func (b *Builder) build(ctx context.Context, w io.Writer, opts builder.BuildOptions) error {
 	env := []string{
 		fmt.Sprintf("REPOSITORY=%s", opts.Repository),
 		fmt.Sprintf("BRANCH=%s", opts.Branch),
@@ -70,7 +91,7 @@ func (b *Builder) Build(ctx context.Context, w io.Writer, opts builder.BuildOpti
 	name := strings.Join([]string{
 		strings.Replace(opts.Repository, "/", "-", -1),
 		opts.Sha,
-		uuid.New(),
+		newUUID(),
 	}, "-")
 
 	c, err := b.client.CreateContainer(docker.CreateContainerOptions{
@@ -86,7 +107,7 @@ func (b *Builder) Build(ctx context.Context, w io.Writer, opts builder.BuildOpti
 		},
 	})
 	if err != nil {
-		return "", fmt.Errorf("create container: %v", err)
+		return fmt.Errorf("create container: %v", err)
 	}
 	defer b.client.RemoveContainer(docker.RemoveContainerOptions{
 		ID:            c.ID,
@@ -100,12 +121,12 @@ func (b *Builder) Build(ctx context.Context, w io.Writer, opts builder.BuildOpti
 		Privileged:  true,
 		VolumesFrom: []string{b.dataVolume()},
 	}); err != nil {
-		return "", fmt.Errorf("start container: %v", err)
+		return fmt.Errorf("start container: %v", err)
 	}
 
 	done := make(chan error, 1)
 	go func() {
-		err := b.client.AttachToContainer(docker.AttachToContainerOptions{
+		done <- b.client.AttachToContainer(docker.AttachToContainerOptions{
 			Container:    c.ID,
 			OutputStream: w,
 			ErrorStream:  w,
@@ -115,7 +136,6 @@ func (b *Builder) Build(ctx context.Context, w io.Writer, opts builder.BuildOpti
 			Stderr:       true,
 			RawTerminal:  false,
 		})
-		done <- err
 	}()
 
 	var canceled bool
@@ -125,25 +145,24 @@ func (b *Builder) Build(ctx context.Context, w io.Writer, opts builder.BuildOpti
 		// prematurely. We'll SIGTERM and give it 10 seconds to stop,
 		// after that we'll SIGKILL.
 		if err := b.client.StopContainer(c.ID, 10); err != nil {
-			return "", fmt.Errorf("stop: %v", err)
+			return fmt.Errorf("stop: %v", err)
 		}
 
 		// Wait for log streaming to finish.
-		err := <-done
-		if err != nil {
-			return "", fmt.Errorf("attach: %v", err)
+		if err := <-done; err != nil {
+			return fmt.Errorf("attach: %v", err)
 		}
 
 		canceled = true
 	case err := <-done:
 		if err != nil {
-			return "", fmt.Errorf("attach: %v", err)
+			return fmt.Errorf("attach: %v", err)
 		}
 	}
 
 	exit, err := b.client.WaitContainer(c.ID)
 	if err != nil {
-		return "", fmt.Errorf("wait container: %v", err)
+		return fmt.Errorf("wait container: %v", err)
 	}
 
 	// A non-zero exit status means the build failed.
@@ -155,11 +174,10 @@ func (b *Builder) Build(ctx context.Context, w io.Writer, opts builder.BuildOpti
 				Reason: ctx.Err(),
 			}
 		}
-		return "", err
+		return err
 	}
 
-	image := fmt.Sprintf("%s:%s", opts.Repository, opts.Sha)
-	return image, nil
+	return nil
 }
 
 func (b *Builder) dryRun() string {
