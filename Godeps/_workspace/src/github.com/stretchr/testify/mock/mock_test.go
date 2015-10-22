@@ -3,7 +3,9 @@ package mock
 import (
 	"errors"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"testing"
+	"time"
 )
 
 /*
@@ -29,10 +31,34 @@ func (i *TestExampleImplementation) TheExampleMethod2(yesorno bool) {
 	i.Called(yesorno)
 }
 
-type ExampleType struct{}
+type ExampleType struct {
+	ran bool
+}
 
 func (i *TestExampleImplementation) TheExampleMethod3(et *ExampleType) error {
 	args := i.Called(et)
+	return args.Error(0)
+}
+
+func (i *TestExampleImplementation) TheExampleMethodFunc(fn func(string) error) error {
+	args := i.Called(fn)
+	return args.Error(0)
+}
+
+func (i *TestExampleImplementation) TheExampleMethodVariadic(a ...int) error {
+	args := i.Called(a)
+	return args.Error(0)
+}
+
+func (i *TestExampleImplementation) TheExampleMethodVariadicInterface(a ...interface{}) error {
+	args := i.Called(a)
+	return args.Error(0)
+}
+
+type ExampleFuncType func(string) error
+
+func (i *TestExampleImplementation) TheExampleMethodFuncType(fn ExampleFuncType) error {
+	args := i.Called(fn)
 	return args.Error(0)
 }
 
@@ -48,9 +74,7 @@ func Test_Mock_TestData(t *testing.T) {
 
 		mockedService.TestData().Set("something", 123)
 		assert.Equal(t, 123, mockedService.TestData().Get("something").Data())
-
 	}
-
 }
 
 func Test_Mock_On(t *testing.T) {
@@ -58,9 +82,36 @@ func Test_Mock_On(t *testing.T) {
 	// make a test impl object
 	var mockedService *TestExampleImplementation = new(TestExampleImplementation)
 
-	assert.Equal(t, mockedService.On("TheExampleMethod"), &mockedService.Mock)
-	assert.Equal(t, "TheExampleMethod", mockedService.onMethodName)
+	c := mockedService.On("TheExampleMethod")
+	assert.Equal(t, []*Call{c}, mockedService.ExpectedCalls)
+	assert.Equal(t, "TheExampleMethod", c.Method)
+}
 
+func Test_Mock_Chained_On(t *testing.T) {
+	// make a test impl object
+	var mockedService *TestExampleImplementation = new(TestExampleImplementation)
+
+	mockedService.
+		On("TheExampleMethod", 1, 2, 3).
+		Return(0).
+		On("TheExampleMethod3", AnythingOfType("*mock.ExampleType")).
+		Return(nil)
+
+	expectedCalls := []*Call{
+		&Call{
+			Parent:          &mockedService.Mock,
+			Method:          "TheExampleMethod",
+			Arguments:       []interface{}{1, 2, 3},
+			ReturnArguments: []interface{}{0},
+		},
+		&Call{
+			Parent:          &mockedService.Mock,
+			Method:          "TheExampleMethod3",
+			Arguments:       []interface{}{AnythingOfType("*mock.ExampleType")},
+			ReturnArguments: []interface{}{nil},
+		},
+	}
+	assert.Equal(t, expectedCalls, mockedService.ExpectedCalls)
 }
 
 func Test_Mock_On_WithArgs(t *testing.T) {
@@ -68,12 +119,126 @@ func Test_Mock_On_WithArgs(t *testing.T) {
 	// make a test impl object
 	var mockedService *TestExampleImplementation = new(TestExampleImplementation)
 
-	assert.Equal(t, mockedService.On("TheExampleMethod", 1, 2, 3), &mockedService.Mock)
-	assert.Equal(t, "TheExampleMethod", mockedService.onMethodName)
-	assert.Equal(t, 1, mockedService.onMethodArguments[0])
-	assert.Equal(t, 2, mockedService.onMethodArguments[1])
-	assert.Equal(t, 3, mockedService.onMethodArguments[2])
+	c := mockedService.On("TheExampleMethod", 1, 2, 3, 4)
 
+	assert.Equal(t, []*Call{c}, mockedService.ExpectedCalls)
+	assert.Equal(t, "TheExampleMethod", c.Method)
+	assert.Equal(t, Arguments{1, 2, 3, 4}, c.Arguments)
+}
+
+func Test_Mock_On_WithFuncArg(t *testing.T) {
+
+	// make a test impl object
+	var mockedService *TestExampleImplementation = new(TestExampleImplementation)
+
+	c := mockedService.
+		On("TheExampleMethodFunc", AnythingOfType("func(string) error")).
+		Return(nil)
+
+	assert.Equal(t, []*Call{c}, mockedService.ExpectedCalls)
+	assert.Equal(t, "TheExampleMethodFunc", c.Method)
+	assert.Equal(t, 1, len(c.Arguments))
+	assert.Equal(t, AnythingOfType("func(string) error"), c.Arguments[0])
+
+	fn := func(string) error { return nil }
+
+	assert.NotPanics(t, func() {
+		mockedService.TheExampleMethodFunc(fn)
+	})
+}
+
+func Test_Mock_On_WithVariadicFunc(t *testing.T) {
+
+	// make a test impl object
+	var mockedService *TestExampleImplementation = new(TestExampleImplementation)
+
+	c := mockedService.
+		On("TheExampleMethodVariadic", []int{1, 2, 3}).
+		Return(nil)
+
+	assert.Equal(t, []*Call{c}, mockedService.ExpectedCalls)
+	assert.Equal(t, 1, len(c.Arguments))
+	assert.Equal(t, []int{1, 2, 3}, c.Arguments[0])
+
+	assert.NotPanics(t, func() {
+		mockedService.TheExampleMethodVariadic(1, 2, 3)
+	})
+	assert.Panics(t, func() {
+		mockedService.TheExampleMethodVariadic(1, 2)
+	})
+
+}
+
+func Test_Mock_On_WithVariadicFuncWithInterface(t *testing.T) {
+
+	// make a test impl object
+	var mockedService *TestExampleImplementation = new(TestExampleImplementation)
+
+	c := mockedService.On("TheExampleMethodVariadicInterface", []interface{}{1, 2, 3}).
+		Return(nil)
+
+	assert.Equal(t, []*Call{c}, mockedService.ExpectedCalls)
+	assert.Equal(t, 1, len(c.Arguments))
+	assert.Equal(t, []interface{}{1, 2, 3}, c.Arguments[0])
+
+	assert.NotPanics(t, func() {
+		mockedService.TheExampleMethodVariadicInterface(1, 2, 3)
+	})
+	assert.Panics(t, func() {
+		mockedService.TheExampleMethodVariadicInterface(1, 2)
+	})
+
+}
+
+func Test_Mock_On_WithVariadicFuncWithEmptyInterfaceArray(t *testing.T) {
+
+	// make a test impl object
+	var mockedService *TestExampleImplementation = new(TestExampleImplementation)
+
+	var expected []interface{}
+	c := mockedService.
+		On("TheExampleMethodVariadicInterface", expected).
+		Return(nil)
+
+	assert.Equal(t, []*Call{c}, mockedService.ExpectedCalls)
+	assert.Equal(t, 1, len(c.Arguments))
+	assert.Equal(t, expected, c.Arguments[0])
+
+	assert.NotPanics(t, func() {
+		mockedService.TheExampleMethodVariadicInterface()
+	})
+	assert.Panics(t, func() {
+		mockedService.TheExampleMethodVariadicInterface(1, 2)
+	})
+
+}
+
+func Test_Mock_On_WithFuncPanics(t *testing.T) {
+	// make a test impl object
+	var mockedService *TestExampleImplementation = new(TestExampleImplementation)
+
+	assert.Panics(t, func() {
+		mockedService.On("TheExampleMethodFunc", func(string) error { return nil })
+	})
+}
+
+func Test_Mock_On_WithFuncTypeArg(t *testing.T) {
+
+	// make a test impl object
+	var mockedService *TestExampleImplementation = new(TestExampleImplementation)
+
+	c := mockedService.
+		On("TheExampleMethodFuncType", AnythingOfType("mock.ExampleFuncType")).
+		Return(nil)
+
+	assert.Equal(t, []*Call{c}, mockedService.ExpectedCalls)
+	assert.Equal(t, 1, len(c.Arguments))
+	assert.Equal(t, AnythingOfType("mock.ExampleFuncType"), c.Arguments[0])
+
+	fn := func(string) error { return nil }
+	assert.NotPanics(t, func() {
+		mockedService.TheExampleMethodFuncType(fn)
+	})
 }
 
 func Test_Mock_Return(t *testing.T) {
@@ -81,23 +246,133 @@ func Test_Mock_Return(t *testing.T) {
 	// make a test impl object
 	var mockedService *TestExampleImplementation = new(TestExampleImplementation)
 
-	assert.Equal(t, mockedService.On("TheExampleMethod", "A", "B", true).Return(1, "two", true), &mockedService.Mock)
+	c := mockedService.
+		On("TheExampleMethod", "A", "B", true).
+		Return(1, "two", true)
 
-	// ensure the call was created
-	if assert.Equal(t, 1, len(mockedService.ExpectedCalls)) {
-		call := mockedService.ExpectedCalls[0]
+	require.Equal(t, []*Call{c}, mockedService.ExpectedCalls)
 
-		assert.Equal(t, "TheExampleMethod", call.Method)
-		assert.Equal(t, "A", call.Arguments[0])
-		assert.Equal(t, "B", call.Arguments[1])
-		assert.Equal(t, true, call.Arguments[2])
-		assert.Equal(t, 1, call.ReturnArguments[0])
-		assert.Equal(t, "two", call.ReturnArguments[1])
-		assert.Equal(t, true, call.ReturnArguments[2])
-		assert.Equal(t, 0, call.Repeatability)
+	call := mockedService.ExpectedCalls[0]
 
+	assert.Equal(t, "TheExampleMethod", call.Method)
+	assert.Equal(t, "A", call.Arguments[0])
+	assert.Equal(t, "B", call.Arguments[1])
+	assert.Equal(t, true, call.Arguments[2])
+	assert.Equal(t, 1, call.ReturnArguments[0])
+	assert.Equal(t, "two", call.ReturnArguments[1])
+	assert.Equal(t, true, call.ReturnArguments[2])
+	assert.Equal(t, 0, call.Repeatability)
+	assert.Nil(t, call.WaitFor)
+}
+
+func Test_Mock_Return_WaitUntil(t *testing.T) {
+
+	// make a test impl object
+	var mockedService *TestExampleImplementation = new(TestExampleImplementation)
+	ch := time.After(time.Second)
+
+	c := mockedService.Mock.
+		On("TheExampleMethod", "A", "B", true).
+		WaitUntil(ch).
+		Return(1, "two", true)
+
+	// assert that the call was created
+	require.Equal(t, []*Call{c}, mockedService.ExpectedCalls)
+
+	call := mockedService.ExpectedCalls[0]
+
+	assert.Equal(t, "TheExampleMethod", call.Method)
+	assert.Equal(t, "A", call.Arguments[0])
+	assert.Equal(t, "B", call.Arguments[1])
+	assert.Equal(t, true, call.Arguments[2])
+	assert.Equal(t, 1, call.ReturnArguments[0])
+	assert.Equal(t, "two", call.ReturnArguments[1])
+	assert.Equal(t, true, call.ReturnArguments[2])
+	assert.Equal(t, 0, call.Repeatability)
+	assert.Equal(t, ch, call.WaitFor)
+}
+
+func Test_Mock_Return_After(t *testing.T) {
+
+	// make a test impl object
+	var mockedService *TestExampleImplementation = new(TestExampleImplementation)
+
+	c := mockedService.Mock.
+		On("TheExampleMethod", "A", "B", true).
+		Return(1, "two", true).
+		After(time.Second)
+
+	require.Equal(t, []*Call{c}, mockedService.ExpectedCalls)
+
+	call := mockedService.Mock.ExpectedCalls[0]
+
+	assert.Equal(t, "TheExampleMethod", call.Method)
+	assert.Equal(t, "A", call.Arguments[0])
+	assert.Equal(t, "B", call.Arguments[1])
+	assert.Equal(t, true, call.Arguments[2])
+	assert.Equal(t, 1, call.ReturnArguments[0])
+	assert.Equal(t, "two", call.ReturnArguments[1])
+	assert.Equal(t, true, call.ReturnArguments[2])
+	assert.Equal(t, 0, call.Repeatability)
+	assert.NotEqual(t, nil, call.WaitFor)
+
+}
+
+func Test_Mock_Return_Run(t *testing.T) {
+
+	// make a test impl object
+	var mockedService *TestExampleImplementation = new(TestExampleImplementation)
+
+	fn := func(args Arguments) {
+		arg := args.Get(0).(*ExampleType)
+		arg.ran = true
 	}
 
+	c := mockedService.Mock.
+		On("TheExampleMethod3", AnythingOfType("*mock.ExampleType")).
+		Return(nil).
+		Run(fn)
+
+	require.Equal(t, []*Call{c}, mockedService.ExpectedCalls)
+
+	call := mockedService.Mock.ExpectedCalls[0]
+
+	assert.Equal(t, "TheExampleMethod3", call.Method)
+	assert.Equal(t, AnythingOfType("*mock.ExampleType"), call.Arguments[0])
+	assert.Equal(t, nil, call.ReturnArguments[0])
+	assert.Equal(t, 0, call.Repeatability)
+	assert.NotEqual(t, nil, call.WaitFor)
+	assert.NotNil(t, call.Run)
+
+	et := ExampleType{}
+	assert.Equal(t, false, et.ran)
+	mockedService.TheExampleMethod3(&et)
+	assert.Equal(t, true, et.ran)
+}
+
+func Test_Mock_Return_Run_Out_Of_Order(t *testing.T) {
+	// make a test impl object
+	var mockedService *TestExampleImplementation = new(TestExampleImplementation)
+	f := func(args Arguments) {
+		arg := args.Get(0).(*ExampleType)
+		arg.ran = true
+	}
+
+	c := mockedService.Mock.
+		On("TheExampleMethod3", AnythingOfType("*mock.ExampleType")).
+		Run(f).
+		Return(nil)
+
+	require.Equal(t, []*Call{c}, mockedService.ExpectedCalls)
+
+	call := mockedService.Mock.ExpectedCalls[0]
+
+	assert.Equal(t, "TheExampleMethod3", call.Method)
+	assert.Equal(t, AnythingOfType("*mock.ExampleType"), call.Arguments[0])
+	assert.Equal(t, nil, call.ReturnArguments[0])
+	assert.Equal(t, 0, call.Repeatability)
+	assert.NotEqual(t, nil, call.WaitFor)
+	assert.NotNil(t, call.Run)
 }
 
 func Test_Mock_Return_Once(t *testing.T) {
@@ -105,23 +380,23 @@ func Test_Mock_Return_Once(t *testing.T) {
 	// make a test impl object
 	var mockedService *TestExampleImplementation = new(TestExampleImplementation)
 
-	mockedService.On("TheExampleMethod", "A", "B", true).Return(1, "two", true).Once()
+	c := mockedService.On("TheExampleMethod", "A", "B", true).
+		Return(1, "two", true).
+		Once()
 
-	// ensure the call was created
-	if assert.Equal(t, 1, len(mockedService.ExpectedCalls)) {
-		call := mockedService.ExpectedCalls[0]
+	require.Equal(t, []*Call{c}, mockedService.ExpectedCalls)
 
-		assert.Equal(t, "TheExampleMethod", call.Method)
-		assert.Equal(t, "A", call.Arguments[0])
-		assert.Equal(t, "B", call.Arguments[1])
-		assert.Equal(t, true, call.Arguments[2])
-		assert.Equal(t, 1, call.ReturnArguments[0])
-		assert.Equal(t, "two", call.ReturnArguments[1])
-		assert.Equal(t, true, call.ReturnArguments[2])
-		assert.Equal(t, 1, call.Repeatability)
+	call := mockedService.ExpectedCalls[0]
 
-	}
-
+	assert.Equal(t, "TheExampleMethod", call.Method)
+	assert.Equal(t, "A", call.Arguments[0])
+	assert.Equal(t, "B", call.Arguments[1])
+	assert.Equal(t, true, call.Arguments[2])
+	assert.Equal(t, 1, call.ReturnArguments[0])
+	assert.Equal(t, "two", call.ReturnArguments[1])
+	assert.Equal(t, true, call.ReturnArguments[2])
+	assert.Equal(t, 1, call.Repeatability)
+	assert.Nil(t, call.WaitFor)
 }
 
 func Test_Mock_Return_Twice(t *testing.T) {
@@ -129,23 +404,24 @@ func Test_Mock_Return_Twice(t *testing.T) {
 	// make a test impl object
 	var mockedService *TestExampleImplementation = new(TestExampleImplementation)
 
-	mockedService.On("TheExampleMethod", "A", "B", true).Return(1, "two", true).Twice()
+	c := mockedService.
+		On("TheExampleMethod", "A", "B", true).
+		Return(1, "two", true).
+		Twice()
 
-	// ensure the call was created
-	if assert.Equal(t, 1, len(mockedService.ExpectedCalls)) {
-		call := mockedService.ExpectedCalls[0]
+	require.Equal(t, []*Call{c}, mockedService.ExpectedCalls)
 
-		assert.Equal(t, "TheExampleMethod", call.Method)
-		assert.Equal(t, "A", call.Arguments[0])
-		assert.Equal(t, "B", call.Arguments[1])
-		assert.Equal(t, true, call.Arguments[2])
-		assert.Equal(t, 1, call.ReturnArguments[0])
-		assert.Equal(t, "two", call.ReturnArguments[1])
-		assert.Equal(t, true, call.ReturnArguments[2])
-		assert.Equal(t, 2, call.Repeatability)
+	call := mockedService.ExpectedCalls[0]
 
-	}
-
+	assert.Equal(t, "TheExampleMethod", call.Method)
+	assert.Equal(t, "A", call.Arguments[0])
+	assert.Equal(t, "B", call.Arguments[1])
+	assert.Equal(t, true, call.Arguments[2])
+	assert.Equal(t, 1, call.ReturnArguments[0])
+	assert.Equal(t, "two", call.ReturnArguments[1])
+	assert.Equal(t, true, call.ReturnArguments[2])
+	assert.Equal(t, 2, call.Repeatability)
+	assert.Nil(t, call.WaitFor)
 }
 
 func Test_Mock_Return_Times(t *testing.T) {
@@ -153,23 +429,24 @@ func Test_Mock_Return_Times(t *testing.T) {
 	// make a test impl object
 	var mockedService *TestExampleImplementation = new(TestExampleImplementation)
 
-	mockedService.On("TheExampleMethod", "A", "B", true).Return(1, "two", true).Times(5)
+	c := mockedService.
+		On("TheExampleMethod", "A", "B", true).
+		Return(1, "two", true).
+		Times(5)
 
-	// ensure the call was created
-	if assert.Equal(t, 1, len(mockedService.ExpectedCalls)) {
-		call := mockedService.ExpectedCalls[0]
+	require.Equal(t, []*Call{c}, mockedService.ExpectedCalls)
 
-		assert.Equal(t, "TheExampleMethod", call.Method)
-		assert.Equal(t, "A", call.Arguments[0])
-		assert.Equal(t, "B", call.Arguments[1])
-		assert.Equal(t, true, call.Arguments[2])
-		assert.Equal(t, 1, call.ReturnArguments[0])
-		assert.Equal(t, "two", call.ReturnArguments[1])
-		assert.Equal(t, true, call.ReturnArguments[2])
-		assert.Equal(t, 5, call.Repeatability)
+	call := mockedService.ExpectedCalls[0]
 
-	}
-
+	assert.Equal(t, "TheExampleMethod", call.Method)
+	assert.Equal(t, "A", call.Arguments[0])
+	assert.Equal(t, "B", call.Arguments[1])
+	assert.Equal(t, true, call.Arguments[2])
+	assert.Equal(t, 1, call.ReturnArguments[0])
+	assert.Equal(t, "two", call.ReturnArguments[1])
+	assert.Equal(t, true, call.ReturnArguments[2])
+	assert.Equal(t, 5, call.Repeatability)
+	assert.Nil(t, call.WaitFor)
 }
 
 func Test_Mock_Return_Nothing(t *testing.T) {
@@ -177,20 +454,19 @@ func Test_Mock_Return_Nothing(t *testing.T) {
 	// make a test impl object
 	var mockedService *TestExampleImplementation = new(TestExampleImplementation)
 
-	assert.Equal(t, mockedService.On("TheExampleMethod", "A", "B", true).Return(), &mockedService.Mock)
+	c := mockedService.
+		On("TheExampleMethod", "A", "B", true).
+		Return()
 
-	// ensure the call was created
-	if assert.Equal(t, 1, len(mockedService.ExpectedCalls)) {
-		call := mockedService.ExpectedCalls[0]
+	require.Equal(t, []*Call{c}, mockedService.ExpectedCalls)
 
-		assert.Equal(t, "TheExampleMethod", call.Method)
-		assert.Equal(t, "A", call.Arguments[0])
-		assert.Equal(t, "B", call.Arguments[1])
-		assert.Equal(t, true, call.Arguments[2])
-		assert.Equal(t, 0, len(call.ReturnArguments))
+	call := mockedService.ExpectedCalls[0]
 
-	}
-
+	assert.Equal(t, "TheExampleMethod", call.Method)
+	assert.Equal(t, "A", call.Arguments[0])
+	assert.Equal(t, "B", call.Arguments[1])
+	assert.Equal(t, true, call.Arguments[2])
+	assert.Equal(t, 0, len(call.ReturnArguments))
 }
 
 func Test_Mock_findExpectedCall(t *testing.T) {
@@ -274,12 +550,54 @@ func Test_Mock_Called(t *testing.T) {
 
 }
 
+func asyncCall(m *Mock, ch chan Arguments) {
+	ch <- m.Called(1, 2, 3)
+}
+
+func Test_Mock_Called_blocks(t *testing.T) {
+
+	var mockedService *TestExampleImplementation = new(TestExampleImplementation)
+
+	mockedService.Mock.On("asyncCall", 1, 2, 3).Return(5, "6", true).After(2 * time.Millisecond)
+
+	ch := make(chan Arguments)
+
+	go asyncCall(&mockedService.Mock, ch)
+
+	select {
+	case <-ch:
+		t.Fatal("should have waited")
+	case <-time.After(1 * time.Millisecond):
+	}
+
+	returnArguments := <-ch
+
+	if assert.Equal(t, 1, len(mockedService.Mock.Calls)) {
+		assert.Equal(t, "asyncCall", mockedService.Mock.Calls[0].Method)
+		assert.Equal(t, 1, mockedService.Mock.Calls[0].Arguments[0])
+		assert.Equal(t, 2, mockedService.Mock.Calls[0].Arguments[1])
+		assert.Equal(t, 3, mockedService.Mock.Calls[0].Arguments[2])
+	}
+
+	if assert.Equal(t, 3, len(returnArguments)) {
+		assert.Equal(t, 5, returnArguments[0])
+		assert.Equal(t, "6", returnArguments[1])
+		assert.Equal(t, true, returnArguments[2])
+	}
+
+}
+
 func Test_Mock_Called_For_Bounded_Repeatability(t *testing.T) {
 
 	var mockedService *TestExampleImplementation = new(TestExampleImplementation)
 
-	mockedService.On("Test_Mock_Called_For_Bounded_Repeatability", 1, 2, 3).Return(5, "6", true).Once()
-	mockedService.On("Test_Mock_Called_For_Bounded_Repeatability", 1, 2, 3).Return(-1, "hi", false)
+	mockedService.
+		On("Test_Mock_Called_For_Bounded_Repeatability", 1, 2, 3).
+		Return(5, "6", true).
+		Once()
+	mockedService.
+		On("Test_Mock_Called_For_Bounded_Repeatability", 1, 2, 3).
+		Return(-1, "hi", false)
 
 	returnArguments1 := mockedService.Called(1, 2, 3)
 	returnArguments2 := mockedService.Called(1, 2, 3)
@@ -477,7 +795,9 @@ func Test_Mock_AssertCalled_WithAnythingOfTypeArgument(t *testing.T) {
 
 	var mockedService *TestExampleImplementation = new(TestExampleImplementation)
 
-	mockedService.On("Test_Mock_AssertCalled_WithAnythingOfTypeArgument", Anything, Anything, Anything).Return()
+	mockedService.
+		On("Test_Mock_AssertCalled_WithAnythingOfTypeArgument", Anything, Anything, Anything).
+		Return()
 
 	mockedService.Called(1, "two", []uint8("three"))
 

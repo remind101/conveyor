@@ -13,6 +13,7 @@ dependencies:
   override:
     - echo '{}' > /home/ubuntu/.dockercfg
     - cd builder/docker && make data && make build
+    - docker inspect data
     - go install -a -race std
     - go get github.com/tools/godep
     - go version
