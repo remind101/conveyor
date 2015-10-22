@@ -23,11 +23,6 @@
       "Default": "",
       "Description": "S3 bucket where ssh keys are located."
     },
-    "Version": {
-      "Type": "String",
-      "Default": "latest",
-      "Description": "Version of Conveyor to run."
-    },
     "BuilderImage": {
       "Type": "String",
       "Default": "remind101/conveyor-builder",
@@ -369,7 +364,6 @@
               "",
               [
                 "#!/bin/bash\n",
-                "mkdir -p /var/run/conveyor/.ssh\n",
                 "cfn-init -s ", { "Ref": "AWS::StackName" }, " -r LaunchConfiguration --region ", { "Ref": "AWS::Region" }, "\n",
                 "docker pull ", { "Ref": "BuilderImage" }, "\n",
                 "docker create --name data -v /var/run/conveyor:/var/run/conveyor:ro ubuntu:14.04\n"
