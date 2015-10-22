@@ -3,6 +3,7 @@ package conveyor
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/sqs"
@@ -17,7 +18,7 @@ type BuildQueue interface {
 	Push(context.Context, builder.BuildOptions) error
 
 	// Subscribe starts sending build requests on the channel. This method
-	// should block until all messages have been consumed.
+	// should not block.
 	Subscribe(chan BuildRequest) error
 }
 
@@ -53,9 +54,12 @@ func (q *buildQueue) Push(ctx context.Context, options builder.BuildOptions) err
 }
 
 func (q *buildQueue) Subscribe(ch chan BuildRequest) error {
-	for req := range q.queue {
-		ch <- req
-	}
+	go func() {
+		for req := range q.queue {
+			ch <- req
+		}
+	}()
+
 	return nil
 }
 
@@ -74,6 +78,11 @@ type SQSBuildQueue struct {
 	// Context is used to generate a context.Context when receiving a
 	// message. The zero value is context.Background.
 	Context func() context.Context
+
+	// ErrHandler is called when there is an error against the AWS API's.
+	// SQSBuildQueue will continue trying to pull messages from the if an
+	// error occurs. The zero value logs the error.
+	ErrHandler func(error)
 
 	sqs sqsClient
 }
@@ -104,15 +113,26 @@ func (q *SQSBuildQueue) Push(ctx context.Context, options builder.BuildOptions) 
 // Subscribe enters into a loop and sends BuildRequests to ch. This method
 // blocks.
 func (q *SQSBuildQueue) Subscribe(ch chan BuildRequest) error {
-	for {
-		if err := q.receiveMessage(ch); err != nil {
-			return err
+	go func() {
+		for {
+			if err := q.receiveMessage(ch); err != nil {
+				q.handleError(err)
+			}
 		}
-	}
+	}()
+
+	return nil
 }
 
 // receiveMessage calls ReceiveMessage and sends the build requests of ch.
 func (q *SQSBuildQueue) receiveMessage(ch chan BuildRequest) (err error) {
+	defer func() {
+		if v := recover(); v != nil {
+			err = fmt.Errorf("panic: %v", v)
+		}
+		return
+	}()
+
 	var resp *sqs.ReceiveMessageOutput
 	resp, err = q.sqs.ReceiveMessage(&sqs.ReceiveMessageInput{
 		QueueUrl: aws.String(q.QueueURL),
@@ -156,4 +176,12 @@ func (q *SQSBuildQueue) context() context.Context {
 	}
 
 	return q.Context()
+}
+
+func (q *SQSBuildQueue) handleError(err error) {
+	if q.ErrHandler == nil {
+		log.Println("sqs error: %v", err)
+	}
+
+	q.ErrHandler(err)
 }

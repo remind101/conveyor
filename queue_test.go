@@ -79,7 +79,7 @@ func TestSQSBuildQueue_Subscribe(t *testing.T) {
 	}).Return(&sqs.DeleteMessageBatchOutput{}, nil)
 
 	ch := make(chan BuildRequest, 1)
-	go q.Subscribe(ch)
+	q.Subscribe(ch)
 
 	assert.Equal(t, builder.BuildOptions{
 		Repository: "remind101/acme-inc-1",
@@ -91,6 +91,29 @@ func TestSQSBuildQueue_Subscribe(t *testing.T) {
 		Branch:     "master",
 		Sha:        "abcd",
 	}, (<-ch).BuildOptions)
+}
+
+func TestSQSBuildQueue_Subscribe_Panic(t *testing.T) {
+	called := make(chan error)
+	c := new(mockSQSClient)
+	q := &SQSBuildQueue{
+		sqs: c,
+		ErrHandler: func(err error) {
+			called <- err
+		},
+	}
+
+	c.On("ReceiveMessage", &sqs.ReceiveMessageInput{
+		QueueUrl: aws.String(""),
+	}).Run(func(args mock.Arguments) {
+		panic("boom")
+	})
+
+	ch := make(chan BuildRequest, 1)
+	q.Subscribe(ch)
+
+	err := <-called
+	assert.EqualError(t, err, "panic: boom")
 }
 
 // mockSQSClient is an implementation of the sqsClient interface for testing.

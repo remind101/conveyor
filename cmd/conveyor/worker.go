@@ -71,13 +71,7 @@ func runWorker(q conveyor.BuildQueue, c *cli.Context) error {
 	info("Starting %d workers\n", numWorkers)
 
 	ch := make(chan conveyor.BuildRequest)
-	go func() {
-		for {
-			if err := q.Subscribe(ch); err != nil {
-				info("queue error: %v\n", err)
-			}
-		}
-	}()
+	q.Subscribe(ch)
 
 	workers := conveyor.NewWorkerPool(numWorkers, conveyor.WorkerOptions{
 		Builder:       newBuilder(c),
