@@ -13,6 +13,11 @@
       "Default": "",
       "Description": "GitHub API token to use when creating commit statuses."
     },
+    "DataDogApiKey": {
+      "Type": "String",
+      "Default": "",
+      "Description": "If provided, metrics will be collected and sent to datadog."
+    },
     "AllowedCIDR": {
       "Type": "String",
       "Default": "",
@@ -322,6 +327,17 @@
               },
               "/etc/conveyor/version": {
                 "content": { "Ref": "Version" },
+                "mode": "000644",
+                "owner": "root",
+                "group": "root"
+              },
+              "/etc/dd-agent/datadog.conf": {
+                "content": { "Fn::Join": ["", [
+                  "[Main]\n",
+                  "dd_url: https://app.datadoghq.com\n",
+                  "api_key: ", { "Ref": "DataDogApiKey" }, "\n",
+                  "tags: 'role:conveyor'\n"
+                ]] },
                 "mode": "000644",
                 "owner": "root",
                 "group": "root"
