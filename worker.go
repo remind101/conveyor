@@ -74,7 +74,6 @@ type Worker struct {
 
 	// Queue to pull jobs from.
 	buildRequests chan BuildRequest
-	buildQueue    BuildQueue
 
 	// Channel used to request a shutdown.
 	shutdown chan struct{}

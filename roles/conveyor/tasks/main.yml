@@ -1,4 +1,3 @@
-- shell: docker pull {{ conveyor_image }}
 - file: name=/etc/conveyor mode=0750 owner=root group=root state=directory
 - file: name=/var/run/conveyor mode=0750 owner=root group=root state=directory
 - file: name=/var/run/conveyor/.ssh mode=0750 owner=root group=root state=directory
