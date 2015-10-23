@@ -1,0 +1,9 @@
+#!/bin/bash
+
+version=$(cat /etc/conveyor/version)
+
+exec /usr/bin/docker run \
+  --name conveyor \
+  --env-file=/etc/env/conveyor.env \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -p 8080:8080 {{ conveyor_image }}:$version

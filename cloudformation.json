@@ -23,6 +23,11 @@
       "Default": "",
       "Description": "S3 bucket where ssh keys are located."
     },
+    "Version": {
+      "Type": "String",
+      "Default": "master",
+      "Description": "Version of Conveyor to run."
+    },
     "BuilderImage": {
       "Type": "String",
       "Default": "remind101/conveyor-builder",
@@ -311,6 +316,12 @@
                   "DRY=", { "Ref": "DryRun" }, "\n",
                   "REPORTER=", { "Ref": "Reporter" }, "\n"
                 ]] },
+                "mode": "000644",
+                "owner": "root",
+                "group": "root"
+              },
+              "/etc/conveyor/version": {
+                "content": { "Ref": "Version" },
                 "mode": "000644",
                 "owner": "root",
                 "group": "root"
