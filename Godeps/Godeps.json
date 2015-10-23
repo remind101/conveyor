@@ -11,6 +11,10 @@
 			"Rev": "7dda39b2e7d5e265014674c5af696ba4186679e9"
 		},
 		{
+			"ImportPath": "github.com/DataDog/datadog-go/statsd",
+			"Rev": "b050cd8f4d7c394545fd7d966c8e2909ce89d552"
+		},
+		{
 			"ImportPath": "github.com/aws/aws-sdk-go/aws",
 			"Comment": "v0.9.15",
 			"Rev": "7ab6754ddaaa7972ac1c896ddd7f796cc726e79d"
