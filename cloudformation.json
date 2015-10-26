@@ -395,7 +395,8 @@
                 "cfn-init -s ", { "Ref": "AWS::StackName" }, " -r LaunchConfiguration --region ", { "Ref": "AWS::Region" }, "\n",
                 "docker pull ", { "Ref": "BuilderImage" }, "\n",
                 "docker create --name data -v /var/run/conveyor:/var/run/conveyor:ro ubuntu:14.04\n",
-                "/etc/init.d/datadog-agent start\n"
+                "/etc/init.d/datadog-agent start\n",
+                "echo ", { "Ref": "Version" }
               ]
             ]
           }
@@ -427,7 +428,7 @@
           "MinInstancesInService": "1",
           "MaxBatchSize": "2",
           "WaitOnResourceSignals": "false",
-          "PauseTime": "PT2M"
+          "PauseTime": "PT5M"
         }
       }
     }

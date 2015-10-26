@@ -40,7 +40,7 @@ func TestBuilder_Build(t *testing.T) {
 	).Return(nil)
 	c.On("Event", &statsd.Event{
 		Title: "Conveyor built remind101/acme-inc:1234",
-		Text:  "Built remind101/acme-inc:1234 for remind101/acme-inc from master",
+		Text:  "Built remind101/acme-inc:1234 from remind101/acme-inc@master",
 		Tags: []string{
 			"repo:remind101/acme-inc",
 			"branch:master",

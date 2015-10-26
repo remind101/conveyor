@@ -56,7 +56,7 @@ func (b *Builder) Build(ctx context.Context, w io.Writer, options builder.BuildO
 			_ = b.statsd.TimeInMilliseconds("conveyor.build.time", d.Seconds()*1000, tags, 1)
 			if err2 := b.statsd.Event(&statsd.Event{
 				Title: fmt.Sprintf("Conveyor built %s", image),
-				Text:  fmt.Sprintf("Built %s for %s from %s", image, options.Repository, options.Branch),
+				Text:  fmt.Sprintf("Built %s from %s@%s", image, options.Repository, options.Branch),
 				Tags: append(tags,
 					fmt.Sprintf("branch:%s", options.Branch),
 					fmt.Sprintf("sha:%s", options.Sha),
