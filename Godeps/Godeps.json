@@ -11,44 +11,53 @@
 			"Rev": "7dda39b2e7d5e265014674c5af696ba4186679e9"
 		},
 		{
+			"ImportPath": "github.com/DataDog/datadog-go/statsd",
+			"Rev": "b050cd8f4d7c394545fd7d966c8e2909ce89d552"
+		},
+		{
 			"ImportPath": "github.com/aws/aws-sdk-go/aws",
-			"Comment": "v0.7.1-4-g1c75632",
-			"Rev": "1c75632eb9b77bb3d8e6416fbd8f3e98fc1367db"
+			"Comment": "v0.9.15",
+			"Rev": "7ab6754ddaaa7972ac1c896ddd7f796cc726e79d"
 		},
 		{
 			"ImportPath": "github.com/aws/aws-sdk-go/internal/endpoints",
-			"Comment": "v0.7.1-4-g1c75632",
-			"Rev": "1c75632eb9b77bb3d8e6416fbd8f3e98fc1367db"
+			"Comment": "v0.9.15",
+			"Rev": "7ab6754ddaaa7972ac1c896ddd7f796cc726e79d"
 		},
 		{
 			"ImportPath": "github.com/aws/aws-sdk-go/internal/protocol/query",
-			"Comment": "v0.7.1-4-g1c75632",
-			"Rev": "1c75632eb9b77bb3d8e6416fbd8f3e98fc1367db"
+			"Comment": "v0.9.15",
+			"Rev": "7ab6754ddaaa7972ac1c896ddd7f796cc726e79d"
 		},
 		{
 			"ImportPath": "github.com/aws/aws-sdk-go/internal/protocol/rest",
-			"Comment": "v0.7.1-4-g1c75632",
-			"Rev": "1c75632eb9b77bb3d8e6416fbd8f3e98fc1367db"
+			"Comment": "v0.9.15",
+			"Rev": "7ab6754ddaaa7972ac1c896ddd7f796cc726e79d"
 		},
 		{
 			"ImportPath": "github.com/aws/aws-sdk-go/internal/protocol/restxml",
-			"Comment": "v0.7.1-4-g1c75632",
-			"Rev": "1c75632eb9b77bb3d8e6416fbd8f3e98fc1367db"
+			"Comment": "v0.9.15",
+			"Rev": "7ab6754ddaaa7972ac1c896ddd7f796cc726e79d"
 		},
 		{
 			"ImportPath": "github.com/aws/aws-sdk-go/internal/protocol/xml/xmlutil",
-			"Comment": "v0.7.1-4-g1c75632",
-			"Rev": "1c75632eb9b77bb3d8e6416fbd8f3e98fc1367db"
+			"Comment": "v0.9.15",
+			"Rev": "7ab6754ddaaa7972ac1c896ddd7f796cc726e79d"
 		},
 		{
 			"ImportPath": "github.com/aws/aws-sdk-go/internal/signer/v4",
-			"Comment": "v0.7.1-4-g1c75632",
-			"Rev": "1c75632eb9b77bb3d8e6416fbd8f3e98fc1367db"
+			"Comment": "v0.9.15",
+			"Rev": "7ab6754ddaaa7972ac1c896ddd7f796cc726e79d"
 		},
 		{
 			"ImportPath": "github.com/aws/aws-sdk-go/service/s3",
-			"Comment": "v0.7.1-4-g1c75632",
-			"Rev": "1c75632eb9b77bb3d8e6416fbd8f3e98fc1367db"
+			"Comment": "v0.9.15",
+			"Rev": "7ab6754ddaaa7972ac1c896ddd7f796cc726e79d"
+		},
+		{
+			"ImportPath": "github.com/aws/aws-sdk-go/service/sqs",
+			"Comment": "v0.9.15",
+			"Rev": "7ab6754ddaaa7972ac1c896ddd7f796cc726e79d"
 		},
 		{
 			"ImportPath": "github.com/codegangsta/cli",

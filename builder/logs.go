@@ -10,6 +10,7 @@ import (
 	"code.google.com/p/go-uuid/uuid"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/defaults"
 	"github.com/aws/aws-sdk-go/service/s3"
 )
 
@@ -55,7 +56,7 @@ func StdoutLogger(opts BuildOptions) (Logger, error) {
 // S3Logger returns a log factory that writes logs to a file in an S3
 // bucket.
 func S3Logger(bucket string) (LogFactory, error) {
-	c := s3.New(aws.DefaultConfig)
+	c := s3.New(defaults.DefaultConfig)
 
 	return func(opts BuildOptions) (Logger, error) {
 		name := filepath.Join("logs", opts.Repository, fmt.Sprintf("%s-%s.txt", opts.Sha, uuid.New()))

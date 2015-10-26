@@ -1,0 +1,6 @@
+- file: name=/etc/conveyor mode=0750 owner=root group=root state=directory
+- file: name=/var/run/conveyor mode=0750 owner=root group=root state=directory
+- file: name=/var/run/conveyor/.ssh mode=0750 owner=root group=root state=directory
+- template: src=etc/init/conveyor.conf dest=/etc/init/conveyor.conf
+- template: src=usr/bin/conveyor dest=/usr/bin/conveyor mode=0770
+- service: name=conveyor enabled=true

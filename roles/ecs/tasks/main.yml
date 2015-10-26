@@ -1,4 +1,0 @@
-- shell: docker pull {{ ecs_agent_image }}
-- file: name=/var/run/ecs mode=0750 owner=root group=root state=directory
-- template: src=etc/init/ecs.conf dest=/etc/init/ecs.conf
-- service: name=ecs enabled=true

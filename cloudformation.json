@@ -13,6 +13,11 @@
       "Default": "",
       "Description": "GitHub API token to use when creating commit statuses."
     },
+    "DataDogApiKey": {
+      "Type": "String",
+      "Default": "",
+      "Description": "If provided, metrics will be collected and sent to datadog."
+    },
     "AllowedCIDR": {
       "Type": "String",
       "Default": "",
@@ -25,7 +30,7 @@
     },
     "Version": {
       "Type": "String",
-      "Default": "latest",
+      "Default": "master",
       "Description": "Version of Conveyor to run."
     },
     "BuilderImage": {
@@ -54,7 +59,7 @@
     "AmiId" : {
       "Type": "AWS::EC2::Image::Id",
       "Description": "AMI Id. Defaults to the Conveyor AMI.",
-      "Default": "ami-bdf2a7d8"
+      "Default": "ami-4be7b82e"
     },
     "KeyName": {
       "Type": "AWS::EC2::KeyPair::KeyName",
@@ -245,6 +250,11 @@
       }
     },
 
+    "Queue": {
+      "Type": "AWS::SQS::Queue",
+      "Properties": { }
+    },
+
     "InstancePolicies": {
       "Type": "AWS::IAM::Policy",
       "Properties": {
@@ -256,15 +266,9 @@
             {
               "Effect": "Allow",
               "Action": [
-                "ec2:Describe*",
-                "elasticloadbalancing:*",
-                "ecs:*",
-                "iam:ListInstanceProfiles",
-                "iam:ListRoles",
-                "iam:PassRole",
-                "iam:UploadServerCertificate",
-                "iam:DeleteServerCertificate",
-                "route53:*"
+                "sqs:SendMessage",
+                "sqs:ReceiveMessage",
+                "sqs:DeleteMessageBatch"
               ],
               "Resource": [
                 "*"
@@ -284,52 +288,6 @@
       }
     },
 
-    "ServiceRole": {
-      "Type": "AWS::IAM::Role",
-      "Properties": {
-        "Path": "/",
-        "AssumeRolePolicyDocument": {
-          "Version": "2008-10-17",
-          "Statement": [
-            {
-              "Effect": "Allow",
-              "Principal": {
-                "Service": [ "ecs.amazonaws.com" ]
-              },
-              "Action": [ "sts:AssumeRole" ]
-            }
-          ]
-        }
-      }
-    },
-
-    "ServiceRolePolicies": {
-      "Type": "AWS::IAM::Policy",
-      "Properties": {
-        "PolicyName": "ecsServiceRole",
-        "Roles": [ { "Ref": "ServiceRole" } ],
-        "PolicyDocument": {
-          "Version": "2012-10-17",
-          "Statement": [
-            {
-              "Effect": "Allow",
-              "Action": [
-                "ec2:Describe*",
-                "elasticloadbalancing:*",
-                "ecs:*",
-                "iam:ListInstanceProfiles",
-                "iam:ListRoles",
-                "iam:PassRole",
-                "route53:*"
-              ],
-              "Resource": [
-                "*"
-              ]
-            }
-          ]
-        }
-      }
-    },
 
     "InstanceProfile": {
       "Type": "AWS::IAM::InstanceProfile",
@@ -341,7 +299,6 @@
 
     "LaunchConfiguration": {
       "Type": "AWS::AutoScaling::LaunchConfiguration",
-      "DependsOn": "Cluster",
       "Metadata": {
         "AWS::CloudFormation::Authentication": {
           "S3AccessCreds": {
@@ -353,11 +310,34 @@
         "AWS::CloudFormation::Init": {
           "config": {
             "files": {
-              "/etc/env/ecs.env": {
+              "/etc/env/conveyor.env": {
                 "content": { "Fn::Join": ["", [
-                  "ECS_CLUSTER=", { "Ref": "Cluster" }, "\n",
-                  "ECS_ENGINE_AUTH_TYPE=dockercfg\n",
-                  "ECS_ENGINE_AUTH_DATA=", { "Ref": "DockerCfg" }, "\n"
+                  "GITHUB_TOKEN=", { "Ref": "GitHubToken" }, "\n",
+                  "GITHUB_SECRET=", { "Ref": "GitHubSecret" }, "\n",
+                  "SQS_QUEUE_URL", { "Ref": "Queue" }, "\n",
+                  "QUEUE", "sqs://\n",
+                  "LOGGER=", { "Fn::Join": ["", ["s3://", { "Ref": "Bucket" }]] }, "\n",
+                  "AWS_REGION=", { "Ref": "AWS::Region" }, "\n",
+                  "DRY=", { "Ref": "DryRun" }, "\n",
+                  "REPORTER=", { "Ref": "Reporter" }, "\n"
+                ]] },
+                "mode": "000644",
+                "owner": "root",
+                "group": "root"
+              },
+              "/etc/conveyor/version": {
+                "content": { "Ref": "Version" },
+                "mode": "000644",
+                "owner": "root",
+                "group": "root"
+              },
+              "/etc/dd-agent/datadog.conf": {
+                "content": { "Fn::Join": ["", [
+                  "[Main]\n\n",
+                  "dd_url: https://app.datadoghq.com\n",
+                  "api_key: ", { "Ref": "DataDogApiKey" }, "\n",
+                  "tags: 'role:conveyor'\n",
+                  "non_local_traffic: yes\n"
                 ]] },
                 "mode": "000644",
                 "owner": "root",
@@ -412,10 +392,11 @@
               "",
               [
                 "#!/bin/bash\n",
-                "mkdir -p /var/run/conveyor/.ssh\n",
                 "cfn-init -s ", { "Ref": "AWS::StackName" }, " -r LaunchConfiguration --region ", { "Ref": "AWS::Region" }, "\n",
                 "docker pull ", { "Ref": "BuilderImage" }, "\n",
-                "docker create --name data -v /var/run/conveyor:/var/run/conveyor:ro ubuntu:14.04\n"
+                "docker create --name data -v /var/run/conveyor:/var/run/conveyor:ro ubuntu:14.04\n",
+                "/etc/init.d/datadog-agent start\n",
+                "echo ", { "Ref": "Version" }
               ]
             ]
           }
@@ -434,6 +415,9 @@
         "DesiredCapacity": { "Ref": "DesiredCapacity" },
         "Tags": [
           { "Key": "Name", "Value": "conveyor", "PropagateAtLaunch": true }
+        ],
+        "LoadBalancerNames": [
+          { "Ref": "LoadBalancer" }
         ]
       },
       "UpdatePolicy": {
@@ -444,94 +428,8 @@
           "MinInstancesInService": "1",
           "MaxBatchSize": "2",
           "WaitOnResourceSignals": "false",
-          "PauseTime": "PT2M"
+          "PauseTime": "PT5M"
         }
-      }
-    },
-
-    "Cluster": {
-      "Type": "AWS::ECS::Cluster"
-    },
-
-    "TaskDefinition": {
-      "Type": "AWS::ECS::TaskDefinition",
-      "Properties": {
-        "ContainerDefinitions": [
-          {
-            "Name": "conveyor",
-            "Image": { "Fn::Join": ["", ["remind101/conveyor:", { "Ref": "Version" }]] },
-            "Cpu": 512,
-            "Memory": 256,
-            "EntryPoint": [],
-            "Environment": [
-              {
-                "Name": "GITHUB_TOKEN",
-                "Value": { "Ref": "GitHubToken" }
-              },
-              {
-                "Name": "GITHUB_SECRET",
-                "Value": { "Ref": "GitHubSecret" }
-              },
-              {
-                "Name": "LOGGER",
-                "Value": { "Fn::Join": ["", ["s3://", { "Ref": "Bucket" }]] }
-              },
-              {
-                "Name": "AWS_REGION",
-                "Value": { "Ref": "AWS::Region" }
-              },
-              {
-                "Name": "DRY",
-                "Value": { "Ref": "DryRun" }
-              },
-              {
-                "Name": "REPORTER",
-                "Value": { "Ref": "Reporter" }
-              }
-            ],
-            "PortMappings": [
-              {
-                "HostPort": 8080,
-                "ContainerPort": 8080
-              }
-            ],
-            "VolumesFrom": [],
-            "MountPoints": [
-              {
-                "SourceVolume": "dockerSocket",
-                "ContainerPath": "/var/run/docker.sock",
-                "ReadOnly": false
-              }
-            ],
-            "Essential": true
-          }
-        ],
-        "Volumes": [
-          {
-            "Name": "dockerSocket",
-            "Host": {
-              "SourcePath": "/var/run/docker.sock"
-            }
-          }
-        ]
-      }
-    },
-
-    "Service": {
-      "Type" : "AWS::ECS::Service",
-      "DependsOn": ["Cluster","ServiceRole","ServiceRolePolicies"],
-      "Properties" : {
-        "Cluster" : { "Ref": "Cluster" },
-        "DesiredCount" : 1,
-        "LoadBalancers" : [
-          {
-            "ContainerName": "conveyor",
-            "ContainerPort": 8080,
-            "LoadBalancerName": { "Ref": "LoadBalancer" }
-          }
-        ],
-        "Role" : { "Ref": "ServiceRole" },
-        "TaskDefinition" : { "Ref": "TaskDefinition" }
       }
     }
   }

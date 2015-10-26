@@ -48,6 +48,12 @@ var workerFlags = []cli.Flag{
 		Usage:  "Number of workers in goroutines to start.",
 		EnvVar: "WORKERS",
 	},
+	cli.StringFlag{
+		Name:   "stats",
+		Value:  "",
+		Usage:  "If provided, defines where build metrics are sent. Available options are dogstatsd://<host>",
+		EnvVar: "STATS",
+	},
 }
 
 var cmdWorker = cli.Command{
@@ -70,10 +76,13 @@ func runWorker(q conveyor.BuildQueue, c *cli.Context) error {
 
 	info("Starting %d workers\n", numWorkers)
 
+	ch := make(chan conveyor.BuildRequest)
+	q.Subscribe(ch)
+
 	workers := conveyor.NewWorkerPool(numWorkers, conveyor.WorkerOptions{
-		Builder:    newBuilder(c),
-		LogFactory: newLogFactory(c),
-		BuildQueue: q,
+		Builder:       newBuilder(c),
+		LogFactory:    newLogFactory(c),
+		BuildRequests: ch,
 	})
 
 	workers.Start()
