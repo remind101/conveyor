@@ -333,10 +333,11 @@
               },
               "/etc/dd-agent/datadog.conf": {
                 "content": { "Fn::Join": ["", [
-                  "[Main]\n",
+                  "[Main]\n\n",
                   "dd_url: https://app.datadoghq.com\n",
                   "api_key: ", { "Ref": "DataDogApiKey" }, "\n",
-                  "tags: 'role:conveyor'\n"
+                  "tags: 'role:conveyor'\n",
+                  "non_local_traffic: yes\n"
                 ]] },
                 "mode": "000644",
                 "owner": "root",
@@ -393,7 +394,8 @@
                 "#!/bin/bash\n",
                 "cfn-init -s ", { "Ref": "AWS::StackName" }, " -r LaunchConfiguration --region ", { "Ref": "AWS::Region" }, "\n",
                 "docker pull ", { "Ref": "BuilderImage" }, "\n",
-                "docker create --name data -v /var/run/conveyor:/var/run/conveyor:ro ubuntu:14.04\n"
+                "docker create --name data -v /var/run/conveyor:/var/run/conveyor:ro ubuntu:14.04\n",
+                "/etc/init.d/datadog-agent start\n"
               ]
             ]
           }
