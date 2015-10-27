@@ -383,6 +383,7 @@
         "AssociatePublicIpAddress": true,
         "IamInstanceProfile": { "Ref": "InstanceProfile" },
         "KeyName": { "Ref": "KeyName" },
+        "EbsOptimized": true,
         "SecurityGroups": [
           { "Ref": "InstanceSecurityGroup" }
         ],
