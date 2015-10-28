@@ -51,6 +51,13 @@ func (b *Builder) Build(ctx context.Context, w io.Writer, options builder.BuildO
 		d := since(start)
 		_ = b.statsd.TimeInMilliseconds("conveyor.build.time", d.Seconds()*1000, tags, 1)
 
+		var url string
+		if w, ok := w.(interface {
+			URL() string
+		}); ok {
+			url = w.URL()
+		}
+
 		if err != nil {
 			_ = b.statsd.Count("conveyor.build.error", 1, tags, 1)
 			if err, ok := err.(*builder.BuildCanceledError); ok {
@@ -61,18 +68,26 @@ func (b *Builder) Build(ctx context.Context, w io.Writer, options builder.BuildO
 					_ = b.statsd.Count("conveyor.build.canceled", 1, tags, 1)
 				}
 			}
+			text := fmt.Sprintf("Build of %s@%s failed with: %s", options.Repository, options.Branch, err)
+			if url != "" {
+				text = fmt.Sprintf("%s\n\n**[View logs](%s)**", text, url)
+			}
 			_ = b.statsd.Event(&statsd.Event{
 				Title: "Conveyor build failed",
-				Text:  fmt.Sprintf("Build of %s@%s failed with: %s", options.Repository, options.Branch, err),
+				Text:  text,
 				Tags: append(tags,
 					fmt.Sprintf("branch:%s", options.Branch),
 					fmt.Sprintf("sha:%s", options.Sha),
 				),
 			})
 		} else {
+			text := fmt.Sprintf("Built %s from %s@%s", image, options.Repository, options.Branch)
+			if url != "" {
+				text = fmt.Sprintf("%s\n\n**[View logs](%s)**", text, url)
+			}
 			_ = b.statsd.Event(&statsd.Event{
 				Title: fmt.Sprintf("Conveyor built %s", image),
-				Text:  fmt.Sprintf("Built %s from %s@%s", image, options.Repository, options.Branch),
+				Text:  text,
 				Tags: append(tags,
 					fmt.Sprintf("branch:%s", options.Branch),
 					fmt.Sprintf("sha:%s", options.Sha),

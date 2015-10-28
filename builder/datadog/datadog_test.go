@@ -58,6 +58,44 @@ func TestBuilder_Build(t *testing.T) {
 	c.AssertExpectations(t)
 }
 
+func TestBuilder_Build_LogURL(t *testing.T) {
+	c := new(mockStatsdClient)
+	b := &Builder{
+		Builder: builder.BuilderFunc(func(ctx context.Context, w io.Writer, options builder.BuildOptions) (string, error) {
+			return "remind101/acme-inc:1234", nil
+		}),
+		statsd: c,
+	}
+
+	c.On("TimeInMilliseconds",
+		"conveyor.build.time",
+		float64(1000),
+		[]string{"repo:remind101/acme-inc"},
+		float64(1),
+	).Return(nil)
+	c.On("Event", &statsd.Event{
+		Title: "Conveyor built remind101/acme-inc:1234",
+		Text: `Built remind101/acme-inc:1234 from remind101/acme-inc@master
+
+**[View logs](http://www.google.com)**`,
+		Tags: []string{
+			"repo:remind101/acme-inc",
+			"branch:master",
+			"sha:1234",
+			"image:remind101/acme-inc:1234",
+		},
+	}).Return(nil)
+
+	_, err := b.Build(context.Background(), new(mockLogger), builder.BuildOptions{
+		Repository: "remind101/acme-inc",
+		Branch:     "master",
+		Sha:        "1234",
+	})
+	assert.NoError(t, err)
+
+	c.AssertExpectations(t)
+}
+
 func TestBuilder_Build_Err(t *testing.T) {
 	errBoom := errors.New("container returned non-zero exit")
 
@@ -224,4 +262,12 @@ func (c *mockStatsdClient) Count(name string, value int64, tags []string, rate f
 func (c *mockStatsdClient) Event(e *statsd.Event) error {
 	args := c.Called(e)
 	return args.Error(0)
+}
+
+type mockLogger struct {
+	io.Writer
+}
+
+func (l *mockLogger) URL() string {
+	return "http://www.google.com"
 }
