@@ -69,15 +69,32 @@ func TestBuilder_Build_Err(t *testing.T) {
 		statsd: c,
 	}
 
+	c.On("TimeInMilliseconds",
+		"conveyor.build.time",
+		float64(1000),
+		[]string{"repo:remind101/acme-inc"},
+		float64(1),
+	).Return(nil)
 	c.On("Count",
 		"conveyor.build.error",
 		int64(1),
 		[]string{"repo:remind101/acme-inc"},
 		float64(1),
 	).Return(nil)
+	c.On("Event", &statsd.Event{
+		Title: "Conveyor build failed",
+		Text:  "Build of remind101/acme-inc@master failed with: container returned non-zero exit",
+		Tags: []string{
+			"repo:remind101/acme-inc",
+			"branch:master",
+			"sha:1234",
+		},
+	}).Return(nil)
 
 	_, err := b.Build(context.Background(), ioutil.Discard, builder.BuildOptions{
 		Repository: "remind101/acme-inc",
+		Sha:        "1234",
+		Branch:     "master",
 	})
 	assert.Equal(t, err, errBoom)
 
@@ -98,6 +115,12 @@ func TestBuilder_Build_Canceled(t *testing.T) {
 		statsd: c,
 	}
 
+	c.On("TimeInMilliseconds",
+		"conveyor.build.time",
+		float64(1000),
+		[]string{"repo:remind101/acme-inc"},
+		float64(1),
+	).Return(nil)
 	c.On("Count",
 		"conveyor.build.error",
 		int64(1),
@@ -111,9 +134,20 @@ func TestBuilder_Build_Canceled(t *testing.T) {
 		[]string{"repo:remind101/acme-inc"},
 		float64(1),
 	).Return(nil)
+	c.On("Event", &statsd.Event{
+		Title: "Conveyor build failed",
+		Text:  "Build of remind101/acme-inc@master failed with: container returned non-zero exit (context canceled)",
+		Tags: []string{
+			"repo:remind101/acme-inc",
+			"branch:master",
+			"sha:1234",
+		},
+	}).Return(nil)
 
 	_, err := b.Build(context.Background(), ioutil.Discard, builder.BuildOptions{
 		Repository: "remind101/acme-inc",
+		Branch:     "master",
+		Sha:        "1234",
 	})
 	assert.Equal(t, err, errCanceled)
 
@@ -134,22 +168,38 @@ func TestBuilder_Build_DeadlineExceeded(t *testing.T) {
 		statsd: c,
 	}
 
+	c.On("TimeInMilliseconds",
+		"conveyor.build.time",
+		float64(1000),
+		[]string{"repo:remind101/acme-inc"},
+		float64(1),
+	).Return(nil)
 	c.On("Count",
 		"conveyor.build.error",
 		int64(1),
 		[]string{"repo:remind101/acme-inc"},
 		float64(1),
 	).Return(nil)
-
 	c.On("Count",
 		"conveyor.build.timedout",
 		int64(1),
 		[]string{"repo:remind101/acme-inc"},
 		float64(1),
 	).Return(nil)
+	c.On("Event", &statsd.Event{
+		Title: "Conveyor build failed",
+		Text:  "Build of remind101/acme-inc@master failed with: container returned non-zero exit (context deadline exceeded)",
+		Tags: []string{
+			"repo:remind101/acme-inc",
+			"branch:master",
+			"sha:1234",
+		},
+	}).Return(nil)
 
 	_, err := b.Build(context.Background(), ioutil.Discard, builder.BuildOptions{
 		Repository: "remind101/acme-inc",
+		Branch:     "master",
+		Sha:        "1234",
 	})
 	assert.Equal(t, err, errCanceled)
 

@@ -5,7 +5,6 @@ package datadog
 import (
 	"fmt"
 	"io"
-	"os"
 	"time"
 
 	"github.com/DataDog/datadog-go/statsd"
@@ -50,6 +49,8 @@ func (b *Builder) Build(ctx context.Context, w io.Writer, options builder.BuildO
 
 	defer func() {
 		d := since(start)
+		_ = b.statsd.TimeInMilliseconds("conveyor.build.time", d.Seconds()*1000, tags, 1)
+
 		if err != nil {
 			_ = b.statsd.Count("conveyor.build.error", 1, tags, 1)
 			if err, ok := err.(*builder.BuildCanceledError); ok {
@@ -60,9 +61,16 @@ func (b *Builder) Build(ctx context.Context, w io.Writer, options builder.BuildO
 					_ = b.statsd.Count("conveyor.build.canceled", 1, tags, 1)
 				}
 			}
+			_ = b.statsd.Event(&statsd.Event{
+				Title: "Conveyor build failed",
+				Text:  fmt.Sprintf("Build of %s@%s failed with: %s", options.Repository, options.Branch, err),
+				Tags: append(tags,
+					fmt.Sprintf("branch:%s", options.Branch),
+					fmt.Sprintf("sha:%s", options.Sha),
+				),
+			})
 		} else {
-			_ = b.statsd.TimeInMilliseconds("conveyor.build.time", d.Seconds()*1000, tags, 1)
-			if err2 := b.statsd.Event(&statsd.Event{
+			_ = b.statsd.Event(&statsd.Event{
 				Title: fmt.Sprintf("Conveyor built %s", image),
 				Text:  fmt.Sprintf("Built %s from %s@%s", image, options.Repository, options.Branch),
 				Tags: append(tags,
@@ -70,9 +78,7 @@ func (b *Builder) Build(ctx context.Context, w io.Writer, options builder.BuildO
 					fmt.Sprintf("sha:%s", options.Sha),
 					fmt.Sprintf("image:%s", image),
 				),
-			}); err2 != nil {
-				fmt.Fprintf(os.Stderr, "datadog event error: %v\n", err2)
-			}
+			})
 		}
 	}()
 
