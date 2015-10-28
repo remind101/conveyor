@@ -52,6 +52,14 @@ func (b *Builder) Build(ctx context.Context, w io.Writer, options builder.BuildO
 		d := since(start)
 		if err != nil {
 			_ = b.statsd.Count("conveyor.build.error", 1, tags, 1)
+			if err, ok := err.(*builder.BuildCanceledError); ok {
+				switch err.Reason {
+				case context.DeadlineExceeded:
+					_ = b.statsd.Count("conveyor.build.timedout", 1, tags, 1)
+				case context.Canceled:
+					_ = b.statsd.Count("conveyor.build.canceled", 1, tags, 1)
+				}
+			}
 		} else {
 			_ = b.statsd.TimeInMilliseconds("conveyor.build.time", d.Seconds()*1000, tags, 1)
 			if err2 := b.statsd.Event(&statsd.Event{

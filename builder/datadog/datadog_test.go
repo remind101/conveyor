@@ -20,7 +20,6 @@ func init() {
 	since = func(time.Time) time.Duration {
 		return time.Second
 	}
-
 }
 
 func TestBuilder_Build(t *testing.T) {
@@ -55,6 +54,8 @@ func TestBuilder_Build(t *testing.T) {
 		Sha:        "1234",
 	})
 	assert.NoError(t, err)
+
+	c.AssertExpectations(t)
 }
 
 func TestBuilder_Build_Err(t *testing.T) {
@@ -79,6 +80,80 @@ func TestBuilder_Build_Err(t *testing.T) {
 		Repository: "remind101/acme-inc",
 	})
 	assert.Equal(t, err, errBoom)
+
+	c.AssertExpectations(t)
+}
+
+func TestBuilder_Build_Canceled(t *testing.T) {
+	errCanceled := &builder.BuildCanceledError{
+		Err:    errors.New("container returned non-zero exit"),
+		Reason: context.Canceled,
+	}
+
+	c := new(mockStatsdClient)
+	b := &Builder{
+		Builder: builder.BuilderFunc(func(ctx context.Context, w io.Writer, options builder.BuildOptions) (string, error) {
+			return "", errCanceled
+		}),
+		statsd: c,
+	}
+
+	c.On("Count",
+		"conveyor.build.error",
+		int64(1),
+		[]string{"repo:remind101/acme-inc"},
+		float64(1),
+	).Return(nil)
+
+	c.On("Count",
+		"conveyor.build.canceled",
+		int64(1),
+		[]string{"repo:remind101/acme-inc"},
+		float64(1),
+	).Return(nil)
+
+	_, err := b.Build(context.Background(), ioutil.Discard, builder.BuildOptions{
+		Repository: "remind101/acme-inc",
+	})
+	assert.Equal(t, err, errCanceled)
+
+	c.AssertExpectations(t)
+}
+
+func TestBuilder_Build_DeadlineExceeded(t *testing.T) {
+	errCanceled := &builder.BuildCanceledError{
+		Err:    errors.New("container returned non-zero exit"),
+		Reason: context.DeadlineExceeded,
+	}
+
+	c := new(mockStatsdClient)
+	b := &Builder{
+		Builder: builder.BuilderFunc(func(ctx context.Context, w io.Writer, options builder.BuildOptions) (string, error) {
+			return "", errCanceled
+		}),
+		statsd: c,
+	}
+
+	c.On("Count",
+		"conveyor.build.error",
+		int64(1),
+		[]string{"repo:remind101/acme-inc"},
+		float64(1),
+	).Return(nil)
+
+	c.On("Count",
+		"conveyor.build.timedout",
+		int64(1),
+		[]string{"repo:remind101/acme-inc"},
+		float64(1),
+	).Return(nil)
+
+	_, err := b.Build(context.Background(), ioutil.Discard, builder.BuildOptions{
+		Repository: "remind101/acme-inc",
+	})
+	assert.Equal(t, err, errCanceled)
+
+	c.AssertExpectations(t)
 }
 
 // mockStatsdClient is a mock implementation of the statsdClient interface.
