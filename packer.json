@@ -17,10 +17,10 @@
     "ami_groups": "all",
     "ami_name": "Conveyor {{user `sha`}}",
     "ami_block_device_mappings": [
-      { "device_name": "/dev/xvdh", "volume_type": "standard", "volume_size": 100, "delete_on_termination": true }
+      { "device_name": "/dev/xvdh", "volume_type": "io1", "iops": 1000, "volume_size": 50, "delete_on_termination": true }
     ],
     "launch_block_device_mappings": [
-      { "device_name": "/dev/xvdh", "volume_type": "standard", "volume_size": 100, "delete_on_termination": true }
+      { "device_name": "/dev/xvdh", "volume_type": "io1", "iops": 1000, "volume_size": 50, "delete_on_termination": true }
     ],
     "tags": {
       "sha": "{{user `sha`}}"

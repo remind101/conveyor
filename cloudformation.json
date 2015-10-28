@@ -59,7 +59,7 @@
     "AmiId" : {
       "Type": "AWS::EC2::Image::Id",
       "Description": "AMI Id. Defaults to the Conveyor AMI.",
-      "Default": "ami-4be7b82e"
+      "Default": "ami-2d097847"
     },
     "KeyName": {
       "Type": "AWS::EC2::KeyPair::KeyName",
@@ -383,6 +383,7 @@
         "AssociatePublicIpAddress": true,
         "IamInstanceProfile": { "Ref": "InstanceProfile" },
         "KeyName": { "Ref": "KeyName" },
+        "EbsOptimized": true,
         "SecurityGroups": [
           { "Ref": "InstanceSecurityGroup" }
         ],
