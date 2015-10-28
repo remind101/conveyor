@@ -314,8 +314,8 @@
                 "content": { "Fn::Join": ["", [
                   "GITHUB_TOKEN=", { "Ref": "GitHubToken" }, "\n",
                   "GITHUB_SECRET=", { "Ref": "GitHubSecret" }, "\n",
-                  "SQS_QUEUE_URL", { "Ref": "Queue" }, "\n",
-                  "QUEUE", "sqs://\n",
+                  "SQS_QUEUE_URL=", { "Ref": "Queue" }, "\n",
+                  "QUEUE=", "sqs://\n",
                   "LOGGER=", { "Fn::Join": ["", ["s3://", { "Ref": "Bucket" }]] }, "\n",
                   "AWS_REGION=", { "Ref": "AWS::Region" }, "\n",
                   "DRY=", { "Ref": "DryRun" }, "\n",
