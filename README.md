@@ -95,10 +95,10 @@ remind101/acme-inc@sha256:44be4f298f764a2a8eb7eecce5383d2b
 
 ## Development
 
-First, cp `.env.sample` to `.env` and add values in the environment variables. The `GITHUB_TOKEN` needs the `repo:status` scope.
+First, bootstrap the `remind101/conveyor-builder` image, SSH keys and docker config:
 
 ```console
-cp .env.sample .env
+$ make bootstrap
 ```
 
 Then start it up with docker-compose:
@@ -110,5 +110,9 @@ $ docker-compose up
 If you want to test external GitHub webhooks, the easiest way to do that is using ngrok:
 
 ```console
-$ ngrok 8080
+$ ngrok $(docker-machine ip default):8080
 ```
+
+Then add a new `push` webhook to a repo, pointed at the ngrok URL. No secret is necessary unless you set `GITHUB_SECRET` in `.env`.
+
+**NOTE**: If you're testing on a private repo, you need to make sure that you've added the generated SSH key to your github account. The generated SSH key can be found in `./builder/docker/data/.ssh/id_rsa.pub`

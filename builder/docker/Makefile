@@ -4,7 +4,7 @@ IMAGE=remind101/conveyor-builder
 DATA_IMAGE=conveyor-builder-data
 EMAIL=your_email@example.com
 
-test: build data
+test: bootstrap
 	docker run --privileged=true \
 		--volumes-from=data \
 		-e CACHE=off \
@@ -13,6 +13,8 @@ test: build data
 		-e SHA=2e4edf57db00d55051c64d1568e2214858a0897d \
 		-e DRY=true \
 		${IMAGE}
+
+bootstrap: build data
 
 build:
 	docker build -t ${IMAGE} .
