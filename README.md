@@ -114,3 +114,5 @@ $ ngrok $(docker-machine ip default):8080
 ```
 
 Then add a new `push` webhook to a repo, pointed at the ngrok URL. No secret is necessary unless you set `GITHUB_SECRET` in `.env`.
+
+**NOTE**: If you're testing on a private repo, you need to make sure that you've added the generated SSH key to your github account. The generated SSH key can be found in `./builder/docker/data/.ssh/id_rsa.pub`
