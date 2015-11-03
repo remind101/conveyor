@@ -60,7 +60,9 @@ func newServer(q conveyor.BuildQueue, c *cli.Context) http.Handler {
 	)
 
 	// Slack webhooks
-	r.Handle("/slack", newSlackServer(c))
+	if c.String("slack.token") != "" {
+		r.Handle("/slack", newSlackServer(c))
+	}
 
 	n := negroni.Classic()
 	n.UseHandler(r)

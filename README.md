@@ -70,6 +70,21 @@ Conveyor currently supports the following build queues:
 
 1. SQS
 
+### Slack Integration
+
+Conveyor can optionally expose some management tasks via Slack slash commands.
+
+**Setup**
+
+1. Add a new [Slash command](https://slack.com/services/new/slash-commands). I'd recommend using `/conveyor` as the command.
+2. Copy the token and provide it as the `--slack.token` flag.
+
+Now, you can use Conveyor to automatically manage the GitHub webhook:
+
+```console
+/conveyor setup org/repo
+```
+
 ## API (Soon)
 
 Conveyor also sports a restful API for triggering builds. You can use this with tooling to, say for example, trigger a build before you deploy.
