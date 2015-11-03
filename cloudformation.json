@@ -13,6 +13,16 @@
       "Default": "",
       "Description": "GitHub API token to use when creating commit statuses."
     },
+    "SlackToken": {
+      "Type": "String",
+      "Default": "",
+      "Description": "Secret shared with Slack to verify slash command webhooks."
+    },
+    "BaseUrl": {
+      "Type": "String",
+      "Default": "",
+      "Description": "Base URL where this instance will run."
+    },
     "DataDogApiKey": {
       "Type": "String",
       "Default": "",
@@ -192,7 +202,7 @@
         "SecurityGroupIngress": [
           {
             "IpProtocol": "tcp", "FromPort": "80", "ToPort": "80",
-            "CidrIp": "192.30.252.0/22"
+            "CidrIp": "0.0.0.0/0"
           },
           {
             "IpProtocol": "tcp", "FromPort": "80", "ToPort": "80",
@@ -314,6 +324,8 @@
                 "content": { "Fn::Join": ["", [
                   "GITHUB_TOKEN=", { "Ref": "GitHubToken" }, "\n",
                   "GITHUB_SECRET=", { "Ref": "GitHubSecret" }, "\n",
+                  "SLACK_TOKEN=", { "Ref": "SlackToken" }, "\n",
+                  "BASE_URL=", { "Ref": "BaseURL" }, "\n",
                   "SQS_QUEUE_URL", { "Ref": "Queue" }, "\n",
                   "QUEUE", "sqs://\n",
                   "LOGGER=", { "Fn::Join": ["", ["s3://", { "Ref": "Bucket" }]] }, "\n",
