@@ -73,6 +73,10 @@
 			"Rev": "4802bea385193a8f3268b38a2918d46049931d6b"
 		},
 		{
+			"ImportPath": "github.com/ejholmes/slash",
+			"Rev": "7be7cffbccc6060d438928213655205ad50241aa"
+		},
+		{
 			"ImportPath": "github.com/fsouza/go-dockerclient",
 			"Rev": "933433faa3e1c0bbc825b251143f8e77affbf797"
 		},
@@ -83,6 +87,14 @@
 		{
 			"ImportPath": "github.com/google/go-querystring/query",
 			"Rev": "547ef5ac979778feb2f760cdb5f4eae1a2207b86"
+		},
+		{
+			"ImportPath": "github.com/gorilla/context",
+			"Rev": "215affda49addc4c8ef7e2534915df2c8c35c6cd"
+		},
+		{
+			"ImportPath": "github.com/gorilla/mux",
+			"Rev": "e444e69cbd2e2e3e0749a2f3c717cec491552bbf"
 		},
 		{
 			"ImportPath": "github.com/honeybadger-io/honeybadger-go",
