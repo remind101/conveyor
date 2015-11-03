@@ -325,7 +325,7 @@
                   "GITHUB_TOKEN=", { "Ref": "GitHubToken" }, "\n",
                   "GITHUB_SECRET=", { "Ref": "GitHubSecret" }, "\n",
                   "SLACK_TOKEN=", { "Ref": "SlackToken" }, "\n",
-                  "BASE_URL=", { "Ref": "BaseURL" }, "\n",
+                  "BASE_URL=", { "Ref": "BaseUrl" }, "\n",
                   "SQS_QUEUE_URL", { "Ref": "Queue" }, "\n",
                   "QUEUE", "sqs://\n",
                   "LOGGER=", { "Fn::Join": ["", ["s3://", { "Ref": "Bucket" }]] }, "\n",
