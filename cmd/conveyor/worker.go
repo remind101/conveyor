@@ -16,7 +16,7 @@ var workerFlags = []cli.Flag{
 	cli.StringFlag{
 		Name:   "github.token",
 		Value:  "",
-		Usage:  "GitHub API token to use when updating commit statuses on repositories.",
+		Usage:  "GitHub API token to use when updating commit statuses and setting up webhooks on repositories.",
 		EnvVar: "GITHUB_TOKEN",
 	},
 	cli.BoolFlag{

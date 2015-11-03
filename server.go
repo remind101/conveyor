@@ -9,7 +9,6 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/codegangsta/negroni"
 	"github.com/ejholmes/hookshot"
 	"github.com/ejholmes/hookshot/events"
 	"github.com/remind101/conveyor/builder"
@@ -32,10 +31,7 @@ func NewServer(q BuildQueue) *Server {
 	r.HandleFunc("ping", s.Ping)
 	r.HandleFunc("push", s.Push)
 
-	n := negroni.Classic()
-	n.UseHandler(r)
-
-	s.mux = n
+	s.mux = r
 	return s
 }
 
