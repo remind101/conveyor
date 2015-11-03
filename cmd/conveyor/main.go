@@ -16,6 +16,12 @@ var sharedFlags = []cli.Flag{
 		Usage:  "Build queue to use. Defaults to an in memory queue.",
 		EnvVar: "QUEUE",
 	},
+	cli.StringFlag{
+		Name:   "url",
+		Value:  "",
+		Usage:  "Canonical URL for this instance. Used when adding webhooks to repos.",
+		EnvVar: "BASE_URL",
+	},
 }
 
 func main() {

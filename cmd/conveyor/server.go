@@ -24,6 +24,12 @@ var serverFlags = []cli.Flag{
 		Usage:  "Shared secret used by GitHub to sign webhook payloads. This secret will be used to verify that the request came from GitHub.",
 		EnvVar: "GITHUB_SECRET",
 	},
+	cli.StringFlag{
+		Name:   "slack.token",
+		Value:  "",
+		Usage:  "Secret shared with Slack to verify slash command webhooks",
+		EnvVar: "SLACK_TOKEN",
+	},
 }
 
 var cmdServer = cli.Command{
