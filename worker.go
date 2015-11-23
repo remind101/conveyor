@@ -1,8 +1,11 @@
 package conveyor
 
 import (
+	"io"
 	"log"
 	"sync"
+
+	"code.google.com/p/go-uuid/uuid"
 
 	"github.com/remind101/conveyor/builder"
 )
@@ -60,8 +63,8 @@ type WorkerOptions struct {
 	// BuildQueue to pull BuildRequests from.
 	BuildRequests chan BuildRequest
 
-	// LogFactory used to generate an io.Writer for each build.
-	LogFactory builder.LogFactory
+	// BuildLogs used to generate an io.Writer for each build.
+	BuildLogs builder.Logs
 }
 
 // Worker pulls jobs off of a BuildQueue and performs the build.
@@ -69,8 +72,8 @@ type Worker struct {
 	// Builder to use to build.
 	builder.Builder
 
-	// LogFactory to use to build a builder.Logger
-	LogFactory builder.LogFactory
+	// BuildLogs to use to build a builder.Logger
+	BuildLogs builder.Logs
 
 	// Queue to pull jobs from.
 	buildRequests chan BuildRequest
@@ -87,7 +90,7 @@ type Worker struct {
 func NewWorker(options WorkerOptions) *Worker {
 	return &Worker{
 		Builder:       builder.WithCancel(options.Builder),
-		LogFactory:    options.LogFactory,
+		BuildLogs:     options.BuildLogs,
 		buildRequests: options.BuildRequests,
 		shutdown:      make(chan struct{}),
 		done:          make(chan error),
@@ -142,10 +145,12 @@ func (w *Worker) Shutdown() error {
 	return <-w.done
 }
 
-func (w *Worker) newLogger(opts builder.BuildOptions) (builder.Logger, error) {
-	if w.LogFactory == nil {
-		return builder.StdoutLogger(opts)
+func (w *Worker) newLogger(opts builder.BuildOptions) (io.Writer, error) {
+	l := w.BuildLogs
+	if l == nil {
+		l = builder.DiscardLogs
 	}
 
-	return w.LogFactory(opts)
+	id := uuid.New()
+	return l.Writer(id)
 }

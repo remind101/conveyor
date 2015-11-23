@@ -131,8 +131,8 @@ type mockBuildLogs struct {
 	mock.Mock
 }
 
-func (b *mockBuildLogs) Writer(opts builder.BuildOptions) (io.Writer, error) {
-	args := b.Called(opts)
+func (b *mockBuildLogs) Writer(id string) (io.Writer, error) {
+	args := b.Called(id)
 	return args.Get(0).(io.Writer), args.Error(1)
 }
 

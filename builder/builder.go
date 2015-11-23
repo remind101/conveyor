@@ -131,7 +131,9 @@ func (b *statusUpdaterBuilder) updateStatus(w io.Writer, opts BuildOptions, stat
 	}
 	var url *string
 	if status == "success" || status == "failure" || status == "error" {
-		if w, ok := w.(Logger); ok {
+		if w, ok := w.(interface {
+			URL() string
+		}); ok {
 			url = github.String(w.URL())
 		}
 	}

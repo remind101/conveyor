@@ -81,7 +81,7 @@ func runWorker(q conveyor.BuildQueue, c *cli.Context) error {
 
 	workers := conveyor.NewWorkerPool(numWorkers, conveyor.WorkerOptions{
 		Builder:       newBuilder(c),
-		LogFactory:    newLogFactory(c),
+		BuildLogs:     newLogger(c),
 		BuildRequests: ch,
 	})
 

@@ -12,15 +12,11 @@ import (
 )
 
 func TestWorker(t *testing.T) {
-	l := builder.NewLogger(ioutil.Discard)
 	b := new(mockBuilder)
-	f := func(options builder.BuildOptions) (builder.Logger, error) {
-		return l, nil
-	}
 	q := make(chan BuildRequest, 1)
 	w := &Worker{
 		Builder:       b,
-		LogFactory:    f,
+		BuildLogs:     builder.DiscardLogs,
 		buildRequests: q,
 	}
 
@@ -30,7 +26,7 @@ func TestWorker(t *testing.T) {
 		close(done)
 	}()
 
-	b.On("Build", l, builder.BuildOptions{}).Return("", nil)
+	b.On("Build", ioutil.Discard, builder.BuildOptions{}).Return("", nil)
 
 	q <- BuildRequest{
 		Ctx:          context.Background(),
@@ -42,15 +38,11 @@ func TestWorker(t *testing.T) {
 }
 
 func TestWorker_Shutdown(t *testing.T) {
-	l := builder.NewLogger(ioutil.Discard)
 	b := new(mockBuilder)
-	f := func(options builder.BuildOptions) (builder.Logger, error) {
-		return l, nil
-	}
 	q := make(chan BuildRequest, 1)
 	w := &Worker{
 		Builder:       b,
-		LogFactory:    f,
+		BuildLogs:     builder.DiscardLogs,
 		buildRequests: q,
 		shutdown:      make(chan struct{}),
 		done:          make(chan error),
@@ -70,15 +62,11 @@ func TestWorker_Shutdown(t *testing.T) {
 }
 
 func TestWorker_Shutdown_Cancel(t *testing.T) {
-	l := builder.NewLogger(ioutil.Discard)
 	b := new(mockCancelBuilder)
-	f := func(options builder.BuildOptions) (builder.Logger, error) {
-		return l, nil
-	}
 	q := make(chan BuildRequest, 1)
 	w := &Worker{
 		Builder:       b,
-		LogFactory:    f,
+		BuildLogs:     builder.DiscardLogs,
 		buildRequests: q,
 		shutdown:      make(chan struct{}),
 		done:          make(chan error),
@@ -99,15 +87,11 @@ func TestWorker_Shutdown_Cancel(t *testing.T) {
 }
 
 func TestWorker_Shutdown_Cancel_Error(t *testing.T) {
-	l := builder.NewLogger(ioutil.Discard)
 	b := new(mockCancelBuilder)
-	f := func(options builder.BuildOptions) (builder.Logger, error) {
-		return l, nil
-	}
 	q := make(chan BuildRequest, 1)
 	w := &Worker{
 		Builder:       b,
-		LogFactory:    f,
+		BuildLogs:     builder.DiscardLogs,
 		buildRequests: q,
 		shutdown:      make(chan struct{}),
 		done:          make(chan error),

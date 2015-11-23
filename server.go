@@ -20,14 +20,14 @@ import (
 type Server struct {
 	Queue BuildQueue
 
-	BuildLogs BuildLogs
+	BuildLogs builder.Logs
 
 	// mux contains the routes.
 	mux http.Handler
 }
 
 // NewServer returns a new Server instance
-func NewServer(q BuildQueue, b BuildLogs) *Server {
+func NewServer(q BuildQueue, b builder.Logs) *Server {
 	s := &Server{Queue: q, BuildLogs: b}
 
 	g := hookshot.NewRouter()
