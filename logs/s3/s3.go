@@ -22,7 +22,7 @@ type Logs struct {
 	client *s3.S3
 }
 
-func NewLogs(bucket string) *Logs {
+func NewLogger(bucket string) *Logs {
 	c := s3.New(defaults.DefaultConfig)
 
 	return &Logs{

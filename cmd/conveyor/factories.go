@@ -22,6 +22,7 @@ import (
 	"github.com/remind101/conveyor/builder/datadog"
 	"github.com/remind101/conveyor/builder/docker"
 	"github.com/remind101/conveyor/logs"
+	"github.com/remind101/conveyor/logs/cloudwatch"
 	"github.com/remind101/conveyor/logs/s3"
 	"github.com/remind101/conveyor/slack"
 	"github.com/remind101/pkg/reporter"
@@ -149,7 +150,9 @@ func newLogger(c *cli.Context) logs.Logger {
 
 	switch u.Scheme {
 	case "s3":
-		return s3.NewLogs(u.Host)
+		return s3.NewLogger(u.Host)
+	case "cloudwatch":
+		return cloudwatch.NewLogger(u.Host)
 	case "stdout":
 		return logs.Stdout
 	default:
