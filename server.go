@@ -11,6 +11,7 @@ import (
 
 	"github.com/ejholmes/hookshot"
 	"github.com/ejholmes/hookshot/events"
+	"github.com/gorilla/mux"
 	"github.com/remind101/conveyor/builder"
 )
 
@@ -19,17 +20,23 @@ import (
 type Server struct {
 	Queue BuildQueue
 
+	BuildLogs BuildLogs
+
 	// mux contains the routes.
 	mux http.Handler
 }
 
 // NewServer returns a new Server instance
-func NewServer(q BuildQueue) *Server {
-	s := &Server{Queue: q}
+func NewServer(q BuildQueue, b BuildLogs) *Server {
+	s := &Server{Queue: q, BuildLogs: b}
 
-	r := hookshot.NewRouter()
-	r.HandleFunc("ping", s.Ping)
-	r.HandleFunc("push", s.Push)
+	g := hookshot.NewRouter()
+	g.HandleFunc("ping", s.Ping)
+	g.HandleFunc("push", s.Push)
+
+	r := mux.NewRouter()
+	r.HandleFunc("/logs/{id}", s.Logs).Methods("GET")
+	r.NotFoundHandler = g
 
 	s.mux = r
 	return s
@@ -38,6 +45,21 @@ func NewServer(q BuildQueue) *Server {
 // ServeHTTP implements the http.Handler interface.
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	s.mux.ServeHTTP(w, r)
+}
+
+// Logs is an http.HandlerFunc that will stream the logs for a build.
+func (s *Server) Logs(w http.ResponseWriter, req *http.Request) {
+	vars := mux.Vars(req)
+
+	// Get a handle to an io.Reader to stream the logs from.
+	r, err := s.BuildLogs.Reader(vars["id"])
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Copy the log stream to the client.
+	io.Copy(w, r)
 }
 
 // Ping is an http.HandlerFunc that will handle the `ping` event from GitHub.

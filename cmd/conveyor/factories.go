@@ -54,7 +54,7 @@ func newServer(q conveyor.BuildQueue, c *cli.Context) http.Handler {
 	// Github webhooks
 	r.MatcherFunc(githubWebhook).Handler(
 		hookshot.Authorize(
-			conveyor.NewServer(q),
+			conveyor.NewServer(q, conveyor.DiscardLogs),
 			c.String("github.secret"),
 		),
 	)

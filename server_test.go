@@ -1,6 +1,7 @@
 package conveyor
 
 import (
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -8,10 +9,27 @@ import (
 
 	"github.com/remind101/conveyor/builder"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
+func TestServer_Logs(t *testing.T) {
+	b := new(mockBuildLogs)
+	s := NewServer(nil, b)
+
+	resp := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/logs/1234", nil)
+
+	b.On("Reader", "1234").Return(strings.NewReader("Logs"), nil)
+
+	s.ServeHTTP(resp, req)
+	assert.Equal(t, http.StatusOK, resp.Code)
+	assert.Equal(t, "Logs", resp.Body.String())
+
+	b.AssertExpectations(t)
+}
+
 func TestServer_Ping(t *testing.T) {
-	s := NewServer(nil)
+	s := NewServer(nil, nil)
 
 	resp := httptest.NewRecorder()
 	req, _ := http.NewRequest("POST", "/", nil)
@@ -23,7 +41,7 @@ func TestServer_Ping(t *testing.T) {
 
 func TestServer_Push(t *testing.T) {
 	q := new(mockBuildQueue)
-	s := NewServer(q)
+	s := NewServer(q, nil)
 
 	resp := httptest.NewRecorder()
 	req, _ := http.NewRequest("POST", "/", strings.NewReader(`{
@@ -49,7 +67,7 @@ func TestServer_Push(t *testing.T) {
 
 func TestServer_Push_Fork(t *testing.T) {
 	q := new(mockBuildQueue)
-	s := NewServer(q)
+	s := NewServer(q, nil)
 
 	resp := httptest.NewRecorder()
 	req, _ := http.NewRequest("POST", "/", strings.NewReader(`{
@@ -70,7 +88,7 @@ func TestServer_Push_Fork(t *testing.T) {
 
 func TestServer_Push_Deleted(t *testing.T) {
 	q := new(mockBuildQueue)
-	s := NewServer(q)
+	s := NewServer(q, nil)
 
 	resp := httptest.NewRecorder()
 	req, _ := http.NewRequest("POST", "/", strings.NewReader(`{
@@ -107,4 +125,18 @@ func TestNoCache(t *testing.T) {
 			t.Fatalf("noCache(%q) => %v; want %v", tt.in, got, want)
 		}
 	}
+}
+
+type mockBuildLogs struct {
+	mock.Mock
+}
+
+func (b *mockBuildLogs) Writer(opts builder.BuildOptions) (io.Writer, error) {
+	args := b.Called(opts)
+	return args.Get(0).(io.Writer), args.Error(1)
+}
+
+func (b *mockBuildLogs) Reader(id string) (io.Reader, error) {
+	args := b.Called(id)
+	return args.Get(0).(io.Reader), args.Error(1)
 }
