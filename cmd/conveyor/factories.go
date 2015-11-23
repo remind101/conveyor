@@ -56,7 +56,7 @@ func newServer(q conveyor.BuildQueue, c *cli.Context) http.Handler {
 	// Github webhooks
 	r.MatcherFunc(githubWebhook).Handler(
 		hookshot.Authorize(
-			conveyor.NewServer(q, logs.Discard), // TODO
+			conveyor.NewServer(q, newLogger(c)),
 			c.String("github.secret"),
 		),
 	)
@@ -151,7 +151,7 @@ func newLogger(c *cli.Context) logs.Logger {
 	case "s3":
 		return s3.NewLogs(u.Host)
 	case "stdout":
-		return nil
+		return logs.Stdout
 	default:
 		must(fmt.Errorf("Unknown logger: %v", u.Scheme))
 		return nil

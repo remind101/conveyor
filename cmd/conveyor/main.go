@@ -22,6 +22,12 @@ var sharedFlags = []cli.Flag{
 		Usage:  "Canonical URL for this instance. Used when adding webhooks to repos.",
 		EnvVar: "BASE_URL",
 	},
+	cli.StringFlag{
+		Name:   "logger",
+		Value:  "stdout://",
+		Usage:  "The logger to use. Available options are `stdout://`, or `s3://bucket`.",
+		EnvVar: "LOGGER",
+	},
 }
 
 func main() {

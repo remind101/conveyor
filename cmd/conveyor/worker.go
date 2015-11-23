@@ -31,12 +31,6 @@ var workerFlags = []cli.Flag{
 		EnvVar: "BUILDER_IMAGE",
 	},
 	cli.StringFlag{
-		Name:   "logger",
-		Value:  "stdout://",
-		Usage:  "The logger to use. Available options are `stdout://`, or `s3://bucket`.",
-		EnvVar: "LOGGER",
-	},
-	cli.StringFlag{
 		Name:   "reporter",
 		Value:  "",
 		Usage:  "The reporter to use to report errors. Available options are `hb://api.honeybadger.io?key=<key>&environment=<environment>",

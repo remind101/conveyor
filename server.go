@@ -60,6 +60,7 @@ func (s *Server) Logs(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Copy the log stream to the client.
+	// TODO: Wrap w in a flush writer.
 	io.Copy(w, r)
 }
 
