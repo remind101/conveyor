@@ -21,7 +21,8 @@ import (
 	"github.com/remind101/conveyor/builder"
 	"github.com/remind101/conveyor/builder/datadog"
 	"github.com/remind101/conveyor/builder/docker"
-	"github.com/remind101/conveyor/builder/logs/s3"
+	"github.com/remind101/conveyor/logs"
+	"github.com/remind101/conveyor/logs/s3"
 	"github.com/remind101/conveyor/slack"
 	"github.com/remind101/pkg/reporter"
 	"github.com/remind101/pkg/reporter/hb2"
@@ -55,7 +56,7 @@ func newServer(q conveyor.BuildQueue, c *cli.Context) http.Handler {
 	// Github webhooks
 	r.MatcherFunc(githubWebhook).Handler(
 		hookshot.Authorize(
-			conveyor.NewServer(q, builder.DiscardLogs),
+			conveyor.NewServer(q, logs.Discard), // TODO
 			c.String("github.secret"),
 		),
 	)
@@ -143,7 +144,7 @@ func newReporter(c *cli.Context) reporter.Reporter {
 	}
 }
 
-func newLogger(c *cli.Context) builder.Logs {
+func newLogger(c *cli.Context) logs.Logger {
 	u := urlParse(c.String("logger"))
 
 	switch u.Scheme {

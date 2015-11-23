@@ -8,6 +8,7 @@ import (
 	"code.google.com/p/go-uuid/uuid"
 
 	"github.com/remind101/conveyor/builder"
+	"github.com/remind101/conveyor/logs"
 )
 
 // Workers is a collection of workers.
@@ -63,8 +64,8 @@ type WorkerOptions struct {
 	// BuildQueue to pull BuildRequests from.
 	BuildRequests chan BuildRequest
 
-	// BuildLogs used to generate an io.Writer for each build.
-	BuildLogs builder.Logs
+	// Logger used to generate an io.Writer for each build.
+	Logger logs.Logger
 }
 
 // Worker pulls jobs off of a BuildQueue and performs the build.
@@ -72,8 +73,8 @@ type Worker struct {
 	// Builder to use to build.
 	builder.Builder
 
-	// BuildLogs to use to build a builder.Logger
-	BuildLogs builder.Logs
+	// Logger to use to build a builder.Logger
+	Logger logs.Logger
 
 	// Queue to pull jobs from.
 	buildRequests chan BuildRequest
@@ -90,7 +91,7 @@ type Worker struct {
 func NewWorker(options WorkerOptions) *Worker {
 	return &Worker{
 		Builder:       builder.WithCancel(options.Builder),
-		BuildLogs:     options.BuildLogs,
+		Logger:        options.Logger,
 		buildRequests: options.BuildRequests,
 		shutdown:      make(chan struct{}),
 		done:          make(chan error),
@@ -146,11 +147,11 @@ func (w *Worker) Shutdown() error {
 }
 
 func (w *Worker) newLogger(opts builder.BuildOptions) (io.Writer, error) {
-	l := w.BuildLogs
+	l := w.Logger
 	if l == nil {
-		l = builder.DiscardLogs
+		l = logs.Discard
 	}
 
 	id := uuid.New()
-	return l.Writer(id)
+	return l.Create(id)
 }

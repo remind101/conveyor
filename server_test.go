@@ -19,7 +19,7 @@ func TestServer_Logs(t *testing.T) {
 	resp := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/logs/1234", nil)
 
-	b.On("Reader", "1234").Return(strings.NewReader("Logs"), nil)
+	b.On("Open", "1234").Return(strings.NewReader("Logs"), nil)
 
 	s.ServeHTTP(resp, req)
 	assert.Equal(t, http.StatusOK, resp.Code)
@@ -131,12 +131,12 @@ type mockBuildLogs struct {
 	mock.Mock
 }
 
-func (b *mockBuildLogs) Writer(id string) (io.Writer, error) {
-	args := b.Called(id)
+func (b *mockBuildLogs) Create(name string) (io.Writer, error) {
+	args := b.Called(name)
 	return args.Get(0).(io.Writer), args.Error(1)
 }
 
-func (b *mockBuildLogs) Reader(id string) (io.Reader, error) {
-	args := b.Called(id)
+func (b *mockBuildLogs) Open(name string) (io.Reader, error) {
+	args := b.Called(name)
 	return args.Get(0).(io.Reader), args.Error(1)
 }

@@ -8,8 +8,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"code.google.com/p/go-uuid/uuid"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/defaults"
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -33,8 +31,8 @@ func NewLogs(bucket string) *Logs {
 	}
 }
 
-func (l *Logs) Writer(id string) (io.Writer, error) {
-	name := filepath.Join("logs", fmt.Sprintf("%s.txt", uuid.New()))
+func (l *Logs) Create(name string) (io.Writer, error) {
+	name = filepath.Join("logs", fmt.Sprintf("%s.txt", name))
 
 	return &writer{
 		bucket: l.Bucket,
@@ -44,7 +42,7 @@ func (l *Logs) Writer(id string) (io.Writer, error) {
 	}, nil
 }
 
-func (l *Logs) Reader(id string) (io.Reader, error) {
+func (l *Logs) Open(name string) (io.Reader, error) {
 	return strings.NewReader(""), errors.New("s3 logs: read is not implemented yet")
 }
 

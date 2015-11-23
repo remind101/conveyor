@@ -8,6 +8,7 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/remind101/conveyor/builder"
+	"github.com/remind101/conveyor/logs"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -16,7 +17,7 @@ func TestWorker(t *testing.T) {
 	q := make(chan BuildRequest, 1)
 	w := &Worker{
 		Builder:       b,
-		BuildLogs:     builder.DiscardLogs,
+		Logger:        logs.Discard,
 		buildRequests: q,
 	}
 
@@ -42,7 +43,7 @@ func TestWorker_Shutdown(t *testing.T) {
 	q := make(chan BuildRequest, 1)
 	w := &Worker{
 		Builder:       b,
-		BuildLogs:     builder.DiscardLogs,
+		Logger:        logs.Discard,
 		buildRequests: q,
 		shutdown:      make(chan struct{}),
 		done:          make(chan error),
@@ -66,7 +67,7 @@ func TestWorker_Shutdown_Cancel(t *testing.T) {
 	q := make(chan BuildRequest, 1)
 	w := &Worker{
 		Builder:       b,
-		BuildLogs:     builder.DiscardLogs,
+		Logger:        logs.Discard,
 		buildRequests: q,
 		shutdown:      make(chan struct{}),
 		done:          make(chan error),
@@ -91,7 +92,7 @@ func TestWorker_Shutdown_Cancel_Error(t *testing.T) {
 	q := make(chan BuildRequest, 1)
 	w := &Worker{
 		Builder:       b,
-		BuildLogs:     builder.DiscardLogs,
+		Logger:        logs.Discard,
 		buildRequests: q,
 		shutdown:      make(chan struct{}),
 		done:          make(chan error),

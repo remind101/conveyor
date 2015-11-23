@@ -13,6 +13,7 @@ import (
 	"github.com/ejholmes/hookshot/events"
 	"github.com/gorilla/mux"
 	"github.com/remind101/conveyor/builder"
+	"github.com/remind101/conveyor/logs"
 )
 
 // Server implements the http.Handler interface for serving build requests via
@@ -20,15 +21,15 @@ import (
 type Server struct {
 	Queue BuildQueue
 
-	BuildLogs builder.Logs
+	Logger logs.Logger
 
 	// mux contains the routes.
 	mux http.Handler
 }
 
 // NewServer returns a new Server instance
-func NewServer(q BuildQueue, b builder.Logs) *Server {
-	s := &Server{Queue: q, BuildLogs: b}
+func NewServer(q BuildQueue, l logs.Logger) *Server {
+	s := &Server{Queue: q, Logger: l}
 
 	g := hookshot.NewRouter()
 	g.HandleFunc("ping", s.Ping)
@@ -52,7 +53,7 @@ func (s *Server) Logs(w http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
 
 	// Get a handle to an io.Reader to stream the logs from.
-	r, err := s.BuildLogs.Reader(vars["id"])
+	r, err := s.Logger.Open(vars["id"])
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
