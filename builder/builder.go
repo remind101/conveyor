@@ -130,12 +130,10 @@ func (b *statusUpdaterBuilder) updateStatus(w io.Writer, opts BuildOptions, stat
 		desc = &description
 	}
 	var url *string
-	if status == "success" || status == "failure" || status == "error" {
-		if w, ok := w.(interface {
-			URL() string
-		}); ok {
-			url = github.String(w.URL())
-		}
+	if w, ok := w.(interface {
+		URL() string
+	}); ok {
+		url = github.String(w.URL())
 	}
 
 	_, _, err := b.github.CreateStatus(parts[0], parts[1], opts.Sha, &github.RepoStatus{

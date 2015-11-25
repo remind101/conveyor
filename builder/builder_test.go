@@ -24,6 +24,7 @@ func TestUpdateGitHubCommitStatus(t *testing.T) {
 	g.On("CreateStatus", "remind101", "acme-inc", "abcd", &github.RepoStatus{
 		State:       github.String("pending"),
 		Description: github.String("Image building."),
+		TargetURL:   github.String("https://google.com"),
 		Context:     github.String("container/docker"),
 	}).Return(nil)
 	g.On("CreateStatus", "remind101", "acme-inc", "abcd", &github.RepoStatus{
@@ -56,6 +57,7 @@ func TestUpdateGitHubCommitStatus_Error(t *testing.T) {
 	g.On("CreateStatus", "remind101", "acme-inc", "abcd", &github.RepoStatus{
 		State:       github.String("pending"),
 		Description: github.String("Image building."),
+		TargetURL:   github.String("https://google.com"),
 		Context:     github.String("container/docker"),
 	}).Return(nil)
 	g.On("CreateStatus", "remind101", "acme-inc", "abcd", &github.RepoStatus{
