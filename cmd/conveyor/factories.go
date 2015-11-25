@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -144,17 +145,56 @@ func newReporter(c *cli.Context) reporter.Reporter {
 func newLogger(c *cli.Context) logs.Logger {
 	u := urlParse(c.String("logger"))
 
+	var l logs.Logger
 	switch u.Scheme {
 	case "s3":
-		return s3.NewLogger(u.Host)
+		l = s3.NewLogger(u.Host)
 	case "cloudwatch":
-		return cloudwatch.NewLogger(u.Host)
+		l = cloudwatch.NewLogger(u.Host)
 	case "stdout":
-		return logs.Stdout
+		l = logs.Stdout
 	default:
 		must(fmt.Errorf("Unknown logger: %v", u.Scheme))
 		return nil
 	}
+
+	return &urlLogger{Logger: l, url: c.String("url")}
+}
+
+type urlLogger struct {
+	logs.Logger
+	url string
+}
+
+func (w *urlLogger) Create(name string) (io.Writer, error) {
+	writer, err := w.Logger.Create(name)
+	if err != nil {
+		return nil, err
+	}
+
+	return withURL(fmt.Sprintf("%s/logs/%s", w.url, name), writer), nil
+}
+
+func withURL(url string, w io.Writer) *urlWriter {
+	return &urlWriter{Writer: w, url: url}
+}
+
+type urlWriter struct {
+	io.Writer
+	url string
+}
+
+func (w *urlWriter) URL() string {
+	return w.url
+}
+
+func (w *urlWriter) Close() error {
+	if w, ok := w.Writer.(interface {
+		Close() error
+	}); ok {
+		return w.Close()
+	}
+	return nil
 }
 
 func urlParse(uri string) *url.URL {

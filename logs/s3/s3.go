@@ -71,7 +71,3 @@ func (l *writer) Close() error {
 	})
 	return err
 }
-
-func (l *writer) URL() string {
-	return fmt.Sprintf("https://%s.s3.amazonaws.com/%s", l.bucket, l.name)
-}
