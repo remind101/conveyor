@@ -13,7 +13,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/defaults"
 	"github.com/codegangsta/cli"
 	"github.com/codegangsta/negroni"
-	"github.com/ejholmes/hookshot"
 	"github.com/ejholmes/slash"
 	"github.com/google/go-github/github"
 	"github.com/gorilla/mux"
@@ -53,14 +52,11 @@ func newBuildQueue(c *cli.Context) conveyor.BuildQueue {
 
 func newServer(q conveyor.BuildQueue, c *cli.Context) http.Handler {
 	r := mux.NewRouter()
-
-	// Github webhooks
-	r.MatcherFunc(githubWebhook).Handler(
-		hookshot.Authorize(
-			conveyor.NewServer(q, newLogger(c)),
-			c.String("github.secret"),
-		),
-	)
+	r.NotFoundHandler = conveyor.NewServer(conveyor.ServerConfig{
+		Secret: c.String("github.secret"),
+		Queue:  q,
+		Logger: newLogger(c),
+	})
 
 	// Slack webhooks
 	if c.String("slack.token") != "" {
@@ -167,11 +163,4 @@ func urlParse(uri string) *url.URL {
 		must(err)
 	}
 	return u
-}
-
-// githubWebhook is a MatcherFunc that matches requests that have an
-// `X-GitHub-Event` header present.
-func githubWebhook(r *http.Request, _ *mux.RouteMatch) bool {
-	h := r.Header[http.CanonicalHeaderKey("X-GitHub-Event")]
-	return len(h) > 0
 }

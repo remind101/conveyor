@@ -25,6 +25,16 @@
 			"Rev": "7ab6754ddaaa7972ac1c896ddd7f796cc726e79d"
 		},
 		{
+			"ImportPath": "github.com/aws/aws-sdk-go/internal/protocol/json/jsonutil",
+			"Comment": "v0.9.15",
+			"Rev": "7ab6754ddaaa7972ac1c896ddd7f796cc726e79d"
+		},
+		{
+			"ImportPath": "github.com/aws/aws-sdk-go/internal/protocol/jsonrpc",
+			"Comment": "v0.9.15",
+			"Rev": "7ab6754ddaaa7972ac1c896ddd7f796cc726e79d"
+		},
+		{
 			"ImportPath": "github.com/aws/aws-sdk-go/internal/protocol/query",
 			"Comment": "v0.9.15",
 			"Rev": "7ab6754ddaaa7972ac1c896ddd7f796cc726e79d"
@@ -50,6 +60,11 @@
 			"Rev": "7ab6754ddaaa7972ac1c896ddd7f796cc726e79d"
 		},
 		{
+			"ImportPath": "github.com/aws/aws-sdk-go/service/cloudwatchlogs",
+			"Comment": "v0.9.15",
+			"Rev": "7ab6754ddaaa7972ac1c896ddd7f796cc726e79d"
+		},
+		{
 			"ImportPath": "github.com/aws/aws-sdk-go/service/s3",
 			"Comment": "v0.9.15",
 			"Rev": "7ab6754ddaaa7972ac1c896ddd7f796cc726e79d"
@@ -67,6 +82,10 @@
 		{
 			"ImportPath": "github.com/codegangsta/negroni",
 			"Rev": "c18469c22a9a334acf9b168b6e56375d83364d23"
+		},
+		{
+			"ImportPath": "github.com/ejholmes/cloudwatch",
+			"Rev": "0db852dd21fc37b4c715f52bc3872c205ec566e6"
 		},
 		{
 			"ImportPath": "github.com/ejholmes/hookshot",
@@ -103,11 +122,15 @@
 		},
 		{
 			"ImportPath": "github.com/remind101/pkg/logger",
-			"Rev": "345c5e4ff41f2e9783d5261b7babfa3e554cc804"
+			"Rev": "08031f3066f0a85a6cf35a3c6723f4812d2111a2"
 		},
 		{
 			"ImportPath": "github.com/remind101/pkg/reporter",
-			"Rev": "345c5e4ff41f2e9783d5261b7babfa3e554cc804"
+			"Rev": "08031f3066f0a85a6cf35a3c6723f4812d2111a2"
+		},
+		{
+			"ImportPath": "github.com/remind101/pkg/stream",
+			"Rev": "08031f3066f0a85a6cf35a3c6723f4812d2111a2"
 		},
 		{
 			"ImportPath": "github.com/shirou/gopsutil/common",

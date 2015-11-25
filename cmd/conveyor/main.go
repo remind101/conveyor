@@ -25,7 +25,7 @@ var sharedFlags = []cli.Flag{
 	cli.StringFlag{
 		Name:   "logger",
 		Value:  "stdout://",
-		Usage:  "The logger to use. Available options are `stdout://`, or `s3://bucket`.",
+		Usage:  "The logger to use. Available options are `stdout://`, `s3://bucket` or `cloudwatch://`.",
 		EnvVar: "LOGGER",
 	},
 }
