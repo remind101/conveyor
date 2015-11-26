@@ -7,6 +7,15 @@ import (
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 )
 
+// Throttling and limits from http://docs.aws.amazon.com/AmazonCloudWatch/latest/DeveloperGuide/cloudwatch_limits.html
+const (
+	// The maximum rate of a GetLogEvents request is 10 requests per second per AWS account.
+	readThrottle = time.Second / 10
+
+	// The maximum rate of a PutLogEvents request is 5 requests per second per log stream.
+	writeThrottle = time.Second / 5
+)
+
 // now is a function that returns the current time.Time. It's a variable so that
 // it can be stubbed out in unit tests.
 var now = time.Now

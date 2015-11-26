@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"sync"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
@@ -38,14 +39,17 @@ type Writer struct {
 
 	events eventsBuffer
 
+	throttle <-chan time.Time
+
 	sync.Mutex // This protects calls to flush.
 }
 
 func NewWriter(group, stream string, client *cloudwatchlogs.CloudWatchLogs) *Writer {
 	w := &Writer{
-		group:  aws.String(group),
-		stream: aws.String(stream),
-		client: client,
+		group:    aws.String(group),
+		stream:   aws.String(stream),
+		client:   client,
+		throttle: time.Tick(writeThrottle),
 	}
 	go w.start() // start flushing
 	return w
@@ -73,6 +77,7 @@ func (w *Writer) start() error {
 			return nil
 		}
 
+		<-w.throttle
 		if err := w.Flush(); err != nil {
 			return err
 		}

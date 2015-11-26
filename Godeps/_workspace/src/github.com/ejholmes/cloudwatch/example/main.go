@@ -33,7 +33,7 @@ func main() {
 		var i int
 		for {
 			i++
-			<-time.After(time.Second)
+			<-time.After(time.Second / 30)
 			_, err := fmt.Fprintf(w, "Line %d\n", i)
 			if err != nil {
 				log.Println(err)

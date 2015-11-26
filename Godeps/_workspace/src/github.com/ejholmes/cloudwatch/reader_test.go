@@ -25,6 +25,9 @@ func TestReader(t *testing.T) {
 		},
 	}, nil)
 
+	err := r.read()
+	assert.NoError(t, err)
+
 	b := make([]byte, 1000)
 	n, err := r.Read(b)
 	assert.NoError(t, err)
@@ -49,6 +52,9 @@ func TestReader_Buffering(t *testing.T) {
 			{Message: aws.String("Hello"), Timestamp: aws.Int64(1000)},
 		},
 	}, nil)
+
+	err := r.read()
+	assert.NoError(t, err)
 
 	b := make([]byte, 3)
 	n, err := r.Read(b) //Hel
@@ -98,14 +104,23 @@ func TestReader_EndOfFile(t *testing.T) {
 		Events: []*cloudwatchlogs.OutputLogEvent{},
 	}, nil)
 
+	err := r.read()
+	assert.NoError(t, err)
+
 	b := make([]byte, 5)
 	n, err := r.Read(b) //Hello
 	assert.NoError(t, err)
 	assert.Equal(t, 5, n)
 
+	err = r.read()
+	assert.NoError(t, err)
+
 	n, err = r.Read(b) //World
 	assert.NoError(t, err)
 	assert.Equal(t, 5, n)
+
+	err = r.read()
+	assert.NoError(t, err)
 
 	// Attempt to read more data, but there is none.
 	n, err = r.Read(b)
