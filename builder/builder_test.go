@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io"
 	"testing"
+	"text/template"
 	"time"
 
 	"github.com/google/go-github/github"
@@ -25,6 +26,7 @@ func TestStatusUpdaterBuilder(t *testing.T) {
 	builder := &statusUpdaterBuilder{
 		Builder: BuilderFunc(b),
 		github:  g,
+		urlTmpl: template.Must(template.New("url").Parse("https://google.com")),
 	}
 
 	g.On("CreateStatus", "remind101", "acme-inc", "abcd", &github.RepoStatus{
@@ -58,6 +60,7 @@ func TestStatusUpdaterBuilder_Error(t *testing.T) {
 	builder := &statusUpdaterBuilder{
 		Builder: BuilderFunc(b),
 		github:  g,
+		urlTmpl: template.Must(template.New("url").Parse("https://google.com")),
 	}
 
 	g.On("CreateStatus", "remind101", "acme-inc", "abcd", &github.RepoStatus{
@@ -178,8 +181,4 @@ func (m *mockLogger) Write(p []byte) (int, error) {
 func (m *mockLogger) Close() error {
 	m.closed = true
 	return m.closeErr
-}
-
-func (m *mockLogger) URL() string {
-	return "https://google.com"
 }

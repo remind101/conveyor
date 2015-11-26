@@ -5,8 +5,6 @@ import (
 	"log"
 	"sync"
 
-	"code.google.com/p/go-uuid/uuid"
-
 	"github.com/remind101/conveyor/builder"
 	"github.com/remind101/conveyor/logs"
 )
@@ -152,6 +150,5 @@ func (w *Worker) newLogger(opts builder.BuildOptions) (io.Writer, error) {
 		l = logs.Discard
 	}
 
-	id := uuid.New()
-	return l.Create(id)
+	return l.Create(opts.ID)
 }

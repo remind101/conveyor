@@ -118,6 +118,7 @@ func (s *Server) Push(w http.ResponseWriter, r *http.Request) {
 	}
 
 	opts := builder.BuildOptions{
+		ID:         newID(),
 		Repository: event.Repository.FullName,
 		Branch:     strings.Replace(event.Ref, "refs/heads/", "", -1),
 		Sha:        event.HeadCommit.ID,

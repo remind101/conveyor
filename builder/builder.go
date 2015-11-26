@@ -3,11 +3,13 @@
 package builder
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
 	"strings"
 	"sync"
+	"text/template"
 	"time"
 
 	"github.com/google/go-github/github"
@@ -40,6 +42,8 @@ func (e *BuildCanceledError) Error() string {
 
 // BuildOptions is provided when building an image.
 type BuildOptions struct {
+	// A unique identifier for the build.
+	ID string
 	// Repository is the repo to build.
 	Repository string
 	// Sha is the git commit to build.
@@ -87,15 +91,17 @@ var since = time.Since
 // status in github.
 type statusUpdaterBuilder struct {
 	Builder
-	github GitHubClient
+	github  GitHubClient
+	urlTmpl *template.Template
 }
 
 // UpdateGitHubCommitStatus wraps b to update the GitHub commit status when a
 // build starts, and stops.
-func UpdateGitHubCommitStatus(b Builder, g GitHubClient) *statusUpdaterBuilder {
+func UpdateGitHubCommitStatus(b Builder, g GitHubClient, urlTmpl string) *statusUpdaterBuilder {
 	return &statusUpdaterBuilder{
 		Builder: b,
 		github:  g,
+		urlTmpl: template.Must(template.New("url").Parse(urlTmpl)),
 	}
 }
 
@@ -130,20 +136,25 @@ func (b *statusUpdaterBuilder) updateStatus(w io.Writer, opts BuildOptions, stat
 	if description != "" {
 		desc = &description
 	}
-	var url *string
-	if w, ok := w.(interface {
-		URL() string
-	}); ok {
-		url = github.String(w.URL())
+
+	url, err := b.url(opts)
+	if err != nil {
+		return err
 	}
 
-	_, _, err := b.github.CreateStatus(parts[0], parts[1], opts.Sha, &github.RepoStatus{
+	_, _, err = b.github.CreateStatus(parts[0], parts[1], opts.Sha, &github.RepoStatus{
 		State:       &status,
 		Context:     &context,
 		Description: desc,
-		TargetURL:   url,
+		TargetURL:   github.String(url),
 	})
 	return err
+}
+
+func (b *statusUpdaterBuilder) url(opts BuildOptions) (string, error) {
+	buf := new(bytes.Buffer)
+	err := b.urlTmpl.Execute(buf, opts)
+	return buf.String(), err
 }
 
 // WithCancel wraps a Builder with a method to stop all builds.

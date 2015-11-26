@@ -56,6 +56,7 @@ func TestServer_Push(t *testing.T) {
 	req.Header.Set("X-GitHub-Event", "push")
 
 	q.On("Push", builder.BuildOptions{
+		ID:         fakeUUID,
 		Repository: "remind101/acme-inc",
 		Branch:     "master",
 		Sha:        "abcd",
