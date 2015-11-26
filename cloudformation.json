@@ -307,7 +307,9 @@
 
     "LogGroup": {
       "Type": "AWS::Logs::LogGroup",
-      "Properties": {}
+      "Properties": {
+        "RetentionInDays": 7
+      }
     },
 
     "InstanceProfile": {
