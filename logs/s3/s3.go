@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
-	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/defaults"
@@ -43,7 +42,7 @@ func (l *Logs) Create(name string) (io.Writer, error) {
 }
 
 func (l *Logs) Open(name string) (io.Reader, error) {
-	return strings.NewReader(""), errors.New("s3 logs: read is not implemented yet")
+	return nil, errors.New("s3 logs: read is not implemented yet")
 }
 
 // writer is an io.WriteCloser implementation that buffers up the bytes until
