@@ -80,12 +80,14 @@ func (fn BuilderFunc) Build(ctx context.Context, w io.Writer, opts BuildOptions)
 	return fn(ctx, w, opts)
 }
 
+// since is a variable so we can stub it out in tests.
+var since = time.Since
+
 // statusUpdaterBuilder is a Builder implementation that updates the commit
 // status in github.
 type statusUpdaterBuilder struct {
 	Builder
 	github GitHubClient
-	since  func(time.Time) time.Duration
 }
 
 // UpdateGitHubCommitStatus wraps b to update the GitHub commit status when a
@@ -94,7 +96,6 @@ func UpdateGitHubCommitStatus(b Builder, g GitHubClient) *statusUpdaterBuilder {
 	return &statusUpdaterBuilder{
 		Builder: b,
 		github:  g,
-		since:   time.Since,
 	}
 }
 
@@ -102,7 +103,7 @@ func (b *statusUpdaterBuilder) Build(ctx context.Context, w io.Writer, opts Buil
 	t := time.Now()
 
 	defer func() {
-		duration := b.since(t)
+		duration := since(t)
 		description := fmt.Sprintf("Image built in %v.", duration)
 		status := "success"
 		if err != nil {

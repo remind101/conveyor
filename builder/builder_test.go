@@ -10,6 +10,12 @@ import (
 	"golang.org/x/net/context"
 )
 
+func init() {
+	since = func(t time.Time) time.Duration {
+		return time.Second
+	}
+}
+
 func TestUpdateGitHubCommitStatus(t *testing.T) {
 	b := func(ctx context.Context, w io.Writer, opts BuildOptions) (string, error) {
 		return "", nil
@@ -17,9 +23,6 @@ func TestUpdateGitHubCommitStatus(t *testing.T) {
 	g := &MockGitHubClient{}
 	w := &mockLogger{}
 	builder := UpdateGitHubCommitStatus(BuilderFunc(b), g)
-	builder.since = func(t time.Time) time.Duration {
-		return time.Second
-	}
 
 	g.On("CreateStatus", "remind101", "acme-inc", "abcd", &github.RepoStatus{
 		State:       github.String("pending"),
@@ -50,9 +53,6 @@ func TestUpdateGitHubCommitStatus_Error(t *testing.T) {
 	g := &MockGitHubClient{}
 	w := &mockLogger{}
 	builder := UpdateGitHubCommitStatus(BuilderFunc(b), g)
-	builder.since = func(t time.Time) time.Duration {
-		return time.Second
-	}
 
 	g.On("CreateStatus", "remind101", "acme-inc", "abcd", &github.RepoStatus{
 		State:       github.String("pending"),
