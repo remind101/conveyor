@@ -23,6 +23,7 @@ import (
 	"github.com/remind101/conveyor/logs"
 	"github.com/remind101/conveyor/logs/cloudwatch"
 	"github.com/remind101/conveyor/logs/s3"
+	"github.com/remind101/conveyor/server"
 	"github.com/remind101/conveyor/slack"
 	"github.com/remind101/pkg/reporter"
 	"github.com/remind101/pkg/reporter/hb2"
@@ -52,10 +53,10 @@ func newBuildQueue(c *cli.Context) conveyor.BuildQueue {
 
 func newServer(q conveyor.BuildQueue, c *cli.Context) http.Handler {
 	r := mux.NewRouter()
-	r.NotFoundHandler = conveyor.NewServer(conveyor.ServerConfig{
-		Secret: c.String("github.secret"),
-		Queue:  q,
-		Logger: newLogger(c),
+	r.NotFoundHandler = server.NewServer(server.Config{
+		GitHubSecret: c.String("github.secret"),
+		Queue:        q,
+		Logger:       newLogger(c),
 	})
 
 	// Slack webhooks

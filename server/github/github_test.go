@@ -1,35 +1,27 @@
-package conveyor
+package github
 
 import (
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
+	"golang.org/x/net/context"
+
+	"github.com/remind101/conveyor"
 	"github.com/remind101/conveyor/builder"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
-func TestServer_Logs(t *testing.T) {
-	l := new(mockLogger)
-	s := NewServer(ServerConfig{Logger: l})
+const fakeUUID = "01234567-89ab-cdef-0123-456789abcdef"
 
-	resp := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/logs/1234", nil)
-
-	l.On("Open", "1234").Return(strings.NewReader("Logs"), nil)
-
-	s.ServeHTTP(resp, req)
-	assert.Equal(t, http.StatusOK, resp.Code)
-	assert.Equal(t, "Logs", resp.Body.String())
-
-	l.AssertExpectations(t)
+func init() {
+	newID = func() string { return fakeUUID }
 }
 
 func TestServer_Ping(t *testing.T) {
-	s := NewServer(ServerConfig{})
+	s := NewServer(nil)
 
 	resp := httptest.NewRecorder()
 	req, _ := http.NewRequest("POST", "/", nil)
@@ -41,7 +33,7 @@ func TestServer_Ping(t *testing.T) {
 
 func TestServer_Push(t *testing.T) {
 	q := new(mockBuildQueue)
-	s := NewServer(ServerConfig{Queue: q})
+	s := NewServer(q)
 
 	resp := httptest.NewRecorder()
 	req, _ := http.NewRequest("POST", "/", strings.NewReader(`{
@@ -64,11 +56,12 @@ func TestServer_Push(t *testing.T) {
 
 	s.ServeHTTP(resp, req)
 	assert.Equal(t, http.StatusOK, resp.Code)
+	assert.Equal(t, resp.Body.String(), fakeUUID)
 }
 
 func TestServer_Push_Fork(t *testing.T) {
 	q := new(mockBuildQueue)
-	s := NewServer(ServerConfig{Queue: q})
+	s := NewServer(q)
 
 	resp := httptest.NewRecorder()
 	req, _ := http.NewRequest("POST", "/", strings.NewReader(`{
@@ -89,7 +82,7 @@ func TestServer_Push_Fork(t *testing.T) {
 
 func TestServer_Push_Deleted(t *testing.T) {
 	q := new(mockBuildQueue)
-	s := NewServer(ServerConfig{Queue: q})
+	s := NewServer(q)
 
 	resp := httptest.NewRecorder()
 	req, _ := http.NewRequest("POST", "/", strings.NewReader(`{
@@ -128,16 +121,17 @@ func TestNoCache(t *testing.T) {
 	}
 }
 
-type mockLogger struct {
+// mockBuildQueue is an implementation of the BuildQueue interface for testing.
+type mockBuildQueue struct {
 	mock.Mock
 }
 
-func (b *mockLogger) Create(name string) (io.Writer, error) {
-	args := b.Called(name)
-	return args.Get(0).(io.Writer), args.Error(1)
+func (q *mockBuildQueue) Push(ctx context.Context, options builder.BuildOptions) error {
+	args := q.Called(options)
+	return args.Error(0)
 }
 
-func (b *mockLogger) Open(name string) (io.Reader, error) {
-	args := b.Called(name)
-	return args.Get(0).(io.Reader), args.Error(1)
+func (q *mockBuildQueue) Subscribe(ch chan conveyor.BuildRequest) error {
+	args := q.Called(ch)
+	return args.Error(0)
 }
