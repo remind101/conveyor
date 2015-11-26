@@ -298,7 +298,7 @@
                 "logs:PutLogEvents",
                 "logs:GetLogEvents"
               ],
-              "Resource": "arn:aws:logs:*:*:*"
+              "Resource": { "Fn::Join": ["", ["arn:aws:logs:*:*:log-group:", { "Ref": "LogGroup" }, ":log-stream:*"]] }
             }
           ]
         }
