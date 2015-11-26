@@ -16,13 +16,16 @@ func init() {
 	}
 }
 
-func TestUpdateGitHubCommitStatus(t *testing.T) {
+func TestStatusUpdaterBuilder(t *testing.T) {
 	b := func(ctx context.Context, w io.Writer, opts BuildOptions) (string, error) {
 		return "", nil
 	}
 	g := &MockGitHubClient{}
 	w := &mockLogger{}
-	builder := UpdateGitHubCommitStatus(BuilderFunc(b), g)
+	builder := &statusUpdaterBuilder{
+		Builder: BuilderFunc(b),
+		github:  g,
+	}
 
 	g.On("CreateStatus", "remind101", "acme-inc", "abcd", &github.RepoStatus{
 		State:       github.String("pending"),
@@ -46,13 +49,16 @@ func TestUpdateGitHubCommitStatus(t *testing.T) {
 	g.AssertExpectations(t)
 }
 
-func TestUpdateGitHubCommitStatus_Error(t *testing.T) {
+func TestStatusUpdaterBuilder_Error(t *testing.T) {
 	b := func(ctx context.Context, w io.Writer, opts BuildOptions) (string, error) {
 		return "", errors.New("i/o timeout")
 	}
 	g := &MockGitHubClient{}
 	w := &mockLogger{}
-	builder := UpdateGitHubCommitStatus(BuilderFunc(b), g)
+	builder := &statusUpdaterBuilder{
+		Builder: BuilderFunc(b),
+		github:  g,
+	}
 
 	g.On("CreateStatus", "remind101", "acme-inc", "abcd", &github.RepoStatus{
 		State:       github.String("pending"),
