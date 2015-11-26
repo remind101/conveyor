@@ -36,7 +36,8 @@ func NewBuilder(b builder.Builder) *Builder {
 
 // Build builds the image.
 func (b *Builder) Build(ctx context.Context, w io.Writer, opts builder.BuildOptions) (image string, err error) {
-	log.Printf("Starting build: repository=%s branch=%s sha=%s",
+	log.Printf("Starting build: id=%s repository=%s branch=%s sha=%s",
+		opts.ID,
 		opts.Repository,
 		opts.Branch,
 		opts.Sha,

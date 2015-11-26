@@ -78,7 +78,11 @@ func (s *Server) Logs(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	rw.Header().Set("Content-Type", "text/plain")
+
+	// Chrome won't show data if we don't set this. See
+	// http://stackoverflow.com/questions/26164705/chrome-not-handling-chunked-responses-like-firefox-safari.
 	rw.Header().Set("X-Content-Type-Options", "nosniff")
+
 	w := streamhttp.StreamingResponseWriter(rw)
 	defer close(stream.Heartbeat(w, time.Second*25)) // Send a null character every 25 seconds.
 
@@ -117,8 +121,9 @@ func (s *Server) Push(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	id := newID()
 	opts := builder.BuildOptions{
-		ID:         newID(),
+		ID:         id,
 		Repository: event.Repository.FullName,
 		Branch:     strings.Replace(event.Ref, "refs/heads/", "", -1),
 		Sha:        event.HeadCommit.ID,
@@ -130,6 +135,8 @@ func (s *Server) Push(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	io.WriteString(w, id)
 }
 
 // http://rubular.com/r/y8oJAY9eAS
