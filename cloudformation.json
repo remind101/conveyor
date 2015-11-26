@@ -287,6 +287,13 @@
             {
               "Effect": "Allow",
               "Action": [
+                "s3:GetObject"
+              ],
+              "Resource": { "Fn::Join": ["", ["arn:aws:s3:::", { "Ref": "Bucket" }, "/*"]] }
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
                 "logs:CreateLogStream",
                 "logs:PutLogEvents",
                 "logs:GetLogEvents"
