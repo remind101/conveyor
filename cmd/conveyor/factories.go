@@ -13,7 +13,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/defaults"
 	"github.com/codegangsta/cli"
 	"github.com/codegangsta/negroni"
-	"github.com/ejholmes/hookshot"
 	"github.com/ejholmes/slash"
 	"github.com/google/go-github/github"
 	"github.com/gorilla/mux"
@@ -21,6 +20,10 @@ import (
 	"github.com/remind101/conveyor/builder"
 	"github.com/remind101/conveyor/builder/datadog"
 	"github.com/remind101/conveyor/builder/docker"
+	"github.com/remind101/conveyor/logs"
+	"github.com/remind101/conveyor/logs/cloudwatch"
+	"github.com/remind101/conveyor/logs/s3"
+	"github.com/remind101/conveyor/server"
 	"github.com/remind101/conveyor/slack"
 	"github.com/remind101/pkg/reporter"
 	"github.com/remind101/pkg/reporter/hb2"
@@ -50,14 +53,11 @@ func newBuildQueue(c *cli.Context) conveyor.BuildQueue {
 
 func newServer(q conveyor.BuildQueue, c *cli.Context) http.Handler {
 	r := mux.NewRouter()
-
-	// Github webhooks
-	r.MatcherFunc(githubWebhook).Handler(
-		hookshot.Authorize(
-			conveyor.NewServer(q),
-			c.String("github.secret"),
-		),
-	)
+	r.NotFoundHandler = server.NewServer(server.Config{
+		GitHubSecret: c.String("github.secret"),
+		Queue:        q,
+		Logger:       newLogger(c),
+	})
 
 	// Slack webhooks
 	if c.String("slack.token") != "" {
@@ -102,7 +102,7 @@ func newBuilder(c *cli.Context) builder.Builder {
 	g := builder.NewGitHubClient(c.String("github.token"))
 
 	var backend builder.Builder
-	backend = builder.UpdateGitHubCommitStatus(db, g)
+	backend = builder.UpdateGitHubCommitStatus(db, g, fmt.Sprintf("%s/logs/{{.ID}}", c.String("url")))
 
 	if uri := c.String("stats"); uri != "" {
 		u := urlParse(uri)
@@ -142,18 +142,16 @@ func newReporter(c *cli.Context) reporter.Reporter {
 	}
 }
 
-func newLogFactory(c *cli.Context) builder.LogFactory {
+func newLogger(c *cli.Context) logs.Logger {
 	u := urlParse(c.String("logger"))
 
 	switch u.Scheme {
 	case "s3":
-		f, err := builder.S3Logger(u.Host)
-		if err != nil {
-			must(err)
-		}
-		return f
+		return s3.NewLogger(u.Host)
+	case "cloudwatch":
+		return cloudwatch.NewLogger(u.Host)
 	case "stdout":
-		return nil
+		return logs.Stdout
 	default:
 		must(fmt.Errorf("Unknown logger: %v", u.Scheme))
 		return nil
@@ -166,11 +164,4 @@ func urlParse(uri string) *url.URL {
 		must(err)
 	}
 	return u
-}
-
-// githubWebhook is a MatcherFunc that matches requests that have an
-// `X-GitHub-Event` header present.
-func githubWebhook(r *http.Request, _ *mux.RouteMatch) bool {
-	h := r.Header[http.CanonicalHeaderKey("X-GitHub-Event")]
-	return len(h) > 0
 }

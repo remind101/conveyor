@@ -8,6 +8,12 @@ import (
 	"golang.org/x/net/context"
 )
 
+const fakeUUID = "01234567-89ab-cdef-0123-456789abcdef"
+
+func init() {
+	newID = func() string { return fakeUUID }
+}
+
 // mockBuilder is a mock implementation of the builder.Builder interface.
 type mockBuilder struct {
 	mock.Mock

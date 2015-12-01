@@ -3,11 +3,13 @@
 package builder
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
 	"strings"
 	"sync"
+	"text/template"
 	"time"
 
 	"github.com/google/go-github/github"
@@ -40,6 +42,8 @@ func (e *BuildCanceledError) Error() string {
 
 // BuildOptions is provided when building an image.
 type BuildOptions struct {
+	// A unique identifier for the build.
+	ID string
 	// Repository is the repo to build.
 	Repository string
 	// Sha is the git commit to build.
@@ -80,21 +84,24 @@ func (fn BuilderFunc) Build(ctx context.Context, w io.Writer, opts BuildOptions)
 	return fn(ctx, w, opts)
 }
 
+// since is a variable so we can stub it out in tests.
+var since = time.Since
+
 // statusUpdaterBuilder is a Builder implementation that updates the commit
 // status in github.
 type statusUpdaterBuilder struct {
 	Builder
-	github GitHubClient
-	since  func(time.Time) time.Duration
+	github  GitHubClient
+	urlTmpl *template.Template
 }
 
 // UpdateGitHubCommitStatus wraps b to update the GitHub commit status when a
 // build starts, and stops.
-func UpdateGitHubCommitStatus(b Builder, g GitHubClient) *statusUpdaterBuilder {
+func UpdateGitHubCommitStatus(b Builder, g GitHubClient, urlTmpl string) *statusUpdaterBuilder {
 	return &statusUpdaterBuilder{
 		Builder: b,
 		github:  g,
-		since:   time.Since,
+		urlTmpl: template.Must(template.New("url").Parse(urlTmpl)),
 	}
 }
 
@@ -102,7 +109,7 @@ func (b *statusUpdaterBuilder) Build(ctx context.Context, w io.Writer, opts Buil
 	t := time.Now()
 
 	defer func() {
-		duration := b.since(t)
+		duration := since(t)
 		description := fmt.Sprintf("Image built in %v.", duration)
 		status := "success"
 		if err != nil {
@@ -129,20 +136,25 @@ func (b *statusUpdaterBuilder) updateStatus(w io.Writer, opts BuildOptions, stat
 	if description != "" {
 		desc = &description
 	}
-	var url *string
-	if status == "success" || status == "failure" || status == "error" {
-		if w, ok := w.(Logger); ok {
-			url = github.String(w.URL())
-		}
+
+	url, err := b.url(opts)
+	if err != nil {
+		return err
 	}
 
-	_, _, err := b.github.CreateStatus(parts[0], parts[1], opts.Sha, &github.RepoStatus{
+	_, _, err = b.github.CreateStatus(parts[0], parts[1], opts.Sha, &github.RepoStatus{
 		State:       &status,
 		Context:     &context,
 		Description: desc,
-		TargetURL:   url,
+		TargetURL:   github.String(url),
 	})
 	return err
+}
+
+func (b *statusUpdaterBuilder) url(opts BuildOptions) (string, error) {
+	buf := new(bytes.Buffer)
+	err := b.urlTmpl.Execute(buf, opts)
+	return buf.String(), err
 }
 
 // WithCancel wraps a Builder with a method to stop all builds.

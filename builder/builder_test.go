@@ -4,26 +4,35 @@ import (
 	"errors"
 	"io"
 	"testing"
+	"text/template"
 	"time"
 
 	"github.com/google/go-github/github"
 	"golang.org/x/net/context"
 )
 
-func TestUpdateGitHubCommitStatus(t *testing.T) {
+func init() {
+	since = func(t time.Time) time.Duration {
+		return time.Second
+	}
+}
+
+func TestStatusUpdaterBuilder(t *testing.T) {
 	b := func(ctx context.Context, w io.Writer, opts BuildOptions) (string, error) {
 		return "", nil
 	}
 	g := &MockGitHubClient{}
 	w := &mockLogger{}
-	builder := UpdateGitHubCommitStatus(BuilderFunc(b), g)
-	builder.since = func(t time.Time) time.Duration {
-		return time.Second
+	builder := &statusUpdaterBuilder{
+		Builder: BuilderFunc(b),
+		github:  g,
+		urlTmpl: template.Must(template.New("url").Parse("https://google.com")),
 	}
 
 	g.On("CreateStatus", "remind101", "acme-inc", "abcd", &github.RepoStatus{
 		State:       github.String("pending"),
 		Description: github.String("Image building."),
+		TargetURL:   github.String("https://google.com"),
 		Context:     github.String("container/docker"),
 	}).Return(nil)
 	g.On("CreateStatus", "remind101", "acme-inc", "abcd", &github.RepoStatus{
@@ -42,20 +51,22 @@ func TestUpdateGitHubCommitStatus(t *testing.T) {
 	g.AssertExpectations(t)
 }
 
-func TestUpdateGitHubCommitStatus_Error(t *testing.T) {
+func TestStatusUpdaterBuilder_Error(t *testing.T) {
 	b := func(ctx context.Context, w io.Writer, opts BuildOptions) (string, error) {
 		return "", errors.New("i/o timeout")
 	}
 	g := &MockGitHubClient{}
 	w := &mockLogger{}
-	builder := UpdateGitHubCommitStatus(BuilderFunc(b), g)
-	builder.since = func(t time.Time) time.Duration {
-		return time.Second
+	builder := &statusUpdaterBuilder{
+		Builder: BuilderFunc(b),
+		github:  g,
+		urlTmpl: template.Must(template.New("url").Parse("https://google.com")),
 	}
 
 	g.On("CreateStatus", "remind101", "acme-inc", "abcd", &github.RepoStatus{
 		State:       github.String("pending"),
 		Description: github.String("Image building."),
+		TargetURL:   github.String("https://google.com"),
 		Context:     github.String("container/docker"),
 	}).Return(nil)
 	g.On("CreateStatus", "remind101", "acme-inc", "abcd", &github.RepoStatus{
@@ -170,8 +181,4 @@ func (m *mockLogger) Write(p []byte) (int, error) {
 func (m *mockLogger) Close() error {
 	m.closed = true
 	return m.closeErr
-}
-
-func (m *mockLogger) URL() string {
-	return "https://google.com"
 }

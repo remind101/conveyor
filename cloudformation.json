@@ -287,17 +287,30 @@
             {
               "Effect": "Allow",
               "Action": [
-                "s3:GetObject",
-                "s3:PutObject",
-                "s3:PutObjectAcl"
+                "s3:GetObject"
               ],
               "Resource": { "Fn::Join": ["", ["arn:aws:s3:::", { "Ref": "Bucket" }, "/*"]] }
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "logs:CreateLogStream",
+                "logs:PutLogEvents",
+                "logs:GetLogEvents"
+              ],
+              "Resource": { "Fn::Join": ["", ["arn:aws:logs:*:*:log-group:", { "Ref": "LogGroup" }, ":log-stream:*"]] }
             }
           ]
         }
       }
     },
 
+    "LogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "RetentionInDays": 7
+      }
+    },
 
     "InstanceProfile": {
       "Type": "AWS::IAM::InstanceProfile",
@@ -328,7 +341,7 @@
                   "BASE_URL=", { "Ref": "BaseUrl" }, "\n",
                   "SQS_QUEUE_URL", { "Ref": "Queue" }, "\n",
                   "QUEUE", "sqs://\n",
-                  "LOGGER=", { "Fn::Join": ["", ["s3://", { "Ref": "Bucket" }]] }, "\n",
+                  "LOGGER=", { "Fn::Join": ["", ["cloudwatch://", { "Ref": "LogGroup" }]] }, "\n",
                   "AWS_REGION=", { "Ref": "AWS::Region" }, "\n",
                   "DRY=", { "Ref": "DryRun" }, "\n",
                   "REPORTER=", { "Ref": "Reporter" }, "\n"

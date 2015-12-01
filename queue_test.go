@@ -36,12 +36,13 @@ func TestSQSBuildQueue_Push(t *testing.T) {
 	}
 
 	c.On("SendMessage", &sqs.SendMessageInput{
-		MessageBody: aws.String(`{"Repository":"remind101/acme-inc","Sha":"abcd","Branch":"master","NoCache":false}`),
+		MessageBody: aws.String(`{"ID":"01234567-89ab-cdef-0123-456789abcdef","Repository":"remind101/acme-inc","Sha":"abcd","Branch":"master","NoCache":false}`),
 		QueueUrl:    aws.String(""),
 	}).Return(&sqs.SendMessageOutput{}, nil)
 
 	background := context.Background()
 	options := builder.BuildOptions{
+		ID:         fakeUUID,
 		Repository: "remind101/acme-inc",
 		Branch:     "master",
 		Sha:        "abcd",

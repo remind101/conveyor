@@ -1,4 +1,4 @@
-package conveyor
+package github
 
 import (
 	"encoding/json"
@@ -11,27 +11,35 @@ import (
 
 	"github.com/ejholmes/hookshot"
 	"github.com/ejholmes/hookshot/events"
+	"github.com/remind101/conveyor"
 	"github.com/remind101/conveyor/builder"
+
+	"code.google.com/p/go-uuid/uuid"
 )
+
+// newID returns a new unique identifier.
+var newID = uuid.New
 
 // Server implements the http.Handler interface for serving build requests via
 // GitHub webhooks.
 type Server struct {
-	Queue BuildQueue
+	Queue conveyor.BuildQueue
 
 	// mux contains the routes.
 	mux http.Handler
 }
 
-// NewServer returns a new Server instance
-func NewServer(q BuildQueue) *Server {
-	s := &Server{Queue: q}
+// NewServer returns a new http.Handler for serving the GitHub webhooks.
+func NewServer(q conveyor.BuildQueue) *Server {
+	s := &Server{
+		Queue: q,
+	}
 
-	r := hookshot.NewRouter()
-	r.HandleFunc("ping", s.Ping)
-	r.HandleFunc("push", s.Push)
+	g := hookshot.NewRouter()
+	g.HandleFunc("ping", s.Ping)
+	g.HandleFunc("push", s.Push)
 
-	s.mux = r
+	s.mux = g
 	return s
 }
 
@@ -67,7 +75,9 @@ func (s *Server) Push(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	id := newID()
 	opts := builder.BuildOptions{
+		ID:         id,
 		Repository: event.Repository.FullName,
 		Branch:     strings.Replace(event.Ref, "refs/heads/", "", -1),
 		Sha:        event.HeadCommit.ID,
@@ -79,6 +89,8 @@ func (s *Server) Push(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	io.WriteString(w, id)
 }
 
 // http://rubular.com/r/y8oJAY9eAS
