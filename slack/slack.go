@@ -20,7 +20,7 @@ func NewHook(url, secret string) *github.Hook {
 		Name:   github.String("web"),
 		Config: map[string]interface{}{
 			"url":          url,
-			"content_type": "application/json",
+			"content_type": "json",
 			"secret":       secret,
 		},
 	}
