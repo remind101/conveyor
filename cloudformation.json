@@ -235,7 +235,8 @@
           {
             "LoadBalancerPort": { "Fn::If": ["NoSSL", "80", "443"] },
             "InstancePort": "8080",
-            "Protocol": "TCP",
+            "Protocol": { "Fn::If": ["NoSSL", "TCP", "SSL"] },
+            "InstanceProtocol": "TCP",
             "SSLCertificateId": { "Fn::If": ["NoSSL", { "Ref": "AWS::NoValue" }, { "Ref": "SSLCertificateId" }] }
           }
         ],
