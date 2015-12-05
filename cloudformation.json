@@ -18,6 +18,11 @@
       "Default": "",
       "Description": "Secret shared with Slack to verify slash command webhooks."
     },
+    "SSLCertificateId": {
+      "Type": "String",
+      "Default": "",
+      "Description": "The SSL certificate to attach to the load balancer."
+    },
     "BaseUrl": {
       "Type": "String",
       "Default": "",
@@ -95,6 +100,10 @@
       "Description": "Comma delimited list of availability zones. MAX 2",
       "Default": "us-east-1a,us-east-1b"
     }
+  },
+
+  "Conditions": {
+    "NoSSL": { "Fn::Equals": [{"Ref": "SSLCertificateId"}, ""] }
   },
 
   "Resources": {
@@ -197,16 +206,14 @@
     "LoadBalancerSecurityGroup": {
       "Type": "AWS::EC2::SecurityGroup",
       "Properties": {
-        "GroupDescription": "Container Instance Allowed Ports",
+        "GroupDescription": "ELB Allowed access.",
         "VpcId": { "Ref": "Vpc" },
         "SecurityGroupIngress": [
           {
-            "IpProtocol": "tcp", "FromPort": "80", "ToPort": "80",
+            "IpProtocol": "tcp",
+            "FromPort": { "Fn::If": ["NoSSL", "80", "443"] },
+            "ToPort": { "Fn::If": ["NoSSL", "80", "443"] },
             "CidrIp": "0.0.0.0/0"
-          },
-          {
-            "IpProtocol": "tcp", "FromPort": "80", "ToPort": "80",
-            "CidrIp": { "Ref": "AllowedCIDR" }
           }
         ]
       }
@@ -226,9 +233,10 @@
         "CrossZone": "true",
         "Listeners": [
           {
-            "LoadBalancerPort": "80",
+            "LoadBalancerPort": { "Fn::If": ["NoSSL", "80", "443"] },
             "InstancePort": "8080",
-            "Protocol": "TCP"
+            "Protocol": "TCP",
+            "SSLCertificateId": { "Fn::If": ["NoSSL", { "Ref": "AWS::NoValue" }, { "Ref": "SSLCertificateId" }] }
           }
         ],
         "HealthCheck": {
