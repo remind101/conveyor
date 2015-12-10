@@ -13,7 +13,7 @@ Conveyor builds Docker images. Fast.
 ## Installation
 
 1. Conveyor needs access to pull GitHub repositories. The easiest way to do this is to add a bot user to your organization and generate an ssh key for them. Once you've done that, create a new S3 bucket and upload `id_rsa` and `id_rsa.pub` to the root of the bucket.
-2. Create a GitHub access token with `repo:status` and `write:repo_hook` scopes.
+2. Create a GitHub access token with `repo`, `admin:repo_hook` scopes.
 3. Create a new CloudFormation stack using [cloudformation.json](./cloudformation.json) in this repo.
 
 ## Configuration

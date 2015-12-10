@@ -1,7 +1,7 @@
 package slash
 
 import (
-	"io"
+	"encoding/json"
 	"net/http"
 
 	"golang.org/x/net/context"
@@ -28,11 +28,27 @@ func (h *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	text, err := h.ServeCommand(context.Background(), command)
+	responder := newResponder(command)
+	resp, err := h.ServeCommand(context.Background(), responder, command)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	io.WriteString(w, text)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(newResponse(resp))
+}
+
+type response struct {
+	ResponseType *string `json:"response_type,omitempty"`
+	Text         string  `json:"text"`
+}
+
+func newResponse(resp Response) *response {
+	r := &response{Text: resp.Text}
+	if resp.InChannel {
+		t := "in_channel"
+		r.ResponseType = &t
+	}
+	return r
 }

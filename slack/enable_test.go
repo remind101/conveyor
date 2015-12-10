@@ -16,10 +16,10 @@ const (
 	slackToken  = "slacktoken"
 )
 
-func TestWebhookHandler(t *testing.T) {
+func TestEnable(t *testing.T) {
 	hook := &github.Hook{}
 	g := new(mockHooker)
-	h := &WebhookHandler{
+	h := &Enable{
 		Hook:   hook,
 		hooker: g,
 	}
@@ -31,18 +31,18 @@ func TestWebhookHandler(t *testing.T) {
 		"owner": "remind101",
 		"repo":  "acme-inc",
 	})
-	reply, err := h.ServeCommand(ctx, slash.Command{
+	resp, err := h.ServeCommand(ctx, nil, slash.Command{
 		Token:   slackToken,
 		Command: "/conveyor",
 		Text:    "setup remind101/acme-inc",
 	})
 	assert.NoError(t, err)
-	assert.Equal(t, "Added webhook to remind101/acme-inc", reply)
+	assert.Equal(t, "Added webhook to remind101/acme-inc", resp.Text)
 
 	g.AssertExpectations(t)
 }
 
-func TestWebhookHandler_Exists(t *testing.T) {
+func TestEnable_Exists(t *testing.T) {
 	hook := &github.Hook{
 		Name: github.String("web"),
 		Config: map[string]interface{}{
@@ -50,7 +50,7 @@ func TestWebhookHandler_Exists(t *testing.T) {
 		},
 	}
 	g := new(mockHooker)
-	h := &WebhookHandler{
+	h := &Enable{
 		Hook:   hook,
 		hooker: g,
 	}
@@ -70,13 +70,13 @@ func TestWebhookHandler_Exists(t *testing.T) {
 		"owner": "remind101",
 		"repo":  "acme-inc",
 	})
-	reply, err := h.ServeCommand(ctx, slash.Command{
+	resp, err := h.ServeCommand(ctx, nil, slash.Command{
 		Token:   slackToken,
 		Command: "/conveyor",
 		Text:    "setup remind101/acme-inc",
 	})
 	assert.NoError(t, err)
-	assert.Equal(t, "Updated webhook on remind101/acme-inc", reply)
+	assert.Equal(t, "Updated webhook on remind101/acme-inc", resp.Text)
 
 	g.AssertExpectations(t)
 }
