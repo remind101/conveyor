@@ -95,6 +95,7 @@ func newSlackServer(q conveyor.BuildQueue, c *cli.Context) http.Handler {
 		slack.NewBuild(
 			client,
 			q,
+			fmt.Sprintf(logsURLTemplate, c.String("url")),
 		),
 	)
 

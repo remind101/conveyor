@@ -2,6 +2,7 @@ package slack
 
 import (
 	"testing"
+	"text/template"
 
 	"github.com/ejholmes/slash"
 	"github.com/remind101/conveyor"
@@ -23,6 +24,7 @@ func TestBuild(t *testing.T) {
 	b := &Build{
 		Queue:          q,
 		branchResolver: r,
+		urlTmpl:        template.Must(template.New("url").Parse("http://conveyor/logs/{{.ID}}")),
 	}
 
 	ctx := slash.WithParams(context.Background(), map[string]string{
@@ -45,7 +47,7 @@ func TestBuild(t *testing.T) {
 	assert.NoError(t, err)
 
 	resp = <-rec.responses
-	assert.Equal(t, "Build enqueued", resp.Text)
+	assert.Equal(t, "Building remind101/acme-inc@master: http://conveyor/logs/01234567-89ab-cdef-0123-456789abcdef", resp.Text)
 }
 
 type mockBuildQueue struct {

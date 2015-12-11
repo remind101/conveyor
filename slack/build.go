@@ -1,7 +1,9 @@
 package slack
 
 import (
+	"bytes"
 	"fmt"
+	"text/template"
 
 	"code.google.com/p/go-uuid/uuid"
 	"github.com/ejholmes/slash"
@@ -24,12 +26,14 @@ type Build struct {
 	Queue conveyor.BuildQueue
 
 	branchResolver
+	urlTmpl *template.Template
 }
 
-func NewBuild(client *github.Client, q conveyor.BuildQueue) *Build {
+func NewBuild(client *github.Client, q conveyor.BuildQueue, urlTmpl string) *Build {
 	return &Build{
 		Queue:          q,
 		branchResolver: &githubBranchResolver{client.Git},
+		urlTmpl:        template.Must(template.New("url").Parse(urlTmpl)),
 	}
 }
 
@@ -48,10 +52,11 @@ func (b *Build) build(ctx context.Context, r slash.Responder, owner, repo, branc
 		return r.Respond(slash.Reply(err.Error()))
 	}
 
+	fullRepo := fmt.Sprintf("%s/%s", owner, repo)
 	id := newID()
 	opts := builder.BuildOptions{
 		ID:         id,
-		Repository: fmt.Sprintf("%s/%s", owner, repo),
+		Repository: fullRepo,
 		Branch:     branch,
 		Sha:        sha,
 	}
@@ -59,7 +64,18 @@ func (b *Build) build(ctx context.Context, r slash.Responder, owner, repo, branc
 		return r.Respond(slash.Reply(err.Error()))
 	}
 
-	return r.Respond(slash.Reply("Build enqueued"))
+	url, err := b.url(opts)
+	if err != nil {
+		return r.Respond(slash.Reply(err.Error()))
+	}
+
+	return r.Respond(slash.Reply(fmt.Sprintf("Building %s@%s: %s", fullRepo, branch, url)))
+}
+
+func (b *Build) url(opts builder.BuildOptions) (string, error) {
+	buf := new(bytes.Buffer)
+	err := b.urlTmpl.Execute(buf, opts)
+	return buf.String(), err
 }
 
 type githubBranchResolver struct {
