@@ -22,10 +22,43 @@ type Command struct {
 
 	Command string
 	Text    string
+
+	ResponseURL *url.URL
+}
+
+// Response represents the response to send back to the user.
+type Response struct {
+	InChannel bool
+	Text      string
+}
+
+// An empty response.
+var NoResponse = Response{}
+
+// Reply returns a Response object that will reply to the user silently with an
+// "ephmeral" message.
+func Reply(text string) Response {
+	return Response{
+		InChannel: false,
+		Text:      text,
+	}
+}
+
+// Say returns a Response object that will post to the channel publicly.
+func Say(text string) Response {
+	return Response{
+		InChannel: true,
+		Text:      text,
+	}
 }
 
 // CommandFromValues returns a Command object from a url.Values object.
-func CommandFromValues(v url.Values) Command {
+func CommandFromValues(v url.Values) (Command, error) {
+	u, err := url.Parse(v.Get("response_url"))
+	if err != nil {
+		return Command{}, err
+	}
+
 	return Command{
 		Token:       v.Get("token"),
 		TeamID:      v.Get("team_id"),
@@ -36,13 +69,17 @@ func CommandFromValues(v url.Values) Command {
 		UserName:    v.Get("user_name"),
 		Command:     v.Get("command"),
 		Text:        v.Get("text"),
-	}
+		ResponseURL: u,
+	}, nil
 }
 
 // ParseRequest parses the form an then returns the extracted Command.
 func ParseRequest(r *http.Request) (Command, error) {
 	err := r.ParseForm()
-	return CommandFromValues(r.Form), err
+	if err != nil {
+		return Command{}, err
+	}
+	return CommandFromValues(r.Form)
 
 }
 

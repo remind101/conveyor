@@ -17,18 +17,18 @@ func Example() {
 }
 
 // Weather is the primary slash handler for the /weather command.
-func Weather(ctx context.Context, command slash.Command) (string, error) {
+func Weather(ctx context.Context, r slash.Responder, command slash.Command) (slash.Response, error) {
 	h := slash.NewMux()
 
 	var zipcodeRegex = regexp.MustCompile(`(?P<zip>[0-9])`)
 	h.MatchText(zipcodeRegex, slash.HandlerFunc(Zipcode))
 
-	return h.ServeCommand(ctx, command)
+	return h.ServeCommand(ctx, r, command)
 }
 
 // Zipcode is a slash handler that returns the weather for a zip code.
-func Zipcode(ctx context.Context, command slash.Command) (string, error) {
+func Zipcode(ctx context.Context, r slash.Responder, command slash.Command) (slash.Response, error) {
 	params := slash.Params(ctx)
 	zip := params["zip"]
-	return zip, nil
+	return slash.Reply(zip), nil
 }

@@ -29,6 +29,8 @@ import (
 	"github.com/remind101/pkg/reporter/hb2"
 )
 
+const logsURLTemplate = "%s/logs/{{.ID}}"
+
 func newBuildQueue(c *cli.Context) conveyor.BuildQueue {
 	u := urlParse(c.String("queue"))
 
@@ -61,7 +63,7 @@ func newServer(q conveyor.BuildQueue, c *cli.Context) http.Handler {
 
 	// Slack webhooks
 	if c.String("slack.token") != "" {
-		r.Handle("/slack", newSlackServer(c))
+		r.Handle("/slack", newSlackServer(q, c))
 	}
 
 	n := negroni.Classic()
@@ -71,7 +73,7 @@ func newServer(q conveyor.BuildQueue, c *cli.Context) http.Handler {
 }
 
 // newSlackServer returns an http handler for handling Slack slash commands at <url>/slack.
-func newSlackServer(c *cli.Context) http.Handler {
+func newSlackServer(q conveyor.BuildQueue, c *cli.Context) http.Handler {
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: c.String("github.token")},
 	)
@@ -80,11 +82,20 @@ func newSlackServer(c *cli.Context) http.Handler {
 	client := github.NewClient(tc)
 
 	r := slash.NewMux()
+	r.Match(slash.MatchSubcommand(`help`), slack.Help)
 	r.MatchText(
-		regexp.MustCompile(`setup (?P<owner>\S+?)/(?P<repo>\S+)`),
-		slack.NewWebhookHandler(
+		regexp.MustCompile(`enable (?P<owner>\S+?)/(?P<repo>\S+)`),
+		slack.NewEnable(
 			client,
 			slack.NewHook(c.String("url"), c.String("github.secret")),
+		),
+	)
+	r.MatchText(
+		regexp.MustCompile(`build (?P<owner>\S+?)/(?P<repo>\S+)@(?P<branch>\S+)`),
+		slack.NewBuild(
+			client,
+			q,
+			fmt.Sprintf(logsURLTemplate, c.String("url")),
 		),
 	)
 
@@ -102,7 +113,7 @@ func newBuilder(c *cli.Context) builder.Builder {
 	g := builder.NewGitHubClient(c.String("github.token"))
 
 	var backend builder.Builder
-	backend = builder.UpdateGitHubCommitStatus(db, g, fmt.Sprintf("%s/logs/{{.ID}}", c.String("url")))
+	backend = builder.UpdateGitHubCommitStatus(db, g, fmt.Sprintf(logsURLTemplate, c.String("url")))
 
 	if uri := c.String("stats"); uri != "" {
 		u := urlParse(uri)

@@ -93,7 +93,7 @@
 		},
 		{
 			"ImportPath": "github.com/ejholmes/slash",
-			"Rev": "7be7cffbccc6060d438928213655205ad50241aa"
+			"Rev": "dad6eeea72ec2cac322d3e6305ce4cfe2870f314"
 		},
 		{
 			"ImportPath": "github.com/fsouza/go-dockerclient",
