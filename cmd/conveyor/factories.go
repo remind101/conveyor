@@ -91,7 +91,7 @@ func newSlackServer(q conveyor.BuildQueue, c *cli.Context) http.Handler {
 		),
 	)
 	r.MatchText(
-		regexp.MustCompile(`build (?P<owner>\S+?)/(?P<repo>\S+)@(?P<branch>\S+)`),
+		slack.BuildRegexp,
 		slack.NewBuild(
 			client,
 			q,

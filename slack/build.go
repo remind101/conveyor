@@ -3,6 +3,7 @@ package slack
 import (
 	"bytes"
 	"fmt"
+	"regexp"
 	"text/template"
 
 	"code.google.com/p/go-uuid/uuid"
@@ -19,6 +20,9 @@ var newID = uuid.New
 type branchResolver interface {
 	resolveBranch(owner, repo, branch string) (sha string, err error)
 }
+
+// A regex for matching build commands.
+var BuildRegexp = regexp.MustCompile(`build (?P<owner>\S+?)/(?P<repo>\S+)[@:#](?P<branch>\S+)`)
 
 // Build is a slash.Handler that will trigger a conveyor build.
 type Build struct {
@@ -69,7 +73,7 @@ func (b *Build) build(ctx context.Context, r slash.Responder, owner, repo, branc
 		return r.Respond(slash.Reply(err.Error()))
 	}
 
-	return r.Respond(slash.Reply(fmt.Sprintf("Building %s@%s: %s", fullRepo, branch, url)))
+	return r.Respond(slash.Reply(fmt.Sprintf("Building %s:%s %s", fullRepo, branch, url)))
 }
 
 func (b *Build) url(opts builder.BuildOptions) (string, error) {
