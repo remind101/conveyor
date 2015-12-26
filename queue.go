@@ -143,10 +143,12 @@ func (q *SQSBuildQueue) receiveMessage(ch chan BuildRequest) (err error) {
 
 	var entries []*sqs.DeleteMessageBatchRequestEntry
 	defer func() {
-		_, err = q.sqs.DeleteMessageBatch(&sqs.DeleteMessageBatchInput{
-			QueueUrl: aws.String(q.QueueURL),
-			Entries:  entries,
-		})
+		if len(entries) > 0 {
+			_, err = q.sqs.DeleteMessageBatch(&sqs.DeleteMessageBatchInput{
+				QueueUrl: aws.String(q.QueueURL),
+				Entries:  entries,
+			})
+		}
 		return
 	}()
 
