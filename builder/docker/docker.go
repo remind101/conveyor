@@ -81,7 +81,7 @@ func (b *Builder) Build(ctx context.Context, w io.Writer, opts builder.BuildOpti
 
 func (b *Builder) build(ctx context.Context, w io.Writer, opts builder.BuildOptions) error {
 	env := []string{
-		fmt.Sprintf("REPOSITORY=%s", opts.Repository),
+		fmt.Sprintf("REPOSITORY=%s", strings.ToLower(opts.Repository)),
 		fmt.Sprintf("BRANCH=%s", opts.Branch),
 		fmt.Sprintf("SHA=%s", opts.Sha),
 		fmt.Sprintf("DRY=%s", b.dryRun()),
