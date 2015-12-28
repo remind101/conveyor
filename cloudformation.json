@@ -82,7 +82,7 @@
     },
     "DockerCfg": {
       "Type": "String",
-      "Description": "Contents of a .dockercfg file.",
+      "Description": "Contents of a .docker/config.json file.",
       "Default": ""
     },
     "MaxCapacity": {
