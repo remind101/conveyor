@@ -377,19 +377,19 @@
                 "owner": "root",
                 "group": "root"
               },
-              "/home/ubuntu/.dockercfg": {
+              "/home/ubuntu/.docker/config.json": {
                 "content": { "Ref": "DockerCfg" },
                 "mode": "000600",
                 "owner": "ubuntu",
                 "group": "ubuntu"
               },
-              "/root/.dockercfg": {
+              "/root/.docker/config.json": {
                 "content": { "Ref": "DockerCfg" },
                 "mode": "000600",
                 "owner": "root",
                 "group": "root"
               },
-              "/var/run/conveyor/.dockercfg": {
+              "/var/run/conveyor/.docker/config.json": {
                 "content": { "Ref": "DockerCfg" },
                 "mode": "000600",
                 "owner": "root",
