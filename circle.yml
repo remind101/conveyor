@@ -11,7 +11,8 @@ checkout:
 
 dependencies:
   override:
-    - echo '{}' > /home/ubuntu/.dockercfg
+    - mkdir /home/ubuntu/.docker
+    - echo '{}' > /home/ubuntu/.docker/config.json
     - cd builder/docker && make data && make build
     - docker inspect data
     - go install -a -race std
