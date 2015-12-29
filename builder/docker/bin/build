@@ -59,8 +59,8 @@ setup() {
   chmod -R 0600 ~/.ssh
   ssh-keyscan -t rsa github.com > ~/.ssh/known_hosts
 
-  # Copy .dockercfg from the data volume.
-  cp -r /var/run/conveyor/.dockercfg /root/.dockercfg
+  # Copy .docker/config.json from the data volume.
+  cp -r /var/run/conveyor/.docker/config.json /root/.docker/config.json
 
   status "Starting Docker..."
   wrapdocker
