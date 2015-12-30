@@ -19,15 +19,15 @@ bootstrap: build data
 build:
 	docker build -t ${IMAGE} .
 
-data: data/.dockercfg data/.ssh/id_rsa
+data: data/.docker/config.json data/.ssh/id_rsa
 	docker rm data || true
 	docker create --name data \
 		-v ${PWD}/data/.ssh:/var/run/conveyor/.ssh \
-		-v ${PWD}/data/.dockercfg:/var/run/conveyor/.dockercfg \
+		-v ${PWD}/data/.docker/config.json:/var/run/conveyor/.docker/config.json \
 		alpine:3.1 sh
 
-data/.dockercfg:
-	cp ${HOME}/.dockercfg data/.dockercfg
+data/.docker/config.json:
+	cp ${HOME}/.docker/config.json data/.docker/config.json
 
 data/.ssh/id_rsa:
 	ssh-keygen -t rsa -b 4096 -C ${EMAIL} -f data/.ssh/id_rsa -P ""
