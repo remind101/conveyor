@@ -20,7 +20,7 @@ func NewGitHubClient(token string, domain string) GitHubClient {
 	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
 	tc := oauth2.NewClient(oauth2.NoContext, ts)
 	c := github.NewClient(tc)
-	c.BaseURL = domain
+	c.BaseURL, err = url.Parse(domain)
 
 	return c.Repositories
 }
