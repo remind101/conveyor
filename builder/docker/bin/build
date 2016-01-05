@@ -33,6 +33,10 @@ if [ -z "$REPOSITORY" ]; then
   error "REPOSITORY env var is required"
 fi
 
+if [ -z "$GITHUB_DOMAIN" ]; then
+  error "GITHUB_DOMAIN env var is required"
+fi
+
 if [ -z "$BRANCH" ]; then
   error "BRANCH env var is required"
 fi
