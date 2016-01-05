@@ -19,7 +19,10 @@ func NewGitHubClient(token string) GitHubClient {
 
 	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
 	tc := oauth2.NewClient(oauth2.NoContext, ts)
-	return github.NewClient(tc).Repositories
+	c := github.NewClient(tc)
+	c.BaseURL = enterpriseUrl
+
+	return c.Repositories
 }
 
 // nullGitHubClient is an implementation of the GitHubClient interface that does
