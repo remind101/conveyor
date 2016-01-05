@@ -3,6 +3,7 @@ package builder
 import (
 	"github.com/google/go-github/github"
 	"golang.org/x/oauth2"
+	"net/url"
 )
 
 // GitHubClient represents a client that can create github commit statuses.
