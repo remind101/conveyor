@@ -46,6 +46,8 @@ type BuildOptions struct {
 	ID string
 	// Repository is the repo to build.
 	Repository string
+	// github.com or enterprise url
+	GithubDomain string
 	// Sha is the git commit to build.
 	Sha string
 	// Branch is the name of the branch that this build relates to.

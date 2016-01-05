@@ -83,6 +83,7 @@ func (b *Builder) build(ctx context.Context, w io.Writer, opts builder.BuildOpti
 	env := []string{
 		fmt.Sprintf("REPOSITORY=%s", strings.ToLower(opts.Repository)),
 		fmt.Sprintf("BRANCH=%s", opts.Branch),
+		fmt.Sprintf("GITHUB_DOMAIN=%s", opts.GithubDomain),
 		fmt.Sprintf("SHA=%s", opts.Sha),
 		fmt.Sprintf("DRY=%s", b.dryRun()),
 		fmt.Sprintf("CACHE=%s", b.cache(opts)),
