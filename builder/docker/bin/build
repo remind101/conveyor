@@ -57,7 +57,7 @@ setup() {
   cp -r /var/run/conveyor/.ssh /root/.ssh
   chown -R root:root ~/.ssh
   chmod -R 0600 ~/.ssh
-  ssh-keyscan -t rsa github.com > ~/.ssh/known_hosts
+  ssh-keyscan -t rsa "$GITHUB_DOMAIN" > ~/.ssh/known_hosts
 
   # Copy .docker/config.json from the data volume. Fallback to old .dockercfg.
   if [ -d /var/run/conveyor/.docker ]; then
@@ -74,7 +74,7 @@ setup() {
 clone() {
   status "Cloning..."
   # Clone the given branch and checkout the sha.
-  git clone --depth 50 --branch="$BRANCH" "git@github.com:${REPOSITORY}.git" "$REPOSITORY"
+  git clone --depth 50 --branch="$BRANCH" "git@${GITHUB_DOMAIN}:${REPOSITORY}.git" "$REPOSITORY"
   cd "$REPOSITORY"
   git checkout -qf "$SHA"
 }
