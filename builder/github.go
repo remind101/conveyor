@@ -12,7 +12,7 @@ type GitHubClient interface {
 
 // NewGitHubClient returns a new GitHubClient instance. If token is an empty
 // string, then a fake client will be returned.
-func NewGitHubClient(token string) GitHubClient {
+func NewGitHubClient(token string, domain string) GitHubClient {
 	if token == "" {
 		return &nullGitHubClient{}
 	}
@@ -20,7 +20,7 @@ func NewGitHubClient(token string) GitHubClient {
 	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
 	tc := oauth2.NewClient(oauth2.NoContext, ts)
 	c := github.NewClient(tc)
-	c.BaseURL = enterpriseUrl
+	c.BaseURL = domain
 
 	return c.Repositories
 }

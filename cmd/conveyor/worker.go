@@ -19,6 +19,12 @@ var workerFlags = []cli.Flag{
 		Usage:  "GitHub API token to use when updating commit statuses and setting up webhooks on repositories.",
 		EnvVar: "GITHUB_TOKEN",
 	},
+	cli.StringFlag{
+		Name:   "github.domain",
+		Value:  "",
+		Usage:  "Github Open Source or Enterprise",
+		EnvVar: "GITHUB_DOMAIN",
+	}
 	cli.BoolFlag{
 		Name:   "dry",
 		Usage:  "Enable dry run mode.",
