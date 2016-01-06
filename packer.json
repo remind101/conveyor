@@ -19,6 +19,7 @@
     "ami_block_device_mappings": [
       { "device_name": "/dev/xvdh", "volume_type": "io1", "iops": 1000, "volume_size": 50, "delete_on_termination": true }
     ],
+    "ami_regions": ["us-west-1", "us-west-2"],
     "launch_block_device_mappings": [
       { "device_name": "/dev/xvdh", "volume_type": "io1", "iops": 1000, "volume_size": 50, "delete_on_termination": true }
     ],
