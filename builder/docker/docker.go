@@ -53,6 +53,9 @@ type Builder struct {
 	// variable.
 	DryRun bool
 
+	// environment variables to be passed
+	Env map[string]string
+
 	client dockerClient
 }
 

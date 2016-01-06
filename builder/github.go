@@ -21,7 +21,11 @@ func NewGitHubClient(token string, domain string) GitHubClient {
 	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
 	tc := oauth2.NewClient(oauth2.NoContext, ts)
 	c := github.NewClient(tc)
+	if domain == "" {
+		domain = "github.com"
+	}
 	c.BaseURL, err = url.Parse(domain)
+	if err != nil { panic(err) }
 
 	return c.Repositories
 }
