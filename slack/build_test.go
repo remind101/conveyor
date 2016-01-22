@@ -59,7 +59,7 @@ func (m *mockBuildQueue) Push(ctx context.Context, options builder.BuildOptions)
 	return args.Error(0)
 }
 
-func (m *mockBuildQueue) Subscribe(chan conveyor.BuildRequest) error {
+func (m *mockBuildQueue) Subscribe(chan conveyor.BuildContext) error {
 	return nil
 }
 

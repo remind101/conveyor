@@ -13,7 +13,8 @@ dependencies:
   override:
     - mkdir /home/ubuntu/.docker
     - echo '{}' > /home/ubuntu/.docker/config.json
-    - cd builder/docker && make data && make build
+    - go get -u github.com/jteeuwen/go-bindata/...
+    - cd ~/.go_workspace/src/github.com/remind101/conveyor && make bootstrap
     - docker inspect data
     - go install -a -race std
     - go get github.com/tools/godep
@@ -21,4 +22,4 @@ dependencies:
 
 test:
   override:
-    - cd ~/.go_workspace/src/github.com/remind101/conveyor && godep go test -short ./...
+    - cd ~/.go_workspace/src/github.com/remind101/conveyor && make ci

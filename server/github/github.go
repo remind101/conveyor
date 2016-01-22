@@ -12,7 +12,6 @@ import (
 	"github.com/ejholmes/hookshot"
 	"github.com/ejholmes/hookshot/events"
 	"github.com/remind101/conveyor"
-	"github.com/remind101/conveyor/builder"
 
 	"code.google.com/p/go-uuid/uuid"
 )
@@ -20,19 +19,28 @@ import (
 // newID returns a new unique identifier.
 var newID = uuid.New
 
+// client mocks out the interface from conveyor.Conveyor that we use.
+type client interface {
+	Build(context.Context, conveyor.BuildRequest) (*conveyor.Build, error)
+}
+
 // Server implements the http.Handler interface for serving build requests via
 // GitHub webhooks.
 type Server struct {
-	Queue conveyor.BuildQueue
+	client
 
 	// mux contains the routes.
 	mux http.Handler
 }
 
 // NewServer returns a new http.Handler for serving the GitHub webhooks.
-func NewServer(q conveyor.BuildQueue) *Server {
+func NewServer(c *conveyor.Conveyor) *Server {
+	return newServer(c)
+}
+
+func newServer(c client) *Server {
 	s := &Server{
-		Queue: q,
+		client: c,
 	}
 
 	g := hookshot.NewRouter()
@@ -75,9 +83,7 @@ func (s *Server) Push(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id := newID()
-	opts := builder.BuildOptions{
-		ID:         id,
+	opts := conveyor.BuildRequest{
 		Repository: event.Repository.FullName,
 		Branch:     strings.Replace(event.Ref, "refs/heads/", "", -1),
 		Sha:        event.HeadCommit.ID,
@@ -85,12 +91,13 @@ func (s *Server) Push(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Enqueue the build
-	if err := s.Queue.Push(ctx, opts); err != nil {
+	b, err := s.client.Build(ctx, opts)
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	io.WriteString(w, id)
+	io.WriteString(w, b.ID)
 }
 
 // http://rubular.com/r/y8oJAY9eAS

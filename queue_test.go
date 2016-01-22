@@ -14,7 +14,7 @@ import (
 
 func TestBuildQueue(t *testing.T) {
 	q := &buildQueue{
-		queue: make(chan BuildRequest, 1),
+		queue: make(chan BuildContext, 1),
 	}
 
 	background := context.Background()
@@ -22,7 +22,7 @@ func TestBuildQueue(t *testing.T) {
 	err := q.Push(background, options)
 	assert.NoError(t, err)
 
-	ch := make(chan BuildRequest)
+	ch := make(chan BuildContext)
 	go q.Subscribe(ch)
 	req := <-ch
 	assert.Equal(t, req.BuildOptions, options)
@@ -79,7 +79,7 @@ func TestSQSBuildQueue_Subscribe(t *testing.T) {
 		QueueUrl: aws.String(""),
 	}).Return(&sqs.DeleteMessageBatchOutput{}, nil)
 
-	ch := make(chan BuildRequest, 1)
+	ch := make(chan BuildContext, 1)
 	q.Subscribe(ch)
 
 	assert.Equal(t, builder.BuildOptions{
@@ -110,7 +110,7 @@ func TestSQSBuildQueue_Subscribe_Panic(t *testing.T) {
 		panic("boom")
 	})
 
-	ch := make(chan BuildRequest, 1)
+	ch := make(chan BuildContext, 1)
 	q.Subscribe(ch)
 
 	err := <-called

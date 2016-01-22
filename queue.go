@@ -19,11 +19,11 @@ type BuildQueue interface {
 
 	// Subscribe starts sending build requests on the channel. This method
 	// should not block.
-	Subscribe(chan BuildRequest) error
+	Subscribe(chan BuildContext) error
 }
 
-// BuildRequest adds a context.Context to build options.
-type BuildRequest struct {
+// BuildContext adds a context.Context to build options.
+type BuildContext struct {
 	builder.BuildOptions
 	Ctx context.Context
 }
@@ -31,12 +31,12 @@ type BuildRequest struct {
 // buildQueue is an implementation of the BuildQueue interface that is in memory
 // using a channel.
 type buildQueue struct {
-	queue chan BuildRequest
+	queue chan BuildContext
 }
 
 func newBuildQueue(buffer int) *buildQueue {
 	return &buildQueue{
-		queue: make(chan BuildRequest, buffer),
+		queue: make(chan BuildContext, buffer),
 	}
 }
 
@@ -46,14 +46,14 @@ func NewBuildQueue(buffer int) BuildQueue {
 }
 
 func (q *buildQueue) Push(ctx context.Context, options builder.BuildOptions) error {
-	q.queue <- BuildRequest{
+	q.queue <- BuildContext{
 		Ctx:          ctx,
 		BuildOptions: options,
 	}
 	return nil
 }
 
-func (q *buildQueue) Subscribe(ch chan BuildRequest) error {
+func (q *buildQueue) Subscribe(ch chan BuildContext) error {
 	go func() {
 		for req := range q.queue {
 			ch <- req
@@ -110,9 +110,9 @@ func (q *SQSBuildQueue) Push(ctx context.Context, options builder.BuildOptions) 
 	return err
 }
 
-// Subscribe enters into a loop and sends BuildRequests to ch. This method
+// Subscribe enters into a loop and sends BuildContexts to ch. This method
 // blocks.
-func (q *SQSBuildQueue) Subscribe(ch chan BuildRequest) error {
+func (q *SQSBuildQueue) Subscribe(ch chan BuildContext) error {
 	go func() {
 		for {
 			if err := q.receiveMessage(ch); err != nil {
@@ -125,7 +125,7 @@ func (q *SQSBuildQueue) Subscribe(ch chan BuildRequest) error {
 }
 
 // receiveMessage calls ReceiveMessage and sends the build requests of ch.
-func (q *SQSBuildQueue) receiveMessage(ch chan BuildRequest) (err error) {
+func (q *SQSBuildQueue) receiveMessage(ch chan BuildContext) (err error) {
 	defer func() {
 		if v := recover(); v != nil {
 			err = fmt.Errorf("panic: %v", v)
@@ -158,7 +158,7 @@ func (q *SQSBuildQueue) receiveMessage(ch chan BuildRequest) (err error) {
 			return
 		}
 
-		ch <- BuildRequest{
+		ch <- BuildContext{
 			Ctx:          q.context(),
 			BuildOptions: options,
 		}

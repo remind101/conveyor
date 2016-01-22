@@ -1,4 +1,4 @@
-package conveyor
+package worker
 
 import (
 	"fmt"

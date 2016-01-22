@@ -123,6 +123,12 @@ Then start it up with docker-compose:
 $ docker-compose up
 ```
 
+You can test a simple dry run build of the remind101/acme-inc repo with:
+
+```
+$ make test-payload
+```
+
 If you want to test external GitHub webhooks, the easiest way to do that is using ngrok:
 
 ```console

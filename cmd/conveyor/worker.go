@@ -9,6 +9,7 @@ import (
 	"github.com/codegangsta/cli"
 	"github.com/remind101/conveyor"
 	"github.com/remind101/conveyor/builder/docker"
+	"github.com/remind101/conveyor/worker"
 )
 
 // flags for the worker.
@@ -58,24 +59,23 @@ var cmdWorker = cli.Command{
 }
 
 func workerAction(c *cli.Context) {
-	q := newBuildQueue(c)
+	cy := newConveyor(c)
 
-	if err := runWorker(q, c); err != nil {
+	if err := runWorker(cy, c); err != nil {
 		must(err)
 	}
 }
 
-func runWorker(q conveyor.BuildQueue, c *cli.Context) error {
+func runWorker(cy *conveyor.Conveyor, c *cli.Context) error {
 	numWorkers := c.Int("workers")
 
 	info("Starting %d workers\n", numWorkers)
 
-	ch := make(chan conveyor.BuildRequest)
-	q.Subscribe(ch)
+	ch := make(chan conveyor.BuildContext)
+	cy.BuildQueue.Subscribe(ch)
 
-	workers := conveyor.NewWorkerPool(numWorkers, conveyor.WorkerOptions{
+	workers := worker.NewPool(cy, numWorkers, worker.Options{
 		Builder:       newBuilder(c),
-		Logger:        newLogger(c),
 		BuildRequests: ch,
 	})
 

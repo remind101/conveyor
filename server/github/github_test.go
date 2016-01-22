@@ -9,7 +9,6 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/remind101/conveyor"
-	"github.com/remind101/conveyor/builder"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -32,8 +31,8 @@ func TestServer_Ping(t *testing.T) {
 }
 
 func TestServer_Push(t *testing.T) {
-	q := new(mockBuildQueue)
-	s := NewServer(q)
+	c := new(mockConveyor)
+	s := newServer(c)
 
 	resp := httptest.NewRecorder()
 	req, _ := http.NewRequest("POST", "/", strings.NewReader(`{
@@ -47,12 +46,13 @@ func TestServer_Push(t *testing.T) {
 }`))
 	req.Header.Set("X-GitHub-Event", "push")
 
-	q.On("Push", builder.BuildOptions{
-		ID:         fakeUUID,
+	c.On("Build", conveyor.BuildRequest{
 		Repository: "remind101/acme-inc",
 		Branch:     "master",
 		Sha:        "abcd",
-	}).Return(nil)
+	}).Return(&conveyor.Build{
+		ID: fakeUUID,
+	}, nil)
 
 	s.ServeHTTP(resp, req)
 	assert.Equal(t, http.StatusOK, resp.Code)
@@ -60,8 +60,8 @@ func TestServer_Push(t *testing.T) {
 }
 
 func TestServer_Push_Fork(t *testing.T) {
-	q := new(mockBuildQueue)
-	s := NewServer(q)
+	c := new(mockConveyor)
+	s := newServer(c)
 
 	resp := httptest.NewRecorder()
 	req, _ := http.NewRequest("POST", "/", strings.NewReader(`{
@@ -81,8 +81,8 @@ func TestServer_Push_Fork(t *testing.T) {
 }
 
 func TestServer_Push_Deleted(t *testing.T) {
-	q := new(mockBuildQueue)
-	s := NewServer(q)
+	c := new(mockConveyor)
+	s := newServer(c)
 
 	resp := httptest.NewRecorder()
 	req, _ := http.NewRequest("POST", "/", strings.NewReader(`{
@@ -121,17 +121,12 @@ func TestNoCache(t *testing.T) {
 	}
 }
 
-// mockBuildQueue is an implementation of the BuildQueue interface for testing.
-type mockBuildQueue struct {
+// mockConveyor is an implementation of the client interface.
+type mockConveyor struct {
 	mock.Mock
 }
 
-func (q *mockBuildQueue) Push(ctx context.Context, options builder.BuildOptions) error {
-	args := q.Called(options)
-	return args.Error(0)
-}
-
-func (q *mockBuildQueue) Subscribe(ch chan conveyor.BuildRequest) error {
-	args := q.Called(ch)
-	return args.Error(0)
+func (m *mockConveyor) Build(ctx context.Context, req conveyor.BuildRequest) (*conveyor.Build, error) {
+	args := m.Called(req)
+	return args.Get(0).(*conveyor.Build), args.Error(1)
 }
