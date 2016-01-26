@@ -22,16 +22,12 @@ type Conveyor struct {
 	// Logger is the log storage backend to read and write logs for builds.
 	Logger logs.Logger
 
-	Builds *BuildsService
-
 	db *sqlx.DB
 }
 
 // New returns a new Conveyor instance.
 func New(db *sqlx.DB) *Conveyor {
-	c := &Conveyor{db: db}
-	c.Builds = &BuildsService{Conveyor: c}
-	return c
+	return &Conveyor{db: db}
 }
 
 // BuildRequest is provided when triggering a new build.
@@ -60,7 +56,7 @@ func (c *Conveyor) Build(ctx context.Context, req BuildRequest) (*Build, error) 
 		Branch:     req.Branch,
 	}
 
-	if err := c.Builds.CreateBuild(ctx, tx, b); err != nil {
+	if err := buildsCreate(tx, b); err != nil {
 		tx.Rollback()
 		return b, err
 	}
@@ -86,7 +82,7 @@ func (c *Conveyor) FindBuild(ctx context.Context, buildID string) (*Build, error
 		return nil, err
 	}
 
-	b, err := c.Builds.FindBuild(ctx, tx, buildID)
+	b, err := buildsFind(tx, buildID)
 	if err != nil {
 		tx.Rollback()
 		return b, err
@@ -112,7 +108,7 @@ func (c *Conveyor) BuildStarted(ctx context.Context, buildID string) error {
 		return err
 	}
 
-	if err := c.Builds.UpdateStatus(ctx, tx, buildID, StatusBuilding); err != nil {
+	if err := buildsUpdateStatus(tx, buildID, StatusBuilding); err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -127,12 +123,12 @@ func (c *Conveyor) BuildComplete(ctx context.Context, buildID, image string) err
 		return err
 	}
 
-	if err := c.Builds.UpdateStatus(ctx, tx, buildID, StatusSucceeded); err != nil {
+	if err := buildsUpdateStatus(tx, buildID, StatusSucceeded); err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	if err := c.Builds.CreateArtifact(ctx, tx, buildID, &Artifact{
+	if err := artifactsCreate(tx, buildID, &Artifact{
 		Image: image,
 	}); err != nil {
 		tx.Rollback()
@@ -149,7 +145,7 @@ func (c *Conveyor) BuildFailed(ctx context.Context, buildID string, err error) e
 		return err
 	}
 
-	if err := c.Builds.UpdateStatus(ctx, tx, buildID, StatusFailed); err != nil {
+	if err := buildsUpdateStatus(tx, buildID, StatusFailed); err != nil {
 		tx.Rollback()
 		return err
 	}

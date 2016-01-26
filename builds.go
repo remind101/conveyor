@@ -8,8 +8,6 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
-
-	"golang.org/x/net/context"
 )
 
 // ErrDuplicateBuild can be returned when we try to start a build for a sha that
@@ -94,13 +92,8 @@ func (s BuildStatus) Value() (driver.Value, error) {
 	return driver.Value(s.String()), nil
 }
 
-// BuildsService is a service for managing builds.
-type BuildsService struct {
-	*Conveyor
-}
-
-// CreateBuild persists the build in the db.
-func (s *BuildsService) CreateBuild(ctx context.Context, tx *sqlx.Tx, b *Build) error {
+// buildsCreate inserts a new build into the database.
+func buildsCreate(tx *sqlx.Tx, b *Build) error {
 	const createBuildSql = `INSERT INTO builds (repository, branch, sha, status) VALUES (:repository, :branch, :sha, :status) RETURNING id`
 	err := insert(tx, createBuildSql, b, &b.ID)
 	if err, ok := err.(*pq.Error); ok {
@@ -111,8 +104,8 @@ func (s *BuildsService) CreateBuild(ctx context.Context, tx *sqlx.Tx, b *Build) 
 	return err
 }
 
-// FindBuild finds a build by id.
-func (s *BuildsService) FindBuild(ctx context.Context, tx *sqlx.Tx, buildID string) (*Build, error) {
+// buildsFind finds a build by ID.
+func buildsFind(tx *sqlx.Tx, buildID string) (*Build, error) {
 	const (
 		findBuildSql     = `SELECT * FROM builds where id = ?`
 		findArtifactsSql = `SELECT image FROM artifacts WHERE build_id = ?`
@@ -132,8 +125,8 @@ func (s *BuildsService) FindBuild(ctx context.Context, tx *sqlx.Tx, buildID stri
 	return &b, err
 }
 
-// UpdateStatus updates the build status on a build.
-func (s *BuildsService) UpdateStatus(ctx context.Context, tx *sqlx.Tx, buildID string, status BuildStatus) error {
+// buildsUpdateStatus changes the status of a build.
+func buildsUpdateStatus(tx *sqlx.Tx, buildID string, status BuildStatus) error {
 	var sql string
 	switch status {
 	case StatusBuilding:
@@ -145,17 +138,5 @@ func (s *BuildsService) UpdateStatus(ctx context.Context, tx *sqlx.Tx, buildID s
 	}
 
 	_, err := tx.Exec(tx.Rebind(sql), status, time.Now(), buildID)
-	return err
-}
-
-type artifact struct {
-	BuildID string `db:"build_id"`
-	*Artifact
-}
-
-// CreateArtifact creates a new Artifact for the build.
-func (s *BuildsService) CreateArtifact(ctx context.Context, tx *sqlx.Tx, buildID string, a *Artifact) error {
-	const createArtifactSql = `INSERT INTO artifacts (build_id, image) VALUES (:build_id, :image)`
-	_, err := tx.NamedExec(createArtifactSql, artifact{BuildID: buildID, Artifact: a})
 	return err
 }
