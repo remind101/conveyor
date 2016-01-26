@@ -28,6 +28,12 @@ var sharedFlags = []cli.Flag{
 		Usage:  "The logger to use. Available options are `stdout://`, `s3://bucket` or `cloudwatch://`.",
 		EnvVar: "LOGGER",
 	},
+	cli.StringFlag{
+		Name:   "db",
+		Value:  "",
+		Usage:  "A postgres connection string for the database.",
+		EnvVar: "DATABASE_URL",
+	},
 }
 
 func main() {
@@ -50,17 +56,17 @@ func main() {
 }
 
 func mainAction(c *cli.Context) {
-	q := newBuildQueue(c)
+	cy := newConveyor(c)
 
 	worker := make(chan error)
 	server := make(chan error)
 
 	go func() {
-		worker <- runWorker(q, c)
+		worker <- runWorker(cy, c)
 	}()
 
 	go func() {
-		server <- runServer(q, c)
+		server <- runServer(cy, c)
 	}()
 
 	<-worker

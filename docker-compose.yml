@@ -1,7 +1,15 @@
 conveyor:
   build: ./
   env_file: .env
+  links:
+    - postgres:postgres
   volumes:
     - "/var/run/docker.sock:/var/run/docker.sock"
   ports:
     - "8080:8080"
+  environment:
+    DATABASE_URL: postgres://postgres:postgres@postgres/postgres?sslmode=disable
+postgres:
+  image: postgres
+  ports:
+    - "5432:5432"

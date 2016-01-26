@@ -1,13 +1,30 @@
-package conveyor
+package worker
 
 import (
 	"io"
 	"log"
 	"sync"
+	"time"
 
+	"golang.org/x/net/context"
+
+	"github.com/remind101/conveyor"
 	"github.com/remind101/conveyor/builder"
-	"github.com/remind101/conveyor/logs"
 )
+
+const (
+	// DefaultTimeout is the default amount of time to wait for a build
+	// to complete before cancelling it.
+	DefaultTimeout = 20 * time.Minute
+)
+
+// Conveyor mocks out the conveyor.Conveyor interface that we use.
+type Conveyor interface {
+	Writer(ctx context.Context, buildID string) (io.Writer, error)
+	BuildStarted(ctx context.Context, buildID string) error
+	BuildComplete(ctx context.Context, buildID, image string) error
+	BuildFailed(ctx context.Context, buildID string, err error) error
+}
 
 // Workers is a collection of workers.
 type Workers []*Worker
@@ -45,37 +62,36 @@ func (w Workers) Shutdown() error {
 	return errors[0]
 }
 
-// NewWorkerPool returns a new set of Worker instances.
-func NewWorkerPool(num int, options WorkerOptions) (workers Workers) {
+// NewPool returns a new set of Worker instances.
+func NewPool(c Conveyor, num int, options Options) (workers Workers) {
 	for i := 0; i < num; i++ {
-		w := NewWorker(options)
+		w := New(c, options)
 		workers = append(workers, w)
 	}
 	return
 }
 
-// WorkerOptions are options passed when building a new Worker instance.
-type WorkerOptions struct {
+// Options are options passed when building a new Worker instance.
+type Options struct {
 	// Builder to use to perform the builds.
 	Builder builder.Builder
 
-	// BuildQueue to pull BuildRequests from.
-	BuildRequests chan BuildRequest
+	// BuildQueue to pull BuildContexts from.
+	BuildRequests chan conveyor.BuildContext
 
 	// Logger used to generate an io.Writer for each build.
-	Logger logs.Logger
+	Conveyor Conveyor
 }
 
 // Worker pulls jobs off of a BuildQueue and performs the build.
 type Worker struct {
+	Conveyor
+
 	// Builder to use to build.
 	builder.Builder
 
-	// Logger to use to build a builder.Logger
-	Logger logs.Logger
-
 	// Queue to pull jobs from.
-	buildRequests chan BuildRequest
+	buildRequests chan conveyor.BuildContext
 
 	// Channel used to request a shutdown.
 	shutdown chan struct{}
@@ -84,12 +100,12 @@ type Worker struct {
 	done chan error
 }
 
-// NewWorker returns a new Worker instance and subscribes to receive build
+// New returns a new Worker instance and subscribes to receive build
 // requests from the BuildQueue.
-func NewWorker(options WorkerOptions) *Worker {
+func New(c Conveyor, options Options) *Worker {
 	return &Worker{
+		Conveyor:      c,
 		Builder:       builder.WithCancel(options.Builder),
-		Logger:        options.Logger,
 		buildRequests: options.BuildRequests,
 		shutdown:      make(chan struct{}),
 		done:          make(chan error),
@@ -115,16 +131,8 @@ func (w *Worker) Start() error {
 				break
 			}
 
-			logger, err := w.newLogger(req.BuildOptions)
-			if err != nil {
+			if err := w.build(req.Ctx, req.BuildOptions); err != nil {
 				log.Println(err)
-				continue
-			}
-
-			_, err = w.Build(req.Ctx, logger, req.BuildOptions)
-			if err != nil {
-				log.Println(err)
-				continue
 			}
 
 			continue
@@ -136,19 +144,44 @@ func (w *Worker) Start() error {
 	return nil
 }
 
+// build performs a build.
+func (w *Worker) build(ctx context.Context, options builder.BuildOptions) (err error) {
+	buildID := options.ID
+
+	err = w.BuildStarted(ctx, buildID)
+	if err != nil {
+		return
+	}
+
+	var image string
+	defer func() {
+		if err == nil {
+			err = w.BuildComplete(ctx, buildID, image)
+		} else {
+			w.BuildFailed(ctx, buildID, err)
+		}
+	}()
+
+	var logger io.Writer
+	// Get an io.Writer to write build logs to.
+	logger, err = w.Writer(ctx, buildID)
+	if err != nil {
+		return
+	}
+
+	// Perform the build.
+	image, err = w.Build(ctx, logger, options)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
 // Shutdown stops this worker for processing any build requests. If the Builder
 // supports the Cancel method, this function will block until all currently
 // processesing builds have been canceled.
 func (w *Worker) Shutdown() error {
 	close(w.shutdown)
 	return <-w.done
-}
-
-func (w *Worker) newLogger(opts builder.BuildOptions) (io.Writer, error) {
-	l := w.Logger
-	if l == nil {
-		l = logs.Discard
-	}
-
-	return l.Create(opts.ID)
 }

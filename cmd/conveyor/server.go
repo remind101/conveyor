@@ -40,12 +40,12 @@ var cmdServer = cli.Command{
 }
 
 func serverAction(c *cli.Context) {
-	q := newBuildQueue(c)
+	cy := newConveyor(c)
 
-	runServer(q, c)
+	runServer(cy, c)
 }
 
-func runServer(q conveyor.BuildQueue, c *cli.Context) error {
+func runServer(cy *conveyor.Conveyor, c *cli.Context) error {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
 
@@ -54,7 +54,7 @@ func runServer(q conveyor.BuildQueue, c *cli.Context) error {
 
 	errCh := make(chan error)
 	go func() {
-		errCh <- http.ListenAndServe(":"+port, newServer(q, c))
+		errCh <- http.ListenAndServe(":"+port, newServer(cy, c))
 	}()
 
 	select {

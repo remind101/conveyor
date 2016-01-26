@@ -121,6 +121,16 @@
 			"Rev": "eb2b0249b6c3189079f1e55f940b91f8b03c73ea"
 		},
 		{
+			"ImportPath": "github.com/jmoiron/sqlx",
+			"Comment": "sqlx-v1.1-53-g54aec3f",
+			"Rev": "54aec3fd91a2b2129ffaca0d652b8a9223ee2d9e"
+		},
+		{
+			"ImportPath": "github.com/lib/pq",
+			"Comment": "go1.0-cutoff-22-g73672c2",
+			"Rev": "73672c22431294bd2d012742dfc488523cc631bd"
+		},
+		{
 			"ImportPath": "github.com/remind101/pkg/logger",
 			"Rev": "08031f3066f0a85a6cf35a3c6723f4812d2111a2"
 		},
@@ -131,6 +141,10 @@
 		{
 			"ImportPath": "github.com/remind101/pkg/stream",
 			"Rev": "08031f3066f0a85a6cf35a3c6723f4812d2111a2"
+		},
+		{
+			"ImportPath": "github.com/rubenv/sql-migrate",
+			"Rev": "53184e1edfb4f9655b0fa8dd2c23e7763f452bda"
 		},
 		{
 			"ImportPath": "github.com/shirou/gopsutil/common",
@@ -172,6 +186,11 @@
 		{
 			"ImportPath": "golang.org/x/oauth2",
 			"Rev": "8914e5017ca260f2a3a1575b1e6868874050d95e"
+		},
+		{
+			"ImportPath": "gopkg.in/gorp.v1",
+			"Comment": "v1.7.1",
+			"Rev": "c87af80f3cc5036b55b83d77171e156791085e2e"
 		}
 	]
 }

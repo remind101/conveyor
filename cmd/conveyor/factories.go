@@ -16,6 +16,7 @@ import (
 	"github.com/ejholmes/slash"
 	"github.com/google/go-github/github"
 	"github.com/gorilla/mux"
+	"github.com/jmoiron/sqlx"
 	"github.com/remind101/conveyor"
 	"github.com/remind101/conveyor/builder"
 	"github.com/remind101/conveyor/builder/datadog"
@@ -25,11 +26,27 @@ import (
 	"github.com/remind101/conveyor/logs/s3"
 	"github.com/remind101/conveyor/server"
 	"github.com/remind101/conveyor/slack"
+	"github.com/remind101/conveyor/worker"
 	"github.com/remind101/pkg/reporter"
 	"github.com/remind101/pkg/reporter/hb2"
 )
 
 const logsURLTemplate = "%s/logs/{{.ID}}"
+
+func newDB(c *cli.Context) *sqlx.DB {
+	db := sqlx.MustConnect("postgres", c.String("db"))
+	if err := conveyor.MigrateUp(db); err != nil {
+		panic(err)
+	}
+	return db
+}
+
+func newConveyor(c *cli.Context) *conveyor.Conveyor {
+	cy := conveyor.New(newDB(c))
+	cy.BuildQueue = newBuildQueue(c)
+	cy.Logger = newLogger(c)
+	return cy
+}
 
 func newBuildQueue(c *cli.Context) conveyor.BuildQueue {
 	u := urlParse(c.String("queue"))
@@ -53,17 +70,16 @@ func newBuildQueue(c *cli.Context) conveyor.BuildQueue {
 	}
 }
 
-func newServer(q conveyor.BuildQueue, c *cli.Context) http.Handler {
+func newServer(cy *conveyor.Conveyor, c *cli.Context) http.Handler {
 	r := mux.NewRouter()
-	r.NotFoundHandler = server.NewServer(server.Config{
+	r.NotFoundHandler = server.NewServer(cy, server.Config{
 		GitHubSecret: c.String("github.secret"),
-		Queue:        q,
 		Logger:       newLogger(c),
 	})
 
 	// Slack webhooks
 	if c.String("slack.token") != "" {
-		r.Handle("/slack", newSlackServer(q, c))
+		r.Handle("/slack", newSlackServer(cy, c))
 	}
 
 	n := negroni.Classic()
@@ -79,21 +95,21 @@ func newSlackServer(q conveyor.BuildQueue, c *cli.Context) http.Handler {
 	)
 	tc := oauth2.NewClient(oauth2.NoContext, ts)
 
-	client := github.NewClient(tc)
+	cy := github.NewClient(tc)
 
 	r := slash.NewMux()
 	r.Match(slash.MatchSubcommand(`help`), slack.Help)
 	r.MatchText(
 		regexp.MustCompile(`enable (?P<owner>\S+?)/(?P<repo>\S+)`),
 		slack.NewEnable(
-			client,
+			cy,
 			slack.NewHook(c.String("url"), c.String("github.secret")),
 		),
 	)
 	r.MatchText(
 		regexp.MustCompile(`build (?P<owner>\S+?)/(?P<repo>\S+)@(?P<branch>\S+)`),
 		slack.NewBuild(
-			client,
+			cy,
 			q,
 			fmt.Sprintf(logsURLTemplate, c.String("url")),
 		),
@@ -112,8 +128,7 @@ func newBuilder(c *cli.Context) builder.Builder {
 
 	g := builder.NewGitHubClient(c.String("github.token"))
 
-	var backend builder.Builder
-	backend = builder.UpdateGitHubCommitStatus(db, g, fmt.Sprintf(logsURLTemplate, c.String("url")))
+	var backend builder.Builder = builder.UpdateGitHubCommitStatus(db, g, fmt.Sprintf(logsURLTemplate, c.String("url")))
 
 	if uri := c.String("stats"); uri != "" {
 		u := urlParse(uri)
@@ -132,7 +147,7 @@ func newBuilder(c *cli.Context) builder.Builder {
 		}
 	}
 
-	b := conveyor.NewBuilder(backend)
+	b := worker.NewBuilder(backend)
 	b.Reporter = newReporter(c)
 
 	return b

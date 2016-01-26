@@ -1,50 +1,145 @@
 package conveyor
 
 import (
-	"io"
+	"errors"
+	"testing"
 
-	"github.com/remind101/conveyor/builder"
-	"github.com/stretchr/testify/mock"
 	"golang.org/x/net/context"
+
+	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq"
+	"github.com/stretchr/testify/assert"
 )
 
 const fakeUUID = "01234567-89ab-cdef-0123-456789abcdef"
+
+const databaseURL = "postgres://localhost/conveyor?sslmode=disable"
 
 func init() {
 	newID = func() string { return fakeUUID }
 }
 
-// mockBuilder is a mock implementation of the builder.Builder interface.
-type mockBuilder struct {
-	mock.Mock
+func TestConveyor_Build(t *testing.T) {
+	c := newConveyor(t)
+
+	b, err := c.Build(context.Background(), BuildRequest{
+		Repository: "remind101/acme-inc",
+		Branch:     "master",
+		Sha:        "139759bd61e98faeec619c45b1060b4288952164",
+	})
+	assert.NoError(t, err)
+	assert.NotNil(t, b)
+	assert.NotEqual(t, "", b.ID)
+
+	b, err = c.FindBuild(context.Background(), b.ID)
+	assert.NoError(t, err)
+	assert.NotNil(t, b)
+	assert.NotNil(t, b.ID)
+	assert.Equal(t, StatusPending, b.Status)
+	assert.Equal(t, "remind101/acme-inc", b.Repository)
+	assert.Equal(t, "master", b.Branch)
+	assert.Equal(t, "139759bd61e98faeec619c45b1060b4288952164", b.Sha)
 }
 
-func (b *mockBuilder) Build(ctx context.Context, w io.Writer, options builder.BuildOptions) (string, error) {
-	args := b.Called(w, options)
-	return args.String(0), args.Error(1)
+func TestConveyor_Build_Duplicate(t *testing.T) {
+	c := newConveyor(t)
+
+	b, err := c.Build(context.Background(), BuildRequest{
+		Repository: "remind101/acme-inc",
+		Branch:     "master",
+		Sha:        "139759bd61e98faeec619c45b1060b4288952164",
+	})
+	assert.NoError(t, err)
+
+	_, err = c.Build(context.Background(), BuildRequest{
+		Repository: "remind101/acme-inc",
+		Branch:     "master",
+		Sha:        "139759bd61e98faeec619c45b1060b4288952164",
+	})
+	assert.Equal(t, ErrDuplicateBuild, err)
+
+	err = c.BuildStarted(context.Background(), b.ID)
+	assert.NoError(t, err)
+
+	_, err = c.Build(context.Background(), BuildRequest{
+		Repository: "remind101/acme-inc",
+		Branch:     "master",
+		Sha:        "139759bd61e98faeec619c45b1060b4288952164",
+	})
+	assert.Equal(t, ErrDuplicateBuild, err)
 }
 
-// mockCancelBuilder is a mockBuilder that responds to Cancel.
-type mockCancelBuilder struct {
-	mockBuilder
+func TestConveyor_BuildStarted(t *testing.T) {
+	c := newConveyor(t)
+
+	b, err := c.Build(context.Background(), BuildRequest{
+		Repository: "remind101/acme-inc",
+		Branch:     "master",
+		Sha:        "139759bd61e98faeec619c45b1060b4288952164",
+	})
+	assert.NoError(t, err)
+
+	err = c.BuildStarted(context.Background(), b.ID)
+	assert.NoError(t, err)
+
+	b, err = c.FindBuild(context.Background(), b.ID)
+	assert.NoError(t, err)
+	assert.NotNil(t, b)
+	assert.NotNil(t, b.StartedAt)
+	assert.Equal(t, StatusBuilding, b.Status)
 }
 
-func (b *mockCancelBuilder) Cancel() error {
-	args := b.Called()
-	return args.Error(0)
+func TestConveyor_BuildComplete(t *testing.T) {
+	c := newConveyor(t)
+
+	b, err := c.Build(context.Background(), BuildRequest{
+		Repository: "remind101/acme-inc",
+		Branch:     "master",
+		Sha:        "139759bd61e98faeec619c45b1060b4288952164",
+	})
+	assert.NoError(t, err)
+
+	image := "remind101/acme-inc:139759bd61e98faeec619c45b1060b4288952164"
+	err = c.BuildComplete(context.Background(), b.ID, image)
+	assert.NoError(t, err)
+
+	b, err = c.FindBuild(context.Background(), b.ID)
+	assert.NoError(t, err)
+	assert.NotNil(t, b)
+	assert.NotNil(t, b.CompletedAt)
+	assert.Equal(t, StatusSucceeded, b.Status)
+	assert.Equal(t, []Artifact{{Image: image}}, b.Artifacts)
 }
 
-// mockBuildQueue is an implementation of the BuildQueue interface for testing.
-type mockBuildQueue struct {
-	mock.Mock
+func TestConveyor_BuildFailed(t *testing.T) {
+	c := newConveyor(t)
+
+	b, err := c.Build(context.Background(), BuildRequest{
+		Repository: "remind101/acme-inc",
+		Branch:     "master",
+		Sha:        "139759bd61e98faeec619c45b1060b4288952164",
+	})
+	assert.NoError(t, err)
+
+	err = c.BuildFailed(context.Background(), b.ID, errors.New("Docker error"))
+	assert.NoError(t, err)
+
+	b, err = c.FindBuild(context.Background(), b.ID)
+	assert.NoError(t, err)
+	assert.NotNil(t, b)
+	assert.NotNil(t, b.CompletedAt)
+	assert.Equal(t, StatusFailed, b.Status)
+	assert.Nil(t, b.Artifacts)
 }
 
-func (q *mockBuildQueue) Push(ctx context.Context, options builder.BuildOptions) error {
-	args := q.Called(options)
-	return args.Error(0)
-}
+func newConveyor(t testing.TB) *Conveyor {
+	db := sqlx.MustConnect("postgres", databaseURL)
+	if err := Reset(db); err != nil {
+		t.Fatal(err)
+	}
 
-func (q *mockBuildQueue) Subscribe(ch chan BuildRequest) error {
-	args := q.Called(ch)
-	return args.Error(0)
+	c := New(db)
+	c.BuildQueue = NewBuildQueue(100)
+
+	return c
 }

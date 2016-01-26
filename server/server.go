@@ -15,19 +15,16 @@ type Config struct {
 	// Shared secret between GitHub and Conveyor.
 	GitHubSecret string
 
-	// BuildQueue to use.
-	Queue conveyor.BuildQueue
-
 	// Logger to use to stream logs from.
 	Logger logs.Logger
 }
 
-func NewServer(config Config) http.Handler {
+func NewServer(c *conveyor.Conveyor, config Config) http.Handler {
 	r := mux.NewRouter()
 
 	// Github webhooks
 	r.MatcherFunc(githubWebhook).Handler(
-		hookshot.Authorize(github.NewServer(config.Queue), config.GitHubSecret),
+		hookshot.Authorize(github.NewServer(c), config.GitHubSecret),
 	)
 
 	// API
