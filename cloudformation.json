@@ -8,6 +8,11 @@
       "Default": "",
       "Description": "The shared secret that GitHub uses to sign webhook payloads."
     },
+    "GitHubDomain": {
+      "Type": "String",
+      "Default": "",
+      "Description": "Github Domain like github.com or enterprise version."
+    },
     "GitHubToken": {
       "Type": "String",
       "Default": "",
@@ -346,6 +351,7 @@
                 "content": { "Fn::Join": ["", [
                   "GITHUB_TOKEN=", { "Ref": "GitHubToken" }, "\n",
                   "GITHUB_SECRET=", { "Ref": "GitHubSecret" }, "\n",
+                  "GITHUB_DOMAIN=", { "Ref": "GitHubDomain" }, "\n",
                   "SLACK_TOKEN=", { "Ref": "SlackToken" }, "\n",
                   "BASE_URL=", { "Ref": "BaseUrl" }, "\n",
                   "SQS_QUEUE_URL=", { "Ref": "Queue" }, "\n",

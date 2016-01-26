@@ -126,7 +126,7 @@ func newBuilder(c *cli.Context) builder.Builder {
 	db.DryRun = c.Bool("dry")
 	db.Image = c.String("builder.image")
 
-	g := builder.NewGitHubClient(c.String("github.token"))
+	g := builder.NewGitHubClient(c.String("github.token"), c.String("github.domain"))
 
 	var backend builder.Builder = builder.UpdateGitHubCommitStatus(db, g, fmt.Sprintf(logsURLTemplate, c.String("url")))
 

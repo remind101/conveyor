@@ -30,6 +30,7 @@ USAGE:
 OPTIONS:
    --port '8080'        Port to run the server on [$PORT]
    --github.token         GitHub API token to use when updating commit statuses on repositories. [$GITHUB_TOKEN]
+   --github.domain        Github Open Source or Enterprise. [$GITHUB_DOMAIN]
    --github.secret        Shared secret used by GitHub to sign webhook payloads. This secret will be used to verify that the request came from GitHub. [$GITHUB_SECRET]
    --dry          Enable dry run mode. [$DRY]
    --builder.image 'remind101/conveyor-builder' A docker image to use to perform the build. [$BUILDER_IMAGE]
