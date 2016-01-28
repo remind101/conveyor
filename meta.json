@@ -1,0 +1,9 @@
+{
+ "description": "Conveyor API",
+ "id": "conveyor",
+ "links": [{
+   "href": "http://conveyor.local",
+   "rel": "self"
+ }],
+ "title": "Conveyor"
+}

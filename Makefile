@@ -33,3 +33,9 @@ bindata.go: db/migrations/*.sql
 database:: bindata.go
 	dropdb conveyor || true
 	createdb conveyor || true
+
+schema.json: meta.json schemata/*
+	bundle exec prmd combine --meta meta.json schemata/ > schema.json
+
+schema.md: schema.json
+	bundle exec prmd doc schema.json > schema.md
