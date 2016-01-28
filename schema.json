@@ -56,6 +56,16 @@
         },
         "image": {
           "$ref": "#/definitions/artifact/definitions/image"
+        },
+        "build": {
+          "type": [
+            "object"
+          ],
+          "properties": {
+            "id": {
+              "$ref": "#/definitions/build/definitions/id"
+            }
+          }
         }
       }
     },

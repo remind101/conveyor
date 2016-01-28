@@ -207,6 +207,9 @@ func String(v string) *string {
 // built Docker image and will tell what what you need to pull to obtain
 // the image.
 type Artifact struct {
+	Build struct {
+		ID string `json:"id" url:"id,key"` // unique identifier of build
+	} `json:"build" url:"build,key"`
 	ID    string `json:"id" url:"id,key"`       // unique identifier of artifact
 	Image string `json:"image" url:"image,key"` // the name of the Docker image. This can be pulled with `docker pull`
 }

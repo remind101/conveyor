@@ -50,6 +50,16 @@
     },
     "image": {
       "$ref": "/schemata/artifact#/definitions/image"
+    },
+    "build": {
+      "type": [
+        "object"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "/schemata/build#/definitions/id"
+        }
+      }
     }
   },
   "id": "schemata/artifact"
