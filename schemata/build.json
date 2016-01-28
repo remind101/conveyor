@@ -66,7 +66,7 @@
       ]
     },
     "started_at": {
-      "description": "when the moved to the \"building\" state",
+      "description": "when the build moved to the `\"building\"` state",
       "readOnly": true,
       "format": "date-time",
       "type": [
@@ -75,7 +75,7 @@
       ]
     },
     "completed_at": {
-      "description": "when the moved to the \"succeeded\" or \"failed\" state",
+      "description": "when the build moved to the `\"succeeded\"` or `\"failed\"` state",
       "readOnly": true,
       "example": null,
       "format": "date-time",

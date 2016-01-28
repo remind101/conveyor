@@ -223,12 +223,12 @@ func (s *Service) ArtifactInfo(artifactIdentity string) (*Artifact, error) {
 type Build struct {
 	Branch string `json:"branch" url:"branch,key"` // the branch within the GitHub repository that the build was triggered
 	// from
-	CompletedAt *time.Time `json:"completed_at" url:"completed_at,key"` // when the moved to the "succeeded" or "failed" state
+	CompletedAt *time.Time `json:"completed_at" url:"completed_at,key"` // when the build moved to the `"succeeded"` or `"failed"` state
 	CreatedAt   time.Time  `json:"created_at" url:"created_at,key"`     // when the build was created
 	ID          string     `json:"id" url:"id,key"`                     // unique identifier of build
 	Repository  string     `json:"repository" url:"repository,key"`     // the GitHub repository that this build is for
 	Sha         string     `json:"sha" url:"sha,key"`                   // the git commit to build
-	StartedAt   *time.Time `json:"started_at" url:"started_at,key"`     // when the moved to the "building" state
+	StartedAt   *time.Time `json:"started_at" url:"started_at,key"`     // when the build moved to the `"building"` state
 	State       string     `json:"state" url:"state,key"`               // the current state of the build
 }
 type BuildCreateOpts struct {
