@@ -12,12 +12,7 @@ import (
 	"github.com/ejholmes/hookshot"
 	"github.com/ejholmes/hookshot/events"
 	"github.com/remind101/conveyor"
-
-	"code.google.com/p/go-uuid/uuid"
 )
-
-// newID returns a new unique identifier.
-var newID = uuid.New
 
 // client mocks out the interface from conveyor.Conveyor that we use.
 type client interface {

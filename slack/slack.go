@@ -6,7 +6,13 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/ejholmes/slash"
+	"github.com/remind101/conveyor"
 )
+
+// client mocks out the interface from conveyor.Conveyor that we use.
+type client interface {
+	Build(context.Context, conveyor.BuildRequest) (*conveyor.Build, error)
+}
 
 // replyHandler returns a slash.Handler that just replies to the user with the
 // text.

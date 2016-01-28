@@ -15,10 +15,6 @@ import (
 
 const fakeUUID = "01234567-89ab-cdef-0123-456789abcdef"
 
-func init() {
-	newID = func() string { return fakeUUID }
-}
-
 func TestServer_Ping(t *testing.T) {
 	s := NewServer(nil)
 

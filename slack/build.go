@@ -5,16 +5,11 @@ import (
 	"fmt"
 	"text/template"
 
-	"code.google.com/p/go-uuid/uuid"
 	"github.com/ejholmes/slash"
 	"github.com/google/go-github/github"
 	"github.com/remind101/conveyor"
-	"github.com/remind101/conveyor/builder"
 	"golang.org/x/net/context"
 )
-
-// newID returns a new unique identifier.
-var newID = uuid.New
 
 type branchResolver interface {
 	resolveBranch(owner, repo, branch string) (sha string, err error)
@@ -22,16 +17,15 @@ type branchResolver interface {
 
 // Build is a slash.Handler that will trigger a conveyor build.
 type Build struct {
-	// BuildQueue to use.
-	Queue conveyor.BuildQueue
+	client
 
 	branchResolver
 	urlTmpl *template.Template
 }
 
-func NewBuild(client *github.Client, q conveyor.BuildQueue, urlTmpl string) *Build {
+func NewBuild(client *github.Client, c *conveyor.Conveyor, urlTmpl string) *Build {
 	return &Build{
-		Queue:          q,
+		client:         c,
 		branchResolver: &githubBranchResolver{client.Git},
 		urlTmpl:        template.Must(template.New("url").Parse(urlTmpl)),
 	}
@@ -53,18 +47,17 @@ func (b *Build) build(ctx context.Context, r slash.Responder, owner, repo, branc
 	}
 
 	fullRepo := fmt.Sprintf("%s/%s", owner, repo)
-	id := newID()
-	opts := builder.BuildOptions{
-		ID:         id,
+	req := conveyor.BuildRequest{
 		Repository: fullRepo,
 		Branch:     branch,
 		Sha:        sha,
 	}
-	if err := b.Queue.Push(ctx, opts); err != nil {
+	build, err := b.client.Build(ctx, req)
+	if err != nil {
 		return r.Respond(slash.Reply(err.Error()))
 	}
 
-	url, err := b.url(opts)
+	url, err := b.url(build)
 	if err != nil {
 		return r.Respond(slash.Reply(err.Error()))
 	}
@@ -72,9 +65,9 @@ func (b *Build) build(ctx context.Context, r slash.Responder, owner, repo, branc
 	return r.Respond(slash.Reply(fmt.Sprintf("Building %s@%s: %s", fullRepo, branch, url)))
 }
 
-func (b *Build) url(opts builder.BuildOptions) (string, error) {
+func (b *Build) url(build *conveyor.Build) (string, error) {
 	buf := new(bytes.Buffer)
-	err := b.urlTmpl.Execute(buf, opts)
+	err := b.urlTmpl.Execute(buf, build)
 	return buf.String(), err
 }
 

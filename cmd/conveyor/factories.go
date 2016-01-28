@@ -88,28 +88,28 @@ func newServer(cy *conveyor.Conveyor, c *cli.Context) http.Handler {
 }
 
 // newSlackServer returns an http handler for handling Slack slash commands at <url>/slack.
-func newSlackServer(q conveyor.BuildQueue, c *cli.Context) http.Handler {
+func newSlackServer(cy *conveyor.Conveyor, c *cli.Context) http.Handler {
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: c.String("github.token")},
 	)
 	tc := oauth2.NewClient(oauth2.NoContext, ts)
 
-	cy := github.NewClient(tc)
+	gc := github.NewClient(tc)
 
 	r := slash.NewMux()
 	r.Match(slash.MatchSubcommand(`help`), slack.Help)
 	r.MatchText(
 		regexp.MustCompile(`enable (?P<owner>\S+?)/(?P<repo>\S+)`),
 		slack.NewEnable(
-			cy,
+			gc,
 			slack.NewHook(c.String("url"), c.String("github.secret")),
 		),
 	)
 	r.MatchText(
 		regexp.MustCompile(`build (?P<owner>\S+?)/(?P<repo>\S+)@(?P<branch>\S+)`),
 		slack.NewBuild(
+			gc,
 			cy,
-			q,
 			fmt.Sprintf(logsURLTemplate, c.String("url")),
 		),
 	)

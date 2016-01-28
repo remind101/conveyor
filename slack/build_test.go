@@ -6,7 +6,6 @@ import (
 
 	"github.com/ejholmes/slash"
 	"github.com/remind101/conveyor"
-	"github.com/remind101/conveyor/builder"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"golang.org/x/net/context"
@@ -14,15 +13,11 @@ import (
 
 const fakeUUID = "01234567-89ab-cdef-0123-456789abcdef"
 
-func init() {
-	newID = func() string { return fakeUUID }
-}
-
 func TestBuild(t *testing.T) {
-	q := new(mockBuildQueue)
+	c := new(mockConveyor)
 	r := new(mockBranchResolver)
 	b := &Build{
-		Queue:          q,
+		client:         c,
 		branchResolver: r,
 		urlTmpl:        template.Must(template.New("url").Parse("http://conveyor/logs/{{.ID}}")),
 	}
@@ -34,12 +29,13 @@ func TestBuild(t *testing.T) {
 	})
 
 	r.On("resolveBranch", "remind101", "acme-inc", "master").Return("sha", nil)
-	q.On("Push", ctx, builder.BuildOptions{
-		ID:         fakeUUID,
+	c.On("Build", conveyor.BuildRequest{
 		Repository: "remind101/acme-inc",
 		Sha:        "sha",
 		Branch:     "master",
-	}).Return(nil)
+	}).Return(&conveyor.Build{
+		ID: fakeUUID,
+	}, nil)
 
 	rec := &fakeResponder{responses: make(chan slash.Response, 1)}
 	resp, err := b.ServeCommand(ctx, rec, slash.Command{})
@@ -50,17 +46,14 @@ func TestBuild(t *testing.T) {
 	assert.Equal(t, "Building remind101/acme-inc@master: http://conveyor/logs/01234567-89ab-cdef-0123-456789abcdef", resp.Text)
 }
 
-type mockBuildQueue struct {
+// mockConveyor is an implementation of the client interface.
+type mockConveyor struct {
 	mock.Mock
 }
 
-func (m *mockBuildQueue) Push(ctx context.Context, options builder.BuildOptions) error {
-	args := m.Called(ctx, options)
-	return args.Error(0)
-}
-
-func (m *mockBuildQueue) Subscribe(chan conveyor.BuildContext) error {
-	return nil
+func (m *mockConveyor) Build(ctx context.Context, req conveyor.BuildRequest) (*conveyor.Build, error) {
+	args := m.Called(req)
+	return args.Get(0).(*conveyor.Build), args.Error(1)
 }
 
 type mockBranchResolver struct {
