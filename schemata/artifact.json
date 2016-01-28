@@ -1,0 +1,56 @@
+{
+  "$schema": "http://json-schema.org/draft-04/hyper-schema",
+  "title": "Artifact",
+  "description": "Represents a Docker image artifact from a build",
+  "stability": "prototype",
+  "strictProperties": true,
+  "type": [
+    "object"
+  ],
+  "definitions": {
+    "id": {
+      "description": "unique identifier of artifact",
+      "readOnly": true,
+      "format": "uuid",
+      "type": [
+        "string"
+      ]
+    },
+    "image": {
+      "description": "the name of the Docker image. This can be pulled with `docker pull`",
+      "readOnly": true,
+      "example": "remind101/acme-inc:139759bd61e98faeec619c45b1060b4288952164",
+      "type": [
+        "string"
+      ]
+    },
+    "identity": {
+      "$ref": "/schemata/artifact#/definitions/id"
+    }
+  },
+  "links": [
+    {
+      "description": "Artifact for a sha",
+      "href": "/artifacts/{(%2Fschemata%2Fbuild%23%2Fdefinitions%2Frepository)}@{(%2Fschemata%2Fbuild%23%2Fdefinitions%2Fsha)}",
+      "method": "GET",
+      "rel": "self",
+      "title": "Info"
+    }
+  ],
+  "properties": {
+    "id": {
+      "$ref": "/schemata/artifact#/definitions/id"
+    },
+    "image": {
+      "$ref": "/schemata/artifact#/definitions/image"
+    },
+    "build": {
+      "properties": {
+        "id": {
+          "$ref": "/schemata/build#/definitions/id"
+        }
+      }
+    }
+  },
+  "id": "schemata/artifact"
+}

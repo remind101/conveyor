@@ -4,6 +4,61 @@
     "object"
   ],
   "definitions": {
+    "artifact": {
+      "$schema": "http://json-schema.org/draft-04/hyper-schema",
+      "title": "Artifact",
+      "description": "Represents a Docker image artifact from a build",
+      "stability": "prototype",
+      "strictProperties": true,
+      "type": [
+        "object"
+      ],
+      "definitions": {
+        "id": {
+          "description": "unique identifier of artifact",
+          "readOnly": true,
+          "format": "uuid",
+          "type": [
+            "string"
+          ]
+        },
+        "image": {
+          "description": "the name of the Docker image. This can be pulled with `docker pull`",
+          "readOnly": true,
+          "example": "remind101/acme-inc:139759bd61e98faeec619c45b1060b4288952164",
+          "type": [
+            "string"
+          ]
+        },
+        "identity": {
+          "$ref": "#/definitions/artifact/definitions/id"
+        }
+      },
+      "links": [
+        {
+          "description": "Artifact for a sha",
+          "href": "/artifacts/{(%23%2Fdefinitions%2Fbuild%2Fdefinitions%2Frepository)}@{(%23%2Fdefinitions%2Fbuild%2Fdefinitions%2Fsha)}",
+          "method": "GET",
+          "rel": "self",
+          "title": "Info"
+        }
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/artifact/definitions/id"
+        },
+        "image": {
+          "$ref": "#/definitions/artifact/definitions/image"
+        },
+        "build": {
+          "properties": {
+            "id": {
+              "$ref": "#/definitions/build/definitions/id"
+            }
+          }
+        }
+      }
+    },
     "build": {
       "$schema": "http://json-schema.org/draft-04/hyper-schema",
       "title": "Build",
@@ -131,6 +186,9 @@
     }
   },
   "properties": {
+    "artifact": {
+      "$ref": "#/definitions/artifact"
+    },
     "build": {
       "$ref": "#/definitions/build"
     }
