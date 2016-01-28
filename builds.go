@@ -33,8 +33,6 @@ type Build struct {
 	Sha string `db:"sha"`
 	// The current status of the build.
 	Status BuildStatus `db:"status"`
-	// Any artifacts that this build produced.
-	Artifacts []Artifact `db:"-"`
 	// The time that this build was created.
 	CreatedAt time.Time `db:"created_at"`
 	// The time that the build was started.
@@ -106,22 +104,12 @@ func buildsCreate(tx *sqlx.Tx, b *Build) error {
 
 // buildsFind finds a build by ID.
 func buildsFind(tx *sqlx.Tx, buildID string) (*Build, error) {
-	const (
-		findBuildSql     = `SELECT * FROM builds where id = ?`
-		findArtifactsSql = `SELECT image FROM artifacts WHERE build_id = ?`
-	)
-
+	const findBuildSql = `SELECT * FROM builds where id = ?`
 	var b Build
 	err := tx.Get(&b, tx.Rebind(findBuildSql), buildID)
 	if err != nil {
 		return nil, err
 	}
-
-	err = tx.Select(&b.Artifacts, tx.Rebind(findArtifactsSql), buildID)
-	if err != nil {
-		return nil, err
-	}
-
 	return &b, err
 }
 

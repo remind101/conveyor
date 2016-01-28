@@ -128,7 +128,6 @@ func TestConveyor_BuildComplete(t *testing.T) {
 	assert.NotNil(t, b)
 	assert.NotNil(t, b.CompletedAt)
 	assert.Equal(t, StatusSucceeded, b.Status)
-	assert.Equal(t, []Artifact{{Image: image}}, b.Artifacts)
 }
 
 func TestConveyor_BuildFailed(t *testing.T) {
@@ -149,7 +148,6 @@ func TestConveyor_BuildFailed(t *testing.T) {
 	assert.NotNil(t, b)
 	assert.NotNil(t, b.CompletedAt)
 	assert.Equal(t, StatusFailed, b.Status)
-	assert.Nil(t, b.Artifacts)
 }
 
 func newConveyor(t testing.TB) *Conveyor {

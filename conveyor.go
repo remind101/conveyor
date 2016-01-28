@@ -131,8 +131,9 @@ func (c *Conveyor) BuildComplete(ctx context.Context, buildID, image string) err
 		return err
 	}
 
-	if err := artifactsCreate(tx, buildID, &Artifact{
-		Image: image,
+	if err := artifactsCreate(tx, &Artifact{
+		BuildID: buildID,
+		Image:   image,
 	}); err != nil {
 		tx.Rollback()
 		return err
