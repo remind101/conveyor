@@ -13,7 +13,6 @@ dependencies:
   override:
     - mkdir /home/ubuntu/.docker
     - echo '{}' > /home/ubuntu/.docker/config.json
-    - go get -u github.com/jteeuwen/go-bindata/...
     - cd ~/.go_workspace/src/github.com/remind101/conveyor && make bootstrap
     - docker inspect data
     - go install -a -race std
