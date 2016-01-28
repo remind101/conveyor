@@ -58,9 +58,28 @@
       ]
     },
     "created_at": {
-      "description": "when build was created",
+      "description": "when the build was created",
+      "readOnly": true,
       "format": "date-time",
       "type": [
+        "string"
+      ]
+    },
+    "started_at": {
+      "description": "when the moved to the \"building\" state",
+      "readOnly": true,
+      "format": "date-time",
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "completed_at": {
+      "description": "when the moved to the \"succeeded\" or \"failed\" state",
+      "readOnly": true,
+      "format": "date-time",
+      "type": [
+        "null",
         "string"
       ]
     }
@@ -99,9 +118,6 @@
     }
   ],
   "properties": {
-    "created_at": {
-      "$ref": "/schemata/build#/definitions/created_at"
-    },
     "id": {
       "$ref": "/schemata/build#/definitions/id"
     },
@@ -116,6 +132,15 @@
     },
     "state": {
       "$ref": "/schemata/build#/definitions/state"
+    },
+    "created_at": {
+      "$ref": "/schemata/build#/definitions/created_at"
+    },
+    "started_at": {
+      "$ref": "/schemata/build#/definitions/started_at"
+    },
+    "completed_at": {
+      "$ref": "/schemata/build#/definitions/completed_at"
     }
   },
   "id": "schemata/build"
