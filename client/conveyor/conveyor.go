@@ -236,7 +236,10 @@ type BuildCreateOpts struct {
 	Sha        string `json:"sha" url:"sha,key"`               // the git commit to build
 }
 
-// Create a new build.
+// Create a new build and start it. Note that you cannot start a new
+// build for a sha that is already in a "pending" or "building" state.
+// You should cancel the existing build first, or wait for it to
+// complete.
 func (s *Service) BuildCreate(o BuildCreateOpts) (*Build, error) {
 	var build Build
 	return &build, s.Post(&build, fmt.Sprintf("/builds"), o)

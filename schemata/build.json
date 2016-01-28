@@ -67,7 +67,7 @@
   },
   "links": [
     {
-      "description": "Create a new build.",
+      "description": "Create a new build and start it. Note that you cannot start a new build for a sha that is already in a \"pending\" or \"building\" state. You should cancel the existing build first, or wait for it to complete.",
       "href": "/builds",
       "method": "POST",
       "rel": "create",

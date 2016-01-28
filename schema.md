@@ -60,7 +60,7 @@ A build represents a request to build a git commit for a repo.
 
 ### Build Create
 
-Create a new build.
+Create a new build and start it. Note that you cannot start a new build for a sha that is already in a "pending" or "building" state. You should cancel the existing build first, or wait for it to complete.
 
 ```
 POST /builds
