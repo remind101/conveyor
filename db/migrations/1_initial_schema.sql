@@ -7,7 +7,7 @@ CREATE TABLE builds (
   repository text,
   branch text,
   sha text,
-  status text,
+  state text,
   created_at timestamp without time zone default (now() at time zone 'utc'),
   started_at timestamp without time zone,
   completed_at timestamp without time zone
@@ -21,7 +21,7 @@ CREATE TABLE artifacts (
 );
 
 -- We should ensure that we only have 1 pending/building build for any given sha.
-CREATE UNIQUE INDEX unique_build ON builds USING btree (sha) WHERE (status = 'building' OR status = 'pending');
+CREATE UNIQUE INDEX unique_build ON builds USING btree (sha) WHERE (state = 'building' OR state = 'pending');
 
 -- +migrate Down
 DROP TABLE artifacts;

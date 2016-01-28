@@ -46,7 +46,7 @@ func TestConveyor_Build(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, b)
 	assert.NotNil(t, b.ID)
-	assert.Equal(t, StatusPending, b.Status)
+	assert.Equal(t, StatePending, b.State)
 	assert.Equal(t, "remind101/acme-inc", b.Repository)
 	assert.Equal(t, "master", b.Branch)
 	assert.Equal(t, "139759bd61e98faeec619c45b1060b4288952164", b.Sha)
@@ -106,7 +106,7 @@ func TestConveyor_BuildStarted(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, b)
 	assert.NotNil(t, b.StartedAt)
-	assert.Equal(t, StatusBuilding, b.Status)
+	assert.Equal(t, StateBuilding, b.State)
 }
 
 func TestConveyor_BuildComplete(t *testing.T) {
@@ -127,7 +127,7 @@ func TestConveyor_BuildComplete(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, b)
 	assert.NotNil(t, b.CompletedAt)
-	assert.Equal(t, StatusSucceeded, b.Status)
+	assert.Equal(t, StateSucceeded, b.State)
 }
 
 func TestConveyor_BuildFailed(t *testing.T) {
@@ -147,7 +147,7 @@ func TestConveyor_BuildFailed(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, b)
 	assert.NotNil(t, b.CompletedAt)
-	assert.Equal(t, StatusFailed, b.Status)
+	assert.Equal(t, StateFailed, b.State)
 }
 
 func newConveyor(t testing.TB) *Conveyor {

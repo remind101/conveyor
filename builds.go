@@ -14,8 +14,7 @@ import (
 // is already in a "pending" or "building" state. We want to ensure that we only
 // have 1 concurrent build for a given sha.
 //
-// This is also enforced at the db level with the `index_builds_on_sha_and_status`
-// constraint.
+// This is also enforced at the db level with the `unique_build` constraint.
 var ErrDuplicateBuild = errors.New("a build for this sha is already pending or building")
 
 // The database constraint that counts as an ErrDuplicateBuild.
@@ -31,8 +30,8 @@ type Build struct {
 	Branch string `db:"branch"`
 	// The sha that this build relates to.
 	Sha string `db:"sha"`
-	// The current status of the build.
-	Status BuildStatus `db:"status"`
+	// The current state of the build.
+	State BuildState `db:"state"`
 	// The time that this build was created.
 	CreatedAt time.Time `db:"created_at"`
 	// The time that the build was started.
@@ -41,44 +40,44 @@ type Build struct {
 	CompletedAt *time.Time `db:"completed_at"`
 }
 
-type BuildStatus int
+type BuildState int
 
 const (
-	StatusPending BuildStatus = iota
-	StatusBuilding
-	StatusFailed
-	StatusSucceeded
+	StatePending BuildState = iota
+	StateBuilding
+	StateFailed
+	StateSucceeded
 )
 
-func (s BuildStatus) String() string {
+func (s BuildState) String() string {
 	switch s {
-	case StatusPending:
+	case StatePending:
 		return "pending"
-	case StatusBuilding:
+	case StateBuilding:
 		return "building"
-	case StatusFailed:
+	case StateFailed:
 		return "failed"
-	case StatusSucceeded:
+	case StateSucceeded:
 		return "succeeded"
 	default:
-		panic(fmt.Sprintf("unknown build status: %v", s))
+		panic(fmt.Sprintf("unknown build state: %v", s))
 	}
 }
 
 // Scan implements the sql.Scanner interface.
-func (s *BuildStatus) Scan(src interface{}) error {
+func (s *BuildState) Scan(src interface{}) error {
 	if v, ok := src.([]byte); ok {
 		switch string(v) {
 		case "pending":
-			*s = StatusPending
+			*s = StatePending
 		case "building":
-			*s = StatusBuilding
+			*s = StateBuilding
 		case "failed":
-			*s = StatusFailed
+			*s = StateFailed
 		case "succeeded":
-			*s = StatusSucceeded
+			*s = StateSucceeded
 		default:
-			return fmt.Errorf("unknown build status: %v", string(v))
+			return fmt.Errorf("unknown build state: %v", string(v))
 		}
 	}
 
@@ -86,13 +85,13 @@ func (s *BuildStatus) Scan(src interface{}) error {
 }
 
 // Value implements the driver.Value interface.
-func (s BuildStatus) Value() (driver.Value, error) {
+func (s BuildState) Value() (driver.Value, error) {
 	return driver.Value(s.String()), nil
 }
 
 // buildsCreate inserts a new build into the database.
 func buildsCreate(tx *sqlx.Tx, b *Build) error {
-	const createBuildSql = `INSERT INTO builds (repository, branch, sha, status) VALUES (:repository, :branch, :sha, :status) RETURNING id`
+	const createBuildSql = `INSERT INTO builds (repository, branch, sha, state) VALUES (:repository, :branch, :sha, :state) RETURNING id`
 	err := insert(tx, createBuildSql, b, &b.ID)
 	if err, ok := err.(*pq.Error); ok {
 		if err.Constraint == uniqueBuildConstraint {
@@ -113,18 +112,18 @@ func buildsFind(tx *sqlx.Tx, buildID string) (*Build, error) {
 	return &b, err
 }
 
-// buildsUpdateStatus changes the status of a build.
-func buildsUpdateStatus(tx *sqlx.Tx, buildID string, status BuildStatus) error {
+// buildsUpdateState changes the state of a build.
+func buildsUpdateState(tx *sqlx.Tx, buildID string, state BuildState) error {
 	var sql string
-	switch status {
-	case StatusBuilding:
-		sql = `UPDATE builds SET status = ?, started_at = ? WHERE id = ?`
-	case StatusSucceeded, StatusFailed:
-		sql = `UPDATE builds SET status = ?, completed_at = ? WHERE id = ?`
+	switch state {
+	case StateBuilding:
+		sql = `UPDATE builds SET state = ?, started_at = ? WHERE id = ?`
+	case StateSucceeded, StateFailed:
+		sql = `UPDATE builds SET state = ?, completed_at = ? WHERE id = ?`
 	default:
-		panic(fmt.Sprintf("UpdateStatus for %s not implemented", status))
+		panic(fmt.Sprintf("not implemented for %s", state))
 	}
 
-	_, err := tx.Exec(tx.Rebind(sql), status, time.Now(), buildID)
+	_, err := tx.Exec(tx.Rebind(sql), state, time.Now(), buildID)
 	return err
 }

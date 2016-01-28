@@ -111,7 +111,7 @@ func (c *Conveyor) BuildStarted(ctx context.Context, buildID string) error {
 		return err
 	}
 
-	if err := buildsUpdateStatus(tx, buildID, StatusBuilding); err != nil {
+	if err := buildsUpdateState(tx, buildID, StateBuilding); err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -126,7 +126,7 @@ func (c *Conveyor) BuildComplete(ctx context.Context, buildID, image string) err
 		return err
 	}
 
-	if err := buildsUpdateStatus(tx, buildID, StatusSucceeded); err != nil {
+	if err := buildsUpdateState(tx, buildID, StateSucceeded); err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -149,7 +149,7 @@ func (c *Conveyor) BuildFailed(ctx context.Context, buildID string, err error) e
 		return err
 	}
 
-	if err := buildsUpdateStatus(tx, buildID, StatusFailed); err != nil {
+	if err := buildsUpdateState(tx, buildID, StateFailed); err != nil {
 		tx.Rollback()
 		return err
 	}
