@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-04/hyper-schema",
   "title": "Artifact",
-  "description": "Represents a Docker image artifact from a build",
+  "description": "An artifact is the result of a successful build. It represents a built Docker image and will tell what what you need to pull to obtain the image.",
   "stability": "prototype",
   "strictProperties": true,
   "type": [

@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-04/hyper-schema",
   "title": "Build",
-  "description": "Represents a build of a git commit for a repo",
+  "description": "A build represents a request to build a git commit for a repo.",
   "stability": "prototype",
   "strictProperties": true,
   "type": [
