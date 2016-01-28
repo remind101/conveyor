@@ -1,28 +1,27 @@
 ## <a name="resource-artifact"></a>Artifact
 
-Represents a Docker image artifact from a build
+An artifact is the result of a successful build. It represents a built Docker image and will tell what what you need to pull to obtain the image.
 
 ### Attributes
 
 | Name | Type | Description | Example |
 | ------- | ------- | ------- | ------- |
-| **build:id** | *uuid* | unique identifier of build | `"01234567-89ab-cdef-0123-456789abcdef"` |
 | **id** | *uuid* | unique identifier of artifact | `"01234567-89ab-cdef-0123-456789abcdef"` |
-| **[image](#resource-build)** | *string* | the name of the Docker image. This can be pulled with `docker pull` | `"remind101/acme-inc:139759bd61e98faeec619c45b1060b4288952164"` |
+| **image** | *string* | the name of the Docker image. This can be pulled with `docker pull` | `"remind101/acme-inc:139759bd61e98faeec619c45b1060b4288952164"` |
 
 ### Artifact Info
 
-Artifact for a sha
+
 
 ```
-GET /artifacts/{build_repository}@{build_sha}
+GET /artifacts/{artifact_id_or_image}
 ```
 
 
 #### Curl Example
 
 ```bash
-$ curl -n http://conveyor.local/artifacts/$BUILD_REPOSITORY@$BUILD_SHA
+$ curl -n http://conveyor.local/artifacts/$ARTIFACT_ID_OR_IMAGE
 ```
 
 
@@ -35,17 +34,14 @@ HTTP/1.1 200 OK
 ```json
 {
   "id": "01234567-89ab-cdef-0123-456789abcdef",
-  "image": "remind101/acme-inc:139759bd61e98faeec619c45b1060b4288952164",
-  "build": {
-    "id": "01234567-89ab-cdef-0123-456789abcdef"
-  }
+  "image": "remind101/acme-inc:139759bd61e98faeec619c45b1060b4288952164"
 }
 ```
 
 
 ## <a name="resource-build"></a>Build
 
-Represents a build of a git commit for a repo
+A build represents a request to build a git commit for a repo.
 
 ### Attributes
 

@@ -25,13 +25,20 @@
       ]
     },
     "identity": {
-      "$ref": "/schemata/artifact#/definitions/id"
+      "anyOf": [
+        {
+          "$ref": "/schemata/artifact#/definitions/id"
+        },
+        {
+          "$ref": "/schemata/artifact#/definitions/image"
+        }
+      ]
     }
   },
   "links": [
     {
-      "description": "Artifact for a sha",
-      "href": "/artifacts/{(%2Fschemata%2Fbuild%23%2Fdefinitions%2Frepository)}@{(%2Fschemata%2Fbuild%23%2Fdefinitions%2Fsha)}",
+      "description": "",
+      "href": "/artifacts/{(%2Fschemata%2Fartifact%23%2Fdefinitions%2Fidentity)}",
       "method": "GET",
       "rel": "self",
       "title": "Info"
@@ -43,13 +50,6 @@
     },
     "image": {
       "$ref": "/schemata/artifact#/definitions/image"
-    },
-    "build": {
-      "properties": {
-        "id": {
-          "$ref": "/schemata/build#/definitions/id"
-        }
-      }
     }
   },
   "id": "schemata/artifact"

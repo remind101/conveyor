@@ -7,7 +7,7 @@
     "artifact": {
       "$schema": "http://json-schema.org/draft-04/hyper-schema",
       "title": "Artifact",
-      "description": "Represents a Docker image artifact from a build",
+      "description": "An artifact is the result of a successful build. It represents a built Docker image and will tell what what you need to pull to obtain the image.",
       "stability": "prototype",
       "strictProperties": true,
       "type": [
@@ -31,13 +31,20 @@
           ]
         },
         "identity": {
-          "$ref": "#/definitions/artifact/definitions/id"
+          "anyOf": [
+            {
+              "$ref": "#/definitions/artifact/definitions/id"
+            },
+            {
+              "$ref": "#/definitions/artifact/definitions/image"
+            }
+          ]
         }
       },
       "links": [
         {
-          "description": "Artifact for a sha",
-          "href": "/artifacts/{(%23%2Fdefinitions%2Fbuild%2Fdefinitions%2Frepository)}@{(%23%2Fdefinitions%2Fbuild%2Fdefinitions%2Fsha)}",
+          "description": "",
+          "href": "/artifacts/{(%23%2Fdefinitions%2Fartifact%2Fdefinitions%2Fidentity)}",
           "method": "GET",
           "rel": "self",
           "title": "Info"
@@ -49,20 +56,13 @@
         },
         "image": {
           "$ref": "#/definitions/artifact/definitions/image"
-        },
-        "build": {
-          "properties": {
-            "id": {
-              "$ref": "#/definitions/build/definitions/id"
-            }
-          }
         }
       }
     },
     "build": {
       "$schema": "http://json-schema.org/draft-04/hyper-schema",
       "title": "Build",
-      "description": "Represents a build of a git commit for a repo",
+      "description": "A build represents a request to build a git commit for a repo.",
       "stability": "prototype",
       "strictProperties": true,
       "type": [

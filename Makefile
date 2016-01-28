@@ -40,4 +40,7 @@ schema.json: meta.json schemata/*
 schema.md: schema.json
 	bundle exec prmd doc schema.json > schema.md
 
-schema:: schema.md
+client/conveyor/conveyor.go: schema.json
+	schematic schema.json > client/conveyor/conveyor.go
+
+schema:: schema.md client/conveyor/conveyor.go
