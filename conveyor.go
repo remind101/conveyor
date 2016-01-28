@@ -2,6 +2,7 @@ package conveyor
 
 import (
 	"io"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/remind101/conveyor/builder"
@@ -78,20 +79,44 @@ func (c *Conveyor) Build(ctx context.Context, req BuildRequest) (*Build, error) 
 
 }
 
-// FindBuild finds a build by id.
-func (c *Conveyor) FindBuild(ctx context.Context, buildID string) (*Build, error) {
+// FindBuild finds a build by its identity.
+func (c *Conveyor) FindBuild(ctx context.Context, buildIdentity string) (*Build, error) {
 	tx, err := c.db.Beginx()
 	if err != nil {
 		return nil, err
 	}
 
-	b, err := buildsFind(tx, buildID)
+	b, err := buildsFind(tx, buildIdentity)
 	if err != nil {
 		tx.Rollback()
 		return b, err
 	}
 
 	return b, tx.Commit()
+}
+
+// FindArtifact finds an artifact by its identity.
+func (c *Conveyor) FindArtifact(ctx context.Context, artifactIdentity string) (*Artifact, error) {
+	tx, err := c.db.Beginx()
+	if err != nil {
+		return nil, err
+	}
+
+	var find func(*sqlx.Tx, string) (*Artifact, error)
+	switch strings.Contains(artifactIdentity, ":") {
+	case true:
+		find = artifactsFindByImage
+	default:
+		find = artifactsFindByID
+	}
+
+	a, err := find(tx, artifactIdentity)
+	if err != nil {
+		tx.Rollback()
+		return a, err
+	}
+
+	return a, tx.Commit()
 }
 
 // Writer returns an io.Writer to write logs for the build.

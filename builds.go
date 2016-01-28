@@ -106,9 +106,6 @@ func buildsFind(tx *sqlx.Tx, buildID string) (*Build, error) {
 	const findBuildSql = `SELECT * FROM builds where id = ?`
 	var b Build
 	err := tx.Get(&b, tx.Rebind(findBuildSql), buildID)
-	if err != nil {
-		return nil, err
-	}
 	return &b, err
 }
 
