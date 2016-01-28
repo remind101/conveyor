@@ -106,7 +106,7 @@ HTTP/1.1 201 Created
   "state": "building",
   "created_at": "2015-01-01T12:00:00Z",
   "started_at": "2015-01-01T12:00:00Z",
-  "completed_at": "2015-01-01T12:00:00Z"
+  "completed_at": null
 }
 ```
 
@@ -141,7 +141,7 @@ HTTP/1.1 200 OK
   "state": "building",
   "created_at": "2015-01-01T12:00:00Z",
   "started_at": "2015-01-01T12:00:00Z",
-  "completed_at": "2015-01-01T12:00:00Z"
+  "completed_at": null
 }
 ```
 

@@ -77,6 +77,7 @@
     "completed_at": {
       "description": "when the moved to the \"succeeded\" or \"failed\" state",
       "readOnly": true,
+      "example": null,
       "format": "date-time",
       "type": [
         "null",
