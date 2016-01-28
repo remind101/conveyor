@@ -47,7 +47,25 @@ func TestBuild(t *testing.T) {
 	assert.NoError(t, err)
 
 	resp = <-rec.responses
-	assert.Equal(t, "Building remind101/acme-inc@master: http://conveyor/logs/01234567-89ab-cdef-0123-456789abcdef", resp.Text)
+	assert.Equal(t, "Building remind101/acme-inc:master http://conveyor/logs/01234567-89ab-cdef-0123-456789abcdef", resp.Text)
+}
+
+func TestBuildRegexp(t *testing.T) {
+	tests := []struct {
+		in  string
+		out map[string]string
+	}{
+		{`build remind101/acme-inc@topic-branch`, map[string]string{"owner": "remind101", "repo": "acme-inc", "branch": "topic-branch"}},
+		{`build remind101/acme-inc:topic-branch`, map[string]string{"owner": "remind101", "repo": "acme-inc", "branch": "topic-branch"}},
+		{`build remind101/acme-inc#topic-branch`, map[string]string{"owner": "remind101", "repo": "acme-inc", "branch": "topic-branch"}},
+	}
+
+	for _, tt := range tests {
+		m := slash.MatchTextRegexp(BuildRegexp)
+		out, ok := m.Match(slash.Command{Text: tt.in})
+		assert.True(t, ok)
+		assert.Equal(t, tt.out, out)
+	}
 }
 
 type mockBuildQueue struct {
