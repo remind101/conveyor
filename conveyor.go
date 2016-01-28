@@ -61,18 +61,21 @@ func (c *Conveyor) Build(ctx context.Context, req BuildRequest) (*Build, error) 
 		return b, err
 	}
 
-	if err := c.BuildQueue.Push(ctx, builder.BuildOptions{
+	// Commit before we push the build into the queue. We need to do this
+	// because it's possible that two inflight transactions will get
+	// commited and one will raise an error.
+	if err := tx.Commit(); err != nil {
+		return b, err
+	}
+
+	return b, c.BuildQueue.Push(ctx, builder.BuildOptions{
 		ID:         b.ID,
 		Repository: req.Repository,
 		Sha:        req.Sha,
 		Branch:     req.Branch,
 		NoCache:    req.NoCache,
-	}); err != nil {
-		tx.Rollback()
-		return b, err
-	}
+	})
 
-	return b, tx.Commit()
 }
 
 // FindBuild finds a build by id.

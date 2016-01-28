@@ -8,7 +8,9 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+	"github.com/remind101/conveyor/builder"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 const fakeUUID = "01234567-89ab-cdef-0123-456789abcdef"
@@ -20,7 +22,16 @@ func init() {
 }
 
 func TestConveyor_Build(t *testing.T) {
+	q := new(mockBuildQueue)
 	c := newConveyor(t)
+	c.BuildQueue = q
+
+	q.On("Push", builder.BuildOptions{
+		ID:         "<build_id>",
+		Repository: "remind101/acme-inc",
+		Branch:     "master",
+		Sha:        "139759bd61e98faeec619c45b1060b4288952164",
+	}).Once().Return(nil)
 
 	b, err := c.Build(context.Background(), BuildRequest{
 		Repository: "remind101/acme-inc",
@@ -42,7 +53,16 @@ func TestConveyor_Build(t *testing.T) {
 }
 
 func TestConveyor_Build_Duplicate(t *testing.T) {
+	q := new(mockBuildQueue)
 	c := newConveyor(t)
+	c.BuildQueue = q
+
+	q.On("Push", builder.BuildOptions{
+		ID:         "<build_id>",
+		Repository: "remind101/acme-inc",
+		Branch:     "master",
+		Sha:        "139759bd61e98faeec619c45b1060b4288952164",
+	}).Once().Return(nil)
 
 	b, err := c.Build(context.Background(), BuildRequest{
 		Repository: "remind101/acme-inc",
@@ -142,4 +162,18 @@ func newConveyor(t testing.TB) *Conveyor {
 	c.BuildQueue = NewBuildQueue(100)
 
 	return c
+}
+
+type mockBuildQueue struct {
+	mock.Mock
+}
+
+func (m *mockBuildQueue) Push(ctx context.Context, options builder.BuildOptions) error {
+	options.ID = "<build_id>" // ID will be a uuid that we can't mock.
+	args := m.Called(options)
+	return args.Error(0)
+}
+
+func (m *mockBuildQueue) Subscribe(chan BuildContext) error {
+	return nil
 }
