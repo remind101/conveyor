@@ -6,25 +6,36 @@ import (
 	"net/http"
 	"time"
 
+	"golang.org/x/net/context"
+
 	"github.com/gorilla/mux"
-	"github.com/remind101/conveyor/logs"
+	"github.com/remind101/conveyor"
 	"github.com/remind101/pkg/stream"
 	streamhttp "github.com/remind101/pkg/stream/http"
 )
 
+// client mocks out the interface from conveyor.Conveyor that we use.
+type client interface {
+	Logs(context.Context, string) (io.Reader, error)
+}
+
 // Server implements the http.Handler interface for serving build requests via
 // GitHub webhooks.
 type Server struct {
-	Logger logs.Logger
+	client
 
 	// mux contains the routes.
 	mux http.Handler
 }
 
 // NewServer returns a new Server instance
-func NewServer(l logs.Logger) *Server {
+func NewServer(c *conveyor.Conveyor) *Server {
+	return newServer(c)
+}
+
+func newServer(c client) *Server {
 	s := &Server{
-		Logger: l,
+		client: c,
 	}
 
 	r := mux.NewRouter()
@@ -41,10 +52,12 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // Logs is an http.HandlerFunc that will stream the logs for a build.
 func (s *Server) Logs(rw http.ResponseWriter, req *http.Request) {
+	ctx := context.TODO()
+
 	vars := mux.Vars(req)
 
 	// Get a handle to an io.Reader to stream the logs from.
-	r, err := s.Logger.Open(vars["id"])
+	r, err := s.client.Logs(ctx, vars["id"])
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return

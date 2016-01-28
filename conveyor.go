@@ -99,8 +99,8 @@ func (c *Conveyor) Writer(ctx context.Context, buildID string) (io.Writer, error
 	return c.Logger.Create(buildID)
 }
 
-// Reader returns an io.Reader to read logs for the build.
-func (c *Conveyor) Reader(ctx context.Context, buildID string) (io.Reader, error) {
+// Logs returns an io.Reader to read logs for the build.
+func (c *Conveyor) Logs(ctx context.Context, buildID string) (io.Reader, error) {
 	return c.Logger.Open(buildID)
 }
 

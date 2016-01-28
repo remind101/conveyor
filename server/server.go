@@ -6,7 +6,6 @@ import (
 	"github.com/ejholmes/hookshot"
 	"github.com/gorilla/mux"
 	"github.com/remind101/conveyor"
-	"github.com/remind101/conveyor/logs"
 	"github.com/remind101/conveyor/server/api"
 	"github.com/remind101/conveyor/server/github"
 )
@@ -14,9 +13,6 @@ import (
 type Config struct {
 	// Shared secret between GitHub and Conveyor.
 	GitHubSecret string
-
-	// Logger to use to stream logs from.
-	Logger logs.Logger
 }
 
 func NewServer(c *conveyor.Conveyor, config Config) http.Handler {
@@ -28,7 +24,7 @@ func NewServer(c *conveyor.Conveyor, config Config) http.Handler {
 	)
 
 	// API
-	r.NotFoundHandler = api.NewServer(config.Logger)
+	r.NotFoundHandler = api.NewServer(c)
 
 	return r
 }

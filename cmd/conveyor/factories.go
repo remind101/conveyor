@@ -74,7 +74,6 @@ func newServer(cy *conveyor.Conveyor, c *cli.Context) http.Handler {
 	r := mux.NewRouter()
 	r.NotFoundHandler = server.NewServer(cy, server.Config{
 		GitHubSecret: c.String("github.secret"),
-		Logger:       newLogger(c),
 	})
 
 	// Slack webhooks

@@ -7,36 +7,34 @@ import (
 	"strings"
 	"testing"
 
+	"golang.org/x/net/context"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
 func TestServer_Logs(t *testing.T) {
-	l := new(mockLogger)
-	s := NewServer(l)
+	c := new(mockConveyor)
+	s := newServer(c)
 
 	resp := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/logs/1234", nil)
 
-	l.On("Open", "1234").Return(strings.NewReader("Logs"), nil)
+	c.On("Logs", "1234").Return(strings.NewReader("Logs"), nil)
 
 	s.ServeHTTP(resp, req)
 	assert.Equal(t, http.StatusOK, resp.Code)
 	assert.Equal(t, "Logs", resp.Body.String())
 
-	l.AssertExpectations(t)
+	c.AssertExpectations(t)
 }
 
-type mockLogger struct {
+// mockConveyor is an implementation of the client interface.
+type mockConveyor struct {
 	mock.Mock
 }
 
-func (b *mockLogger) Create(name string) (io.Writer, error) {
-	args := b.Called(name)
-	return args.Get(0).(io.Writer), args.Error(1)
-}
-
-func (b *mockLogger) Open(name string) (io.Reader, error) {
-	args := b.Called(name)
+func (m *mockConveyor) Logs(ctx context.Context, buildID string) (io.Reader, error) {
+	args := m.Called(buildID)
 	return args.Get(0).(io.Reader), args.Error(1)
 }
