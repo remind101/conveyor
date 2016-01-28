@@ -253,3 +253,9 @@ func (s *Service) BuildInfo(buildIdentity string) (*Build, error) {
 	return &build, s.Get(&build, fmt.Sprintf("/builds/%v", buildIdentity), nil, nil)
 }
 
+// Defines the format that errors are returned in
+type Error struct {
+	ID      string `json:"id" url:"id,key"`           // unique identifier of error
+	Message string `json:"message" url:"message,key"` // human readable message
+}
+

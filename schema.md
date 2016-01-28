@@ -146,3 +146,15 @@ HTTP/1.1 200 OK
 ```
 
 
+## <a name="resource-error"></a>Error
+
+Defines the format that errors are returned in
+
+### Attributes
+
+| Name | Type | Description | Example |
+| ------- | ------- | ------- | ------- |
+| **id** | *string* | unique identifier of error | `"example"` |
+| **message** | *string* | human readable message | `"example"` |
+
+

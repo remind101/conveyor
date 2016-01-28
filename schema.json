@@ -219,6 +219,43 @@
           "$ref": "#/definitions/build/definitions/completed_at"
         }
       }
+    },
+    "error": {
+      "$schema": "http://json-schema.org/draft-04/hyper-schema",
+      "title": "Error",
+      "description": "Defines the format that errors are returned in",
+      "stability": "prototype",
+      "strictProperties": true,
+      "type": [
+        "object"
+      ],
+      "definitions": {
+        "id": {
+          "description": "unique identifier of error",
+          "readOnly": true,
+          "type": [
+            "string"
+          ]
+        },
+        "message": {
+          "description": "human readable message",
+          "readOnly": true,
+          "type": [
+            "string"
+          ]
+        },
+        "identity": {
+          "$ref": "#/definitions/error/definitions/id"
+        }
+      },
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/error/definitions/id"
+        },
+        "message": {
+          "$ref": "#/definitions/error/definitions/message"
+        }
+      }
     }
   },
   "properties": {
@@ -227,6 +264,9 @@
     },
     "build": {
       "$ref": "#/definitions/build"
+    },
+    "error": {
+      "$ref": "#/definitions/error"
     }
   },
   "description": "Conveyor API",
