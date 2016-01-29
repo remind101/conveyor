@@ -30,21 +30,16 @@ type Responder interface {
 
 // Handler represents something that handles a slash command.
 type Handler interface {
-	// ServeCommand runs the command. The handler should return a Response
-	// that will be used as the initial reply to send back to the user, or
-	// an error.  If an error is returned, then the string value is what
-	// will be sent to the user.
-	//
-	// That provided Responder can be used to send asynchronous responses
-	// after the initial response, up to 30 minutes after the command was
-	// invoked.
-	ServeCommand(context.Context, Responder, Command) (Response, error)
+	// ServeCommand runs the command. The provided Responder object can be
+	// used to send responses back to the user. If an error is returned, the
+	// string error will be sent back to the user as a response.
+	ServeCommand(context.Context, Responder, Command) error
 }
 
 // HandlerFunc is a function that implements the Handler interface.
-type HandlerFunc func(context.Context, Responder, Command) (Response, error)
+type HandlerFunc func(context.Context, Responder, Command) error
 
-func (fn HandlerFunc) ServeCommand(ctx context.Context, r Responder, command Command) (Response, error) {
+func (fn HandlerFunc) ServeCommand(ctx context.Context, r Responder, command Command) error {
 	return fn(ctx, r, command)
 }
 
@@ -159,10 +154,10 @@ func (m *Mux) Handler(command Command) (Handler, map[string]string) {
 
 // ServeCommand attempts to find a Handler to serve the Command. If no handler
 // is found, an error is returned.
-func (m *Mux) ServeCommand(ctx context.Context, r Responder, command Command) (Response, error) {
+func (m *Mux) ServeCommand(ctx context.Context, r Responder, command Command) error {
 	h, params := m.Handler(command)
 	if h == nil {
-		return NoResponse, ErrNoHandler
+		return ErrNoHandler
 	}
 	return h.ServeCommand(WithParams(ctx, params), r, command)
 }
@@ -170,15 +165,15 @@ func (m *Mux) ServeCommand(ctx context.Context, r Responder, command Command) (R
 // ValidateToken returns a new Handler that verifies that the token in the
 // request matches the given token.
 func ValidateToken(h Handler, token string) Handler {
-	return HandlerFunc(func(ctx context.Context, r Responder, command Command) (Response, error) {
+	return HandlerFunc(func(ctx context.Context, r Responder, command Command) error {
 		// If an empty string was provided, this was probably a
 		// configuration error, so return unauthorized for safety.
 		if token == "" {
-			return NoResponse, ErrInvalidToken
+			return ErrInvalidToken
 		}
 
 		if command.Token != token {
-			return NoResponse, ErrInvalidToken
+			return ErrInvalidToken
 		}
 		return h.ServeCommand(ctx, r, command)
 	})
@@ -216,8 +211,22 @@ func (r *responder) Respond(resp Response) error {
 
 	if hresp.StatusCode/100 != 2 {
 		raw, _ := ioutil.ReadAll(hresp.Body)
-		return fmt.Errorf("unknown response: %v: %s", hresp.StatusCode, raw)
+		return fmt.Errorf("error sending delayed response: %s", raw)
 	}
 
 	return err
+}
+
+type response struct {
+	ResponseType *string `json:"response_type,omitempty"`
+	Text         string  `json:"text"`
+}
+
+func newResponse(resp Response) *response {
+	r := &response{Text: resp.Text}
+	if resp.InChannel {
+		t := "in_channel"
+		r.ResponseType = &t
+	}
+	return r
 }

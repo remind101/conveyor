@@ -1,7 +1,6 @@
 package slash
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"golang.org/x/net/context"
@@ -10,6 +9,7 @@ import (
 // Server adapts a Handler to be served over http.
 type Server struct {
 	Handler
+	Context func() context.Context
 }
 
 // NewServer returns a new Server instance.
@@ -22,33 +22,27 @@ func NewServer(h Handler) *Server {
 // ServeHTTP parses the Command from the incoming request then serves it using
 // the Handler.
 func (h *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	var ctx = h.Context
+	if ctx == nil {
+		ctx = context.Background
+	}
+
+	if err := h.ServeHTTPContext(ctx(), w, r); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	return
+}
+
+// ServeHTTPContext serves the http request with context.Context support.
+func (h *Server) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	command, err := ParseRequest(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		return err
 	}
 
-	responder := newResponder(command)
-	resp, err := h.ServeCommand(context.Background(), responder, command)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+	go h.ServeCommand(ctx, newResponder(command), command)
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(newResponse(resp))
-}
-
-type response struct {
-	ResponseType *string `json:"response_type,omitempty"`
-	Text         string  `json:"text"`
-}
-
-func newResponse(resp Response) *response {
-	r := &response{Text: resp.Text}
-	if resp.InChannel {
-		t := "in_channel"
-		r.ResponseType = &t
-	}
-	return r
+	return nil
 }
