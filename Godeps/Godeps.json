@@ -96,6 +96,10 @@
 			"Rev": "dad6eeea72ec2cac322d3e6305ce4cfe2870f314"
 		},
 		{
+			"ImportPath": "github.com/ernesto-jimenez/go-querystring/query",
+			"Rev": "a9b7f983e384616b2a317c8f345701fb1688d061"
+		},
+		{
 			"ImportPath": "github.com/fsouza/go-dockerclient",
 			"Rev": "933433faa3e1c0bbc825b251143f8e77affbf797"
 		},

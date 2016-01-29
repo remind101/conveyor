@@ -1,6 +1,10 @@
 package conveyor
 
-import "github.com/jmoiron/sqlx"
+import (
+	"strings"
+
+	"github.com/jmoiron/sqlx"
+)
 
 // Artifact represents an image that was successfully created from a build.
 type Artifact struct {
@@ -18,20 +22,19 @@ func artifactsCreate(tx *sqlx.Tx, a *Artifact) error {
 	return insert(tx, createArtifactSql, a, &a.ID)
 }
 
-// artifactsFind finds an artifact by a field.
-func artifactsFind(tx *sqlx.Tx, field, value string) (*Artifact, error) {
-	var sql = `SELECT * FROM artifacts ` + field + ` = ?`
+// artifactsFindByID finds an artifact by ID.
+func artifactsFindByID(tx *sqlx.Tx, artifactID string) (*Artifact, error) {
+	var sql = `SELECT * FROM artifacts WHERE id = ?`
 	var a Artifact
-	err := tx.Get(&a, tx.Rebind(sql), value)
+	err := tx.Get(&a, tx.Rebind(sql), artifactID)
 	return &a, err
 }
 
-// artifactsFindByID finds an artifact by ID.
-func artifactsFindByID(tx *sqlx.Tx, artifactID string) (*Artifact, error) {
-	return artifactsFind(tx, "id", artifactID)
-}
-
-// artifactsFindByImage finds an artifact by image.
-func artifactsFindByImage(tx *sqlx.Tx, image string) (*Artifact, error) {
-	return artifactsFind(tx, "image", image)
+// artifactsFindByRepoSha finds an artifact by image.
+func artifactsFindByRepoSha(tx *sqlx.Tx, repoSha string) (*Artifact, error) {
+	parts := strings.Split(repoSha, "@")
+	var sql = `SELECT * FROM artifacts WHERE build_id = (SELECT id FROM builds WHERE repository = ? AND sha = ?)`
+	var a Artifact
+	err := tx.Get(&a, tx.Rebind(sql), parts[0], parts[1])
+	return &a, err
 }
