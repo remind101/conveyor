@@ -103,9 +103,9 @@ func (c *Conveyor) FindArtifact(ctx context.Context, artifactIdentity string) (*
 	}
 
 	var find func(*sqlx.Tx, string) (*Artifact, error)
-	switch strings.Contains(artifactIdentity, ":") {
+	switch strings.Contains(artifactIdentity, "@") {
 	case true:
-		find = artifactsFindByImage
+		find = artifactsFindByRepoSha
 	default:
 		find = artifactsFindByID
 	}

@@ -78,9 +78,6 @@ type Options struct {
 
 	// BuildQueue to pull BuildContexts from.
 	BuildRequests chan conveyor.BuildContext
-
-	// Logger used to generate an io.Writer for each build.
-	Conveyor Conveyor
 }
 
 // Worker pulls jobs off of a BuildQueue and performs the build.

@@ -16,8 +16,7 @@ CREATE TABLE builds (
 CREATE TABLE artifacts (
   id uuid NOT NULL DEFAULT uuid_generate_v4() primary key,
   build_id uuid NOT NULL references builds(id),
-  image text,
-  created_at timestamp without time zone default (now() at time zone 'utc')
+  image text
 );
 
 -- We should ensure that we only have 1 pending/building build for any given sha.

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -46,10 +47,12 @@ func newServer(c client) *Server {
 	r := mux.NewRouter()
 	// Builds
 	r.HandleFunc("/builds", s.BuildCreate).Methods("POST")
-	r.HandleFunc("/builds/{build_id}", s.BuildInfo).Methods("GET")
+	r.HandleFunc("/builds/{owner}/{repo}@{sha}", s.ArtifactInfo).Methods("GET")
+	r.HandleFunc("/builds/{id}", s.BuildInfo).Methods("GET")
 
 	// Artifacts
-	r.HandleFunc("/artifacts/{artifact_id_or_image}", s.ArtifactInfo).Methods("GET")
+	r.HandleFunc("/artifacts/{owner}/{repo}@{sha}", s.ArtifactInfo).Methods("GET")
+	r.HandleFunc("/artifacts/{id}", s.ArtifactInfo).Methods("GET")
 
 	// Logs
 	r.HandleFunc("/logs/{id}", s.LogsStream).Methods("GET")
@@ -133,7 +136,7 @@ func (s *Server) BuildCreate(w http.ResponseWriter, r *http.Request) {
 func (s *Server) BuildInfo(w http.ResponseWriter, r *http.Request) {
 	ctx := context.TODO()
 
-	ident := mux.Vars(r)["build_id"]
+	ident := identity(mux.Vars(r))
 
 	b, err := s.client.FindBuild(ctx, ident)
 	if err != nil {
@@ -157,7 +160,7 @@ func newArtifact(a *conveyor.Artifact) schema.Artifact {
 func (s *Server) ArtifactInfo(w http.ResponseWriter, r *http.Request) {
 	ctx := context.TODO()
 
-	ident := mux.Vars(r)["artifact_id_or_image"]
+	ident := identity(mux.Vars(r))
 
 	a, err := s.client.FindArtifact(ctx, ident)
 	if err != nil {
@@ -169,6 +172,14 @@ func (s *Server) ArtifactInfo(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
+func identity(vars map[string]string) string {
+	if id := vars["id"]; id != "" {
+		return id
+	}
+
+	return fmt.Sprintf("%s/%s@%s", vars["owner"], vars["repo"], vars["sha"])
+}
+
 func encode(w io.Writer, v interface{}) error {
 	return json.NewEncoder(w).Encode(v)
 }
@@ -177,18 +188,25 @@ func decode(r io.Reader, v interface{}) error {
 	return json.NewDecoder(r).Decode(v)
 }
 
-func encodeErr(w io.Writer, err error) error {
-	return encode(w, newError(err))
+func encodeErr(w http.ResponseWriter, e error) error {
+	err := newError(e)
+
+	switch err {
+	case schema.ErrNotFound:
+		w.WriteHeader(http.StatusNotFound)
+	default:
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+
+	return encode(w, err)
 }
 
-type Error schema.Error
+func newError(err error) *schema.Error {
+	if err == sql.ErrNoRows {
+		return schema.ErrNotFound
+	}
 
-func (e *Error) Error() string {
-	return e.Message
-}
-
-func newError(err error) Error {
-	return Error{
+	return &schema.Error{
 		ID:      "internal_error",
 		Message: err.Error(),
 	}

@@ -30,13 +30,16 @@
             "string"
           ]
         },
+        "build_identy": {
+          "$ref": "#/definitions/build/definitions/identity"
+        },
         "identity": {
           "anyOf": [
             {
               "$ref": "#/definitions/artifact/definitions/id"
             },
             {
-              "$ref": "#/definitions/artifact/definitions/image"
+              "$ref": "#/definitions/artifact/definitions/build_identity"
             }
           ]
         }
@@ -87,8 +90,23 @@
             "string"
           ]
         },
+        "repo_sha": {
+          "description": "a compact identifier for an artifact the describes the repository and sha together",
+          "readOnly": true,
+          "example": "remind101/acme-inc@139759bd61e98faeec619c45b1060b4288952164",
+          "type": [
+            "string"
+          ]
+        },
         "identity": {
-          "$ref": "#/definitions/build/definitions/id"
+          "anyOf": [
+            {
+              "$ref": "#/definitions/build/definitions/id"
+            },
+            {
+              "$ref": "#/definitions/build/definitions/repo_sha"
+            }
+          ]
         },
         "repository": {
           "description": "the GitHub repository that this build is for",

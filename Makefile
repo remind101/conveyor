@@ -29,6 +29,8 @@ bindata.go: db/migrations/*.sql
 database:: bindata.go
 	dropdb conveyor || true
 	createdb conveyor || true
+	dropdb conveyor_api || true
+	createdb conveyor_api || true
 
 schema.json: meta.json schemata/*
 	bundle exec prmd combine --meta meta.json schemata/ > schema.json

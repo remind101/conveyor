@@ -15,14 +15,14 @@ An artifact is the result of a successful build. It represents a built Docker im
 
 
 ```
-GET /artifacts/{artifact_id_or_image}
+GET /artifacts/{artifact_id_or_build_identity}
 ```
 
 
 #### Curl Example
 
 ```bash
-$ curl -n http://conveyor.local/artifacts/$ARTIFACT_ID_OR_IMAGE
+$ curl -n http://conveyor.local/artifacts/$ARTIFACT_ID_OR_BUILD_IDENTITY
 ```
 
 
@@ -115,14 +115,14 @@ HTTP/1.1 201 Created
 Info for existing build.
 
 ```
-GET /builds/{build_id}
+GET /builds/{build_id_or_repo_sha}
 ```
 
 
 #### Curl Example
 
 ```bash
-$ curl -n http://conveyor.local/builds/$BUILD_ID
+$ curl -n http://conveyor.local/builds/$BUILD_ID_OR_REPO_SHA
 ```
 
 

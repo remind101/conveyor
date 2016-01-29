@@ -16,8 +16,23 @@
         "string"
       ]
     },
+    "repo_sha": {
+      "description": "a compact identifier for an artifact the describes the repository and sha together",
+      "readOnly": true,
+      "example": "remind101/acme-inc@139759bd61e98faeec619c45b1060b4288952164",
+      "type": [
+        "string"
+      ]
+    },
     "identity": {
-      "$ref": "/schemata/build#/definitions/id"
+      "anyOf": [
+        {
+          "$ref": "/schemata/build#/definitions/id"
+        },
+        {
+          "$ref": "/schemata/build#/definitions/repo_sha"
+        }
+      ]
     },
     "repository": {
       "description": "the GitHub repository that this build is for",

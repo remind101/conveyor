@@ -24,13 +24,16 @@
         "string"
       ]
     },
+    "build_identy": {
+      "$ref": "/schemata/build#/definitions/identity"
+    },
     "identity": {
       "anyOf": [
         {
           "$ref": "/schemata/artifact#/definitions/id"
         },
         {
-          "$ref": "/schemata/artifact#/definitions/image"
+          "$ref": "/schemata/artifact#/definitions/build_identity"
         }
       ]
     }
