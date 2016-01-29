@@ -56,7 +56,8 @@ func (c *Conveyor) Build(ctx context.Context, req BuildRequest) (*Build, error) 
 	// A branch is provied with no sha. Use the GitHub API to resolve the
 	// branch to the sha of HEAD of the branch.
 	if req.Sha == "" && req.Branch != "" {
-		sha, err := c.GitHub.ResolveBranch(req.Repository, req.Branch)
+		owner, repo := splitRepo(req.Repository)
+		sha, err := c.GitHub.ResolveBranch(owner, repo, req.Branch)
 		if err != nil {
 			return nil, err
 		}
@@ -200,8 +201,9 @@ func (c *Conveyor) BuildFailed(ctx context.Context, buildID string, err error) e
 }
 
 // EnableRepo installs the webhook on the repo.
-func (c *Conveyor) EnableRepo(ctx context.Context, repo string) error {
-	return c.GitHub.InstallHook(repo, c.Hook)
+func (c *Conveyor) EnableRepo(ctx context.Context, fullRepo string) error {
+	owner, repo := splitRepo(fullRepo)
+	return c.GitHub.InstallHook(owner, repo, c.Hook)
 }
 
 func insert(tx *sqlx.Tx, sql string, v interface{}, id *string) error {

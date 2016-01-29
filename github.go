@@ -24,8 +24,8 @@ func NewHook(url, secret string) *github.Hook {
 
 // GitHubAPI represents an interface for performing Git operations.
 type GitHubAPI interface {
-	ResolveBranch(repo, branch string) (sha string, err error)
-	InstallHook(repo string, hook *github.Hook) error
+	ResolveBranch(owner, repo, branch string) (sha string, err error)
+	InstallHook(owner, repo string, hook *github.Hook) error
 }
 
 func NewGitHub(c *github.Client) *GitHub {
@@ -40,23 +40,23 @@ func NewGitHub(c *github.Client) *GitHub {
 type GitHub struct {
 	Git *github.GitService
 
-	Repositories *github.RepositoriesService
+	Repositories interface {
+		CreateHook(owner, repo string, hook *github.Hook) (*github.Hook, *github.Response, error)
+		ListHooks(owner, repo string, opt *github.ListOptions) ([]github.Hook, *github.Response, error)
+		EditHook(owner, repo string, id int, hook *github.Hook) (*github.Hook, *github.Response, error)
+	}
 }
 
-func (g *GitHub) ResolveBranch(repo, branch string) (string, error) {
-	parts := strings.Split(repo, "/")
-	ref, _, err := g.Git.GetRef(parts[0], parts[1], fmt.Sprintf("refs/heads/%s", branch))
+func (g *GitHub) ResolveBranch(owner, repo, branch string) (string, error) {
+	ref, _, err := g.Git.GetRef(owner, repo, fmt.Sprintf("refs/heads/%s", branch))
 	if err != nil {
 		return "", err
 	}
 	return *ref.Object.SHA, nil
 }
 
-// EnableHook installs the hook on the repo.
-func (g *GitHub) InstallHook(fullRepo string, hook *github.Hook) (err error) {
-	parts := strings.Split(fullRepo, "/")
-	owner, repo := parts[0], parts[1]
-
+// InstallHook installs the hook on the repo.
+func (g *GitHub) InstallHook(owner, repo string, hook *github.Hook) (err error) {
 	var existingHook *github.Hook
 	existingHook, err = g.existingHook(owner, repo, hook)
 	if err != nil {
@@ -100,4 +100,10 @@ func equalHooks(a, b *github.Hook) bool {
 	}
 
 	return false
+}
+
+func splitRepo(fullRepo string) (owner, repo string) {
+	parts := strings.Split(fullRepo, "/")
+	owner, repo = parts[0], parts[1]
+	return
 }
