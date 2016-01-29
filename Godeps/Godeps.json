@@ -93,7 +93,7 @@
 		},
 		{
 			"ImportPath": "github.com/ejholmes/slash",
-			"Rev": "dad6eeea72ec2cac322d3e6305ce4cfe2870f314"
+			"Rev": "bf98cf37cde31b2c749b705296d0f34b005485eb"
 		},
 		{
 			"ImportPath": "github.com/ernesto-jimenez/go-querystring/query",

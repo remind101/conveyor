@@ -3,8 +3,21 @@ package slash
 import (
 	"net/http"
 	"net/url"
+	"time"
 
 	"golang.org/x/net/context"
+)
+
+// Limits defined in https://api.slack.com/slash-commands
+const (
+	// When responding directly via the http request, Slack will timeout the
+	// request at 3 seconds, so we need to respond before than before
+	// reverting to delayed responses.
+	ResponseTimeout = 3 * time.Second
+
+	// We can only send a maximum of 5 delayed responses with the
+	// response_url.
+	MaximumDelayedResponses = 5
 )
 
 // Command represents an incoming Slash Command request.

@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"regexp"
+	"text/template"
 
 	"golang.org/x/oauth2"
 
@@ -45,6 +45,8 @@ func newConveyor(c *cli.Context) *conveyor.Conveyor {
 	cy := conveyor.New(newDB(c))
 	cy.BuildQueue = newBuildQueue(c)
 	cy.Logger = newLogger(c)
+	cy.GitHub = conveyor.NewGitHub(newGitHubClient(c))
+	cy.Hook = conveyor.NewHook(c.String("url"), c.String("github.secret"))
 	return cy
 }
 
@@ -87,34 +89,20 @@ func newServer(cy *conveyor.Conveyor, c *cli.Context) http.Handler {
 	return n
 }
 
-// newSlackServer returns an http handler for handling Slack slash commands at <url>/slack.
-func newSlackServer(cy *conveyor.Conveyor, c *cli.Context) http.Handler {
+func newGitHubClient(c *cli.Context) *github.Client {
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: c.String("github.token")},
 	)
 	tc := oauth2.NewClient(oauth2.NoContext, ts)
 
-	gc := github.NewClient(tc)
+	return github.NewClient(tc)
+}
 
-	r := slash.NewMux()
-	r.Match(slash.MatchSubcommand(`help`), slack.Help)
-	r.MatchText(
-		regexp.MustCompile(`enable (?P<owner>\S+?)/(?P<repo>\S+)`),
-		slack.NewEnable(
-			gc,
-			slack.NewHook(c.String("url"), c.String("github.secret")),
-		),
-	)
-	r.MatchText(
-		regexp.MustCompile(`build (?P<owner>\S+?)/(?P<repo>\S+)@(?P<branch>\S+)`),
-		slack.NewBuild(
-			gc,
-			cy,
-			fmt.Sprintf(logsURLTemplate, c.String("url")),
-		),
-	)
-
-	return slash.NewServer(slash.ValidateToken(r, c.String("slack.token")))
+// newSlackServer returns an http handler for handling Slack slash commands at <url>/slack.
+func newSlackServer(cy *conveyor.Conveyor, c *cli.Context) http.Handler {
+	s := slack.New(cy)
+	s.URLTemplate = template.Must(template.New("url").Parse(fmt.Sprintf(logsURLTemplate, c.String("url"))))
+	return slash.NewServer(slash.ValidateToken(s, c.String("slack.token")))
 }
 
 func newBuilder(c *cli.Context) builder.Builder {

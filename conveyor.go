@@ -4,6 +4,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/google/go-github/github"
 	"github.com/jmoiron/sqlx"
 	"github.com/remind101/conveyor/builder"
 	"github.com/remind101/conveyor/logs"
@@ -17,11 +18,16 @@ var newID = uuid.New
 
 // Conveyor provides the primary api for triggering builds.
 type Conveyor struct {
+	// Hook is the webhook configuration for Conveyor.
+	Hook *github.Hook
+
 	// BuildQueue is used to enqueue a build.
 	BuildQueue
 
 	// Logger is the log storage backend to read and write logs for builds.
 	Logger logs.Logger
+
+	GitHub GitHubAPI
 
 	db *sqlx.DB
 }
@@ -33,9 +39,10 @@ func New(db *sqlx.DB) *Conveyor {
 
 // BuildRequest is provided when triggering a new build.
 type BuildRequest struct {
-	// Repository is the repo to build.
+	// Repository is the repo to build. This is always required.
 	Repository string
-	// Sha is the git commit to build.
+	// Sha is the git commit to build. If this is not provided, and a Branch
+	// is provided, the sha will be auto-resolved.
 	Sha string
 	// Branch is the name of the branch that this build relates to.
 	Branch string
@@ -46,6 +53,17 @@ type BuildRequest struct {
 
 // Build enqueues a build to run.
 func (c *Conveyor) Build(ctx context.Context, req BuildRequest) (*Build, error) {
+	// A branch is provied with no sha. Use the GitHub API to resolve the
+	// branch to the sha of HEAD of the branch.
+	if req.Sha == "" && req.Branch != "" {
+		owner, repo := splitRepo(req.Repository)
+		sha, err := c.GitHub.ResolveBranch(owner, repo, req.Branch)
+		if err != nil {
+			return nil, err
+		}
+		req.Sha = sha
+	}
+
 	tx, err := c.db.Beginx()
 	if err != nil {
 		return nil, err
@@ -180,6 +198,12 @@ func (c *Conveyor) BuildFailed(ctx context.Context, buildID string, err error) e
 	}
 
 	return tx.Commit()
+}
+
+// EnableRepo installs the webhook on the repo.
+func (c *Conveyor) EnableRepo(ctx context.Context, fullRepo string) error {
+	owner, repo := splitRepo(fullRepo)
+	return c.GitHub.InstallHook(owner, repo, c.Hook)
 }
 
 func insert(tx *sqlx.Tx, sql string, v interface{}, id *string) error {
