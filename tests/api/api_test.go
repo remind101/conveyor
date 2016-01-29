@@ -32,6 +32,7 @@ func TestBuild(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, "remind101/acme-inc:1234", a.Image)
+	assert.NotEqual(t, "", buf.String())
 }
 
 type Client struct {
@@ -80,6 +81,7 @@ func newConveyor(t testing.TB) *Conveyor {
 
 	w := worker.New(c, worker.Options{
 		Builder: builder.BuilderFunc(func(ctx context.Context, w io.Writer, options builder.BuildOptions) (string, error) {
+			io.WriteString(w, "Pulling base image\n")
 			return "remind101/acme-inc:1234", nil
 		}),
 		BuildRequests: ch,

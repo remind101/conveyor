@@ -22,7 +22,7 @@ GET /artifacts/{artifact_id_or_build_identity}
 #### Curl Example
 
 ```bash
-$ curl -n http://conveyor.local/artifacts/$ARTIFACT_ID_OR_BUILD_IDENTITY
+$ curl -n http://localhost:8080/artifacts/$ARTIFACT_ID_OR_BUILD_IDENTITY
 ```
 
 
@@ -81,7 +81,7 @@ POST /builds
 #### Curl Example
 
 ```bash
-$ curl -n -X POST http://conveyor.local/builds \
+$ curl -n -X POST http://localhost:8080/builds \
   -d '{
   "repository": "remind101/acme-inc",
   "branch": "master",
@@ -122,7 +122,7 @@ GET /builds/{build_id_or_repo_sha}
 #### Curl Example
 
 ```bash
-$ curl -n http://conveyor.local/builds/$BUILD_ID_OR_REPO_SHA
+$ curl -n http://localhost:8080/builds/$BUILD_ID_OR_REPO_SHA
 ```
 
 

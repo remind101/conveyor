@@ -2,7 +2,7 @@
  "description": "Conveyor API",
  "id": "conveyor",
  "links": [{
-   "href": "http://conveyor.local",
+   "href": "http://localhost:8080",
    "rel": "self"
  }],
  "title": "Conveyor"
