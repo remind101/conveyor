@@ -9,9 +9,9 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/remind101/conveyor"
+	core "github.com/remind101/conveyor"
 	"github.com/remind101/conveyor/builder"
-	client "github.com/remind101/conveyor/client/conveyor"
+	"github.com/remind101/conveyor/client/conveyor"
 	"github.com/remind101/conveyor/logs"
 	"github.com/remind101/conveyor/server"
 	"github.com/remind101/conveyor/worker"
@@ -25,10 +25,10 @@ func TestBuild(t *testing.T) {
 	defer c.Close(t)
 
 	buf := new(bytes.Buffer)
-	a, err := c.Build(buf, client.BuildCreateOpts{
+	a, err := c.Build(buf, conveyor.BuildCreateOpts{
 		Repository: "remind101/acme-inc",
-		Branch:     "master",
-		Sha:        "139759bd61e98faeec619c45b1060b4288952164",
+		Branch:     conveyor.String("master"),
+		Sha:        conveyor.String("139759bd61e98faeec619c45b1060b4288952164"),
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, "remind101/acme-inc:1234", a.Image)
@@ -36,7 +36,7 @@ func TestBuild(t *testing.T) {
 }
 
 type Client struct {
-	*client.Service
+	*conveyor.Service
 	s *httptest.Server
 	c *Conveyor
 }
@@ -45,7 +45,7 @@ func newClient(t testing.TB) *Client {
 	c := newConveyor(t)
 	s := httptest.NewServer(server.NewServer(c.Conveyor, server.Config{}))
 
-	cl := client.NewService(client.DefaultClient)
+	cl := conveyor.NewService(conveyor.DefaultClient)
 	cl.URL = s.URL
 
 	return &Client{
@@ -62,21 +62,21 @@ func (c *Client) Close(t testing.TB) {
 
 // Wraps a Conveyor instance and a set of workers together.
 type Conveyor struct {
-	*conveyor.Conveyor
+	*core.Conveyor
 	worker *worker.Worker
 }
 
 func newConveyor(t testing.TB) *Conveyor {
 	db := sqlx.MustConnect("postgres", databaseURL)
-	if err := conveyor.Reset(db); err != nil {
+	if err := core.Reset(db); err != nil {
 		t.Fatal(err)
 	}
 
-	c := conveyor.New(db)
-	c.BuildQueue = conveyor.NewBuildQueue(100)
+	c := core.New(db)
+	c.BuildQueue = core.NewBuildQueue(100)
 	c.Logger = logs.Discard
 
-	ch := make(chan conveyor.BuildContext)
+	ch := make(chan core.BuildContext)
 	c.BuildQueue.Subscribe(ch)
 
 	w := worker.New(c, worker.Options{
