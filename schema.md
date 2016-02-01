@@ -62,7 +62,7 @@ A build represents a request to build a git commit for a repo.
 
 ### Build Create
 
-Create a new build and start it. Note that you cannot start a new build for a sha that is already in a "pending" or "building" state. You should cancel the existing build first, or wait for it to complete.
+Create a new build and start it. Note that you cannot start a new build for a sha that is already in a "pending" or "building" state. You should cancel the existing build first, or wait for it to complete. You must specify either a `branch` OR a `sha`. If you provide a `branch` but no `sha`, Conveyor will use the GitHub API to resolve the HEAD commit on that branch to a sha. If you provide a `sha` but no `branch`, branch caching will be disabled.
 
 ```
 POST /builds
@@ -72,10 +72,15 @@ POST /builds
 
 | Name | Type | Description | Example |
 | ------- | ------- | ------- | ------- |
-| **branch** | *string* | the branch within the GitHub repository that the build was triggered from | `"master"` |
 | **repository** | *string* | the GitHub repository that this build is for | `"remind101/acme-inc"` |
-| **sha** | *string* | the git commit to build | `"139759bd61e98faeec619c45b1060b4288952164"` |
 
+
+#### Optional Parameters
+
+| Name | Type | Description | Example |
+| ------- | ------- | ------- | ------- |
+| **branch** | *string* | the branch within the GitHub repository that the build was triggered from | `"master"` |
+| **sha** | *string* | the git commit to build | `"139759bd61e98faeec619c45b1060b4288952164"` |
 
 
 #### Curl Example

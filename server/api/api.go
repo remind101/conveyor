@@ -121,8 +121,8 @@ func (s *Server) BuildCreate(w http.ResponseWriter, r *http.Request) {
 
 	b, err := s.client.Build(ctx, conveyor.BuildRequest{
 		Repository: req.Repository,
-		Branch:     req.Branch,
-		Sha:        req.Sha,
+		Branch:     emptyString(req.Branch),
+		Sha:        emptyString(req.Sha),
 	})
 	if err != nil {
 		encodeErr(w, err)
@@ -210,4 +210,13 @@ func newError(err error) *schema.Error {
 		ID:      "internal_error",
 		Message: err.Error(),
 	}
+}
+
+// returns an empty string if the pointer is nil.
+func emptyString(s *string) string {
+	if s == nil {
+		return ""
+	}
+
+	return *s
 }

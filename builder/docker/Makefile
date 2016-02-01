@@ -8,15 +8,15 @@ test: bootstrap
 	docker run --privileged=true \
 		--volumes-from=data \
 		-e CACHE=off \
-		-e REPOSITORY=ejholmes/captain-test \
+		-e REPOSITORY=remind101/acme-inc \
 		-e BRANCH=master \
-		-e SHA=2e4edf57db00d55051c64d1568e2214858a0897d \
+		-e SHA=d4c832fcc95974bd017567b44868194a38b3b03a \
 		-e DRY=true \
 		${IMAGE}
 
 bootstrap: build data
 
-build:
+build: Dockerfile bin/*
 	docker build -t ${IMAGE} .
 
 data: data/.docker/config.json data/.ssh/id_rsa

@@ -33,10 +33,6 @@ if [ -z "$REPOSITORY" ]; then
   error "REPOSITORY env var is required"
 fi
 
-if [ -z "$BRANCH" ]; then
-  error "BRANCH env var is required"
-fi
-
 if [ -z "$SHA" ]; then
   error "SHA env var is required"
 fi
@@ -74,7 +70,11 @@ setup() {
 clone() {
   status "Cloning..."
   # Clone the given branch and checkout the sha.
-  git clone --depth 50 --branch="$BRANCH" "git@github.com:${REPOSITORY}.git" "$REPOSITORY"
+  if [ -z "$BRANCH" ]; then
+    git clone --depth 50 "git@github.com:${REPOSITORY}.git" "$REPOSITORY"
+  else
+    git clone --depth 50 --branch="$BRANCH" "git@github.com:${REPOSITORY}.git" "$REPOSITORY"
+  fi
   cd "$REPOSITORY"
   git checkout -qf "$SHA"
 }
@@ -93,7 +93,9 @@ build() {
   status "Building..."
   docker build -t "$REPOSITORY" .
   docker tag "$REPOSITORY" "$REPOSITORY:$SHA"
-  docker tag -f "$REPOSITORY" "$REPOSITORY:$BRANCH" # Force tag because we pulled the last build for this branch.
+  if [ ! -z "$BRANCH" ]; then
+    docker tag -f "$REPOSITORY" "$REPOSITORY:$BRANCH" # Force tag because we pulled the last build for this branch.
+  fi
 }
 
 # Push tag pushes a tag for this repository. It will also retry up to 3 times because the docker registry sucks.
@@ -107,7 +109,9 @@ push() {
   if [ -z "$DRY" ]; then
     push_tag "latest"
     push_tag "$SHA"
-    push_tag "$BRANCH"
+    if [ ! -z "$BRANCH" ]; then
+      push_tag "$BRANCH"
+    fi
   else
     status "Dry run enabled. Not pushing."
   fi
