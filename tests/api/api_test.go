@@ -3,6 +3,7 @@ package api_test
 import (
 	"bytes"
 	"io"
+	"net/http"
 	"net/http/httptest"
 	"testing"
 
@@ -43,7 +44,9 @@ type Client struct {
 
 func newClient(t testing.TB) *Client {
 	c := newConveyor(t)
-	s := httptest.NewServer(server.NewServer(c.Conveyor, server.Config{}))
+	s := httptest.NewServer(server.NewServer(c.Conveyor, server.Config{
+		APIAuth: func(h http.Handler) http.Handler { return h },
+	}))
 
 	cl := conveyor.NewService(conveyor.DefaultClient)
 	cl.URL = s.URL

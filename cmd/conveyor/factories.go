@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 	"text/template"
 
 	"golang.org/x/oauth2"
@@ -14,6 +15,7 @@ import (
 	"github.com/codegangsta/cli"
 	"github.com/codegangsta/negroni"
 	"github.com/ejholmes/slash"
+	"github.com/goji/httpauth"
 	"github.com/google/go-github/github"
 	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
@@ -73,8 +75,18 @@ func newBuildQueue(c *cli.Context) conveyor.BuildQueue {
 }
 
 func newServer(cy *conveyor.Conveyor, c *cli.Context) http.Handler {
+	var apiAuth func(http.Handler) http.Handler
+
+	if auth := c.String("auth"); auth != "" {
+		parts := strings.Split(auth, ":")
+		apiAuth = httpauth.SimpleBasicAuth(parts[0], parts[1])
+	} else {
+		apiAuth = func(h http.Handler) http.Handler { return h }
+	}
+
 	r := mux.NewRouter()
 	r.NotFoundHandler = server.NewServer(cy, server.Config{
+		APIAuth:      apiAuth,
 		GitHubSecret: c.String("github.secret"),
 	})
 

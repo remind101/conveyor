@@ -16,9 +16,13 @@ import (
 
 const fakeUUID = "01234567-89ab-cdef-0123-456789abcdef"
 
+func nullAuth(h http.Handler) http.Handler {
+	return h
+}
+
 func TestServer_Logs(t *testing.T) {
 	c := new(mockConveyor)
-	s := newServer(c)
+	s := newServer(c, nullAuth)
 
 	resp := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/logs/1234", nil)
@@ -34,7 +38,7 @@ func TestServer_Logs(t *testing.T) {
 
 func TestServer_BuildCreate(t *testing.T) {
 	c := new(mockConveyor)
-	s := newServer(c)
+	s := newServer(c, nullAuth)
 
 	resp := httptest.NewRecorder()
 	req, _ := http.NewRequest("POST", "/builds", strings.NewReader(`{
@@ -63,7 +67,7 @@ func TestServer_BuildCreate(t *testing.T) {
 
 func TestServer_BuildInfo(t *testing.T) {
 	c := new(mockConveyor)
-	s := newServer(c)
+	s := newServer(c, nullAuth)
 
 	resp := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/builds/01234567-89ab-cdef-0123-456789abcdef", nil)
@@ -84,7 +88,7 @@ func TestServer_BuildInfo(t *testing.T) {
 
 func TestServer_ArtifactInfo(t *testing.T) {
 	c := new(mockConveyor)
-	s := newServer(c)
+	s := newServer(c, nullAuth)
 
 	resp := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/artifacts/01234567-89ab-cdef-0123-456789abcdef", nil)

@@ -35,24 +35,28 @@ type Server struct {
 }
 
 // NewServer returns a new Server instance
-func NewServer(c *conveyor.Conveyor) *Server {
-	return newServer(c)
+func NewServer(c *conveyor.Conveyor, auth func(http.Handler) http.Handler) *Server {
+	return newServer(c, auth)
 }
 
-func newServer(c client) *Server {
+func newServer(c client, auth func(http.Handler) http.Handler) *Server {
 	s := &Server{
 		client: c,
 	}
 
+	authFunc := func(h http.HandlerFunc) http.Handler {
+		return auth(http.HandlerFunc(h))
+	}
+
 	r := mux.NewRouter()
 	// Builds
-	r.HandleFunc("/builds", s.BuildCreate).Methods("POST")
-	r.HandleFunc("/builds/{owner}/{repo}@{sha}", s.BuildInfo).Methods("GET")
-	r.HandleFunc("/builds/{id}", s.BuildInfo).Methods("GET")
+	r.Handle("/builds", authFunc(s.BuildCreate)).Methods("POST")
+	r.Handle("/builds/{owner}/{repo}@{sha}", authFunc(s.BuildInfo)).Methods("GET")
+	r.Handle("/builds/{id}", authFunc(s.BuildInfo)).Methods("GET")
 
 	// Artifacts
-	r.HandleFunc("/artifacts/{owner}/{repo}@{sha}", s.ArtifactInfo).Methods("GET")
-	r.HandleFunc("/artifacts/{id}", s.ArtifactInfo).Methods("GET")
+	r.Handle("/artifacts/{owner}/{repo}@{sha}", authFunc(s.ArtifactInfo)).Methods("GET")
+	r.Handle("/artifacts/{id}", authFunc(s.ArtifactInfo)).Methods("GET")
 
 	// Logs
 	r.HandleFunc("/logs/{id}", s.LogsStream).Methods("GET")

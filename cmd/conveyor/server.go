@@ -30,6 +30,12 @@ var serverFlags = []cli.Flag{
 		Usage:  "Secret shared with Slack to verify slash command webhooks",
 		EnvVar: "SLACK_TOKEN",
 	},
+	cli.StringFlag{
+		Name:   "auth",
+		Value:  "",
+		Usage:  "Basic auth credentials for the API. Should be in the form `user:pass`.",
+		EnvVar: "BASIC_AUTH",
+	},
 }
 
 var cmdServer = cli.Command{

@@ -11,6 +11,8 @@ import (
 )
 
 type Config struct {
+	APIAuth func(http.Handler) http.Handler
+
 	// Shared secret between GitHub and Conveyor.
 	GitHubSecret string
 }
@@ -24,7 +26,7 @@ func NewServer(c *conveyor.Conveyor, config Config) http.Handler {
 	)
 
 	// API
-	r.NotFoundHandler = api.NewServer(c)
+	r.NotFoundHandler = api.NewServer(c, config.APIAuth)
 
 	return r
 }

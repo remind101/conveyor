@@ -104,6 +104,10 @@
 			"Rev": "933433faa3e1c0bbc825b251143f8e77affbf797"
 		},
 		{
+			"ImportPath": "github.com/goji/httpauth",
+			"Rev": "fc389c3003535723411032f2e9300889389e30fa"
+		},
+		{
 			"ImportPath": "github.com/google/go-github/github",
 			"Rev": "34fb8ee07214d23c3035c95691fe9069705814d6"
 		},
