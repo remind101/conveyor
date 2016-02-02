@@ -18,7 +18,13 @@ type Artifact struct {
 
 // artifactsCreate creates a new artifact linked to the build.
 func artifactsCreate(tx *sqlx.Tx, a *Artifact) error {
-	const createArtifactSql = `INSERT INTO artifacts (build_id, image) VALUES (:build_id, :image) RETURNING id`
+	const createArtifactSql = `INSERT INTO artifacts (build_id, image, repository, sha)
+(
+	SELECT :build_id, :image, repository, sha
+	FROM builds
+	WHERE id = :build_id
+)
+RETURNING id`
 	return insert(tx, createArtifactSql, a, &a.ID)
 }
 
@@ -33,15 +39,11 @@ func artifactsFindByID(tx *sqlx.Tx, artifactID string) (*Artifact, error) {
 // artifactsFindByRepoSha finds an artifact by image.
 func artifactsFindByRepoSha(tx *sqlx.Tx, repoSha string) (*Artifact, error) {
 	parts := strings.Split(repoSha, "@")
-	var sql = `SELECT id, image, build_id FROM artifacts
-WHERE build_id = (
-	SELECT id FROM builds
-	WHERE repository = ?
-	AND sha = ?
-	AND state = 'succeeded'
-	ORDER BY seq desc
-	LIMIT 1
-)
+	var sql = `SELECT id, image, build_id
+FROM artifacts
+WHERE repository = ?
+AND sha = ?
+ORDER BY seq desc
 LIMIT 1`
 	var a Artifact
 	err := tx.Get(&a, tx.Rebind(sql), parts[0], parts[1])

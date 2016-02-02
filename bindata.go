@@ -2,6 +2,7 @@
 // sources:
 // db/migrations/1_initial_schema.sql
 // db/migrations/2_add_sequences.sql
+// db/migrations/3_denormalize_artifacts.sql
 // DO NOT EDIT!
 
 package conveyor
@@ -109,6 +110,26 @@ func dbMigrations2_add_sequencesSql() (*asset, error) {
 	return a, nil
 }
 
+var _dbMigrations3_denormalize_artifactsSql = []byte("\x1f\x8b\x08\x00\x00\x09\x6e\x88\x00\xff\x84\x8f\xb1\x0e\x82\x30\x18\x84\xf7\x3e\xc5\xed\x0a\x2f\x40\x1c\xaa\xad\x71\x00\x21\xa5\xc4\xd1\x14\x41\x6d\xa2\x42\xda\x1a\xf5\xed\xc5\x86\xc4\x32\x18\xa7\x3f\xff\xe5\xbe\xcb\x5d\x14\x61\x76\xd5\x27\xa3\x5c\x8b\xaa\x27\x34\x95\x5c\x40\xd2\x65\xca\xa1\x8c\xd3\x47\x75\x70\x16\x94\x31\xac\xf2\xb4\xca\xb6\xb0\x67\x05\xd7\x3e\x5d\xf2\xdf\x6a\xda\xbe\xb3\xda\x75\xe6\x35\x12\x55\xc1\xa8\x9c\x98\x4b\x28\x94\x5c\xfa\xd4\x05\xea\x78\xb8\xf3\x90\xfb\x68\xc1\xbb\x16\x79\x86\xfa\xae\x2f\x8d\x67\x6b\xec\x36\x5c\x0c\x81\xb1\xd7\xf6\xba\xf1\x80\x6e\x12\x42\xc2\x5d\xac\x7b\xdc\x26\x75\xc7\x08\x26\xf2\x22\xd8\xf5\x6b\x52\x68\xfb\x96\x49\xc8\x3b\x00\x00\xff\xff\xdc\x11\x6c\x6e\x3b\x01\x00\x00")
+
+func dbMigrations3_denormalize_artifactsSqlBytes() ([]byte, error) {
+	return bindataRead(
+		_dbMigrations3_denormalize_artifactsSql,
+		"db/migrations/3_denormalize_artifacts.sql",
+	)
+}
+
+func dbMigrations3_denormalize_artifactsSql() (*asset, error) {
+	bytes, err := dbMigrations3_denormalize_artifactsSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "db/migrations/3_denormalize_artifacts.sql", size: 315, mode: os.FileMode(420), modTime: time.Unix(1454375765, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 // Asset loads and returns the asset for the given name.
 // It returns an error if the asset could not be found or
 // could not be loaded.
@@ -163,6 +184,7 @@ func AssetNames() []string {
 var _bindata = map[string]func() (*asset, error){
 	"db/migrations/1_initial_schema.sql": dbMigrations1_initial_schemaSql,
 	"db/migrations/2_add_sequences.sql": dbMigrations2_add_sequencesSql,
+	"db/migrations/3_denormalize_artifacts.sql": dbMigrations3_denormalize_artifactsSql,
 }
 
 // AssetDir returns the file names below a certain
@@ -209,6 +231,7 @@ var _bintree = &bintree{nil, map[string]*bintree{
 		"migrations": &bintree{nil, map[string]*bintree{
 			"1_initial_schema.sql": &bintree{dbMigrations1_initial_schemaSql, map[string]*bintree{}},
 			"2_add_sequences.sql": &bintree{dbMigrations2_add_sequencesSql, map[string]*bintree{}},
+			"3_denormalize_artifacts.sql": &bintree{dbMigrations3_denormalize_artifactsSql, map[string]*bintree{}},
 		}},
 	}},
 }}
