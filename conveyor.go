@@ -104,7 +104,15 @@ func (c *Conveyor) FindBuild(ctx context.Context, buildIdentity string) (*Build,
 		return nil, err
 	}
 
-	b, err := buildsFind(tx, buildIdentity)
+	var find func(*sqlx.Tx, string) (*Build, error)
+	switch strings.Contains(buildIdentity, "@") {
+	case true:
+		find = buildsFindByRepoSha
+	default:
+		find = buildsFindByID
+	}
+
+	b, err := find(tx, buildIdentity)
 	if err != nil {
 		tx.Rollback()
 		return b, err
@@ -206,14 +214,16 @@ func (c *Conveyor) EnableRepo(ctx context.Context, fullRepo string) error {
 	return c.GitHub.InstallHook(owner, repo, c.Hook)
 }
 
-func insert(tx *sqlx.Tx, sql string, v interface{}, id *string) error {
+func insert(tx *sqlx.Tx, sql string, v interface{}, returns ...interface{}) error {
 	rows, err := tx.NamedQuery(sql, v)
 	if err != nil {
 		return err
 	}
 	defer rows.Close()
 	if rows.Next() {
-		rows.Scan(id)
+		for _, r := range returns {
+			rows.Scan(r)
+		}
 	} else {
 		panic("expected id to be returned")
 	}

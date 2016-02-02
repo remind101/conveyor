@@ -47,7 +47,7 @@ func newServer(c client) *Server {
 	r := mux.NewRouter()
 	// Builds
 	r.HandleFunc("/builds", s.BuildCreate).Methods("POST")
-	r.HandleFunc("/builds/{owner}/{repo}@{sha}", s.ArtifactInfo).Methods("GET")
+	r.HandleFunc("/builds/{owner}/{repo}@{sha}", s.BuildInfo).Methods("GET")
 	r.HandleFunc("/builds/{id}", s.BuildInfo).Methods("GET")
 
 	// Artifacts
