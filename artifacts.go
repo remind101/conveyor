@@ -24,7 +24,7 @@ func artifactsCreate(tx *sqlx.Tx, a *Artifact) error {
 
 // artifactsFindByID finds an artifact by ID.
 func artifactsFindByID(tx *sqlx.Tx, artifactID string) (*Artifact, error) {
-	var sql = `SELECT * FROM artifacts WHERE id = ?`
+	var sql = `SELECT id, image, build_id FROM artifacts WHERE id = ? LIMIT 1`
 	var a Artifact
 	err := tx.Get(&a, tx.Rebind(sql), artifactID)
 	return &a, err
@@ -33,7 +33,16 @@ func artifactsFindByID(tx *sqlx.Tx, artifactID string) (*Artifact, error) {
 // artifactsFindByRepoSha finds an artifact by image.
 func artifactsFindByRepoSha(tx *sqlx.Tx, repoSha string) (*Artifact, error) {
 	parts := strings.Split(repoSha, "@")
-	var sql = `SELECT * FROM artifacts WHERE build_id = (SELECT id FROM builds WHERE repository = ? AND sha = ?)`
+	var sql = `SELECT id, image, build_id FROM artifacts
+WHERE build_id = (
+	SELECT id FROM builds
+	WHERE repository = ?
+	AND sha = ?
+	AND state = 'succeeded'
+	ORDER BY seq desc
+	LIMIT 1
+)
+LIMIT 1`
 	var a Artifact
 	err := tx.Get(&a, tx.Rebind(sql), parts[0], parts[1])
 	return &a, err

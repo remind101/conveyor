@@ -103,7 +103,7 @@ func buildsCreate(tx *sqlx.Tx, b *Build) error {
 
 // buildsFind finds a build by ID.
 func buildsFind(tx *sqlx.Tx, buildID string) (*Build, error) {
-	const findBuildSql = `SELECT * FROM builds where id = ?`
+	const findBuildSql = `SELECT id, repository, branch, sha, state, created_at, started_at, completed_at FROM builds WHERE id = ? LIMIT 1`
 	var b Build
 	err := tx.Get(&b, tx.Rebind(findBuildSql), buildID)
 	return &b, err

@@ -150,6 +150,97 @@ func TestConveyor_BuildFailed(t *testing.T) {
 	assert.Equal(t, StateFailed, b.State)
 }
 
+func TestConveyor_FindArtifact(t *testing.T) {
+	q := new(mockBuildQueue)
+	c := newConveyor(t)
+	c.BuildQueue = q
+
+	q.On("Push", builder.BuildOptions{
+		ID:         "<build_id>",
+		Repository: "remind101/acme-inc",
+		Branch:     "master",
+		Sha:        "139759bd61e98faeec619c45b1060b4288952164",
+	}).Once().Return(nil)
+
+	b, err := c.Build(context.Background(), BuildRequest{
+		Repository: "remind101/acme-inc",
+		Branch:     "master",
+		Sha:        "139759bd61e98faeec619c45b1060b4288952164",
+	})
+	assert.NoError(t, err)
+
+	image := "remind101/acme-inc:139759bd61e98faeec619c45b1060b4288952164"
+	err = c.BuildComplete(context.Background(), b.ID, image)
+	assert.NoError(t, err)
+
+	// Find by repo@sha
+	a, err := c.FindArtifact(context.Background(), "remind101/acme-inc@139759bd61e98faeec619c45b1060b4288952164")
+	assert.NoError(t, err)
+	assert.NotNil(t, a)
+	assert.Equal(t, image, a.Image)
+
+	// Find by id
+	a, err = c.FindArtifact(context.Background(), a.ID)
+	assert.NoError(t, err)
+	assert.NotNil(t, a)
+	assert.Equal(t, image, a.Image)
+}
+
+// This tests the case where we have a previous successful build for a sha that
+// resulted in an artifact, but we re-triggered the build. We want to return the
+// artifacts from the previous successful build until the new build is
+// successful.
+func TestConveyor_FindArtifact_PendingBuild(t *testing.T) {
+	q := new(mockBuildQueue)
+	c := newConveyor(t)
+	c.BuildQueue = q
+
+	q.On("Push", builder.BuildOptions{
+		ID:         "<build_id>",
+		Repository: "remind101/acme-inc",
+		Branch:     "master",
+		Sha:        "139759bd61e98faeec619c45b1060b4288952164",
+	}).Twice().Return(nil)
+
+	b, err := c.Build(context.Background(), BuildRequest{
+		Repository: "remind101/acme-inc",
+		Branch:     "master",
+		Sha:        "139759bd61e98faeec619c45b1060b4288952164",
+	})
+	assert.NoError(t, err)
+
+	image := "remind101/acme-inc:139759bd61e98faeec619c45b1060b4288952164"
+	err = c.BuildComplete(context.Background(), b.ID, image)
+	assert.NoError(t, err)
+
+	successfulBuild := b
+
+	// Start a new build
+	b, err = c.Build(context.Background(), BuildRequest{
+		Repository: "remind101/acme-inc",
+		Branch:     "master",
+		Sha:        "139759bd61e98faeec619c45b1060b4288952164",
+	})
+	assert.NoError(t, err)
+
+	a, err := c.FindArtifact(context.Background(), "remind101/acme-inc@139759bd61e98faeec619c45b1060b4288952164")
+	assert.NoError(t, err)
+	assert.NotNil(t, a)
+	assert.Equal(t, image, a.Image)
+	assert.Equal(t, successfulBuild.ID, a.BuildID)
+
+	// Mark the new build as complete. New artifact.
+	err = c.BuildComplete(context.Background(), b.ID, image)
+	assert.NoError(t, err)
+
+	newBuild := b
+	a, err = c.FindArtifact(context.Background(), "remind101/acme-inc@139759bd61e98faeec619c45b1060b4288952164")
+	assert.NoError(t, err)
+	assert.NotNil(t, a)
+	assert.Equal(t, image, a.Image)
+	assert.Equal(t, newBuild.ID, a.BuildID)
+}
+
 func newConveyor(t testing.TB) *Conveyor {
 	db := sqlx.MustConnect("postgres", databaseURL)
 	if err := Reset(db); err != nil {
