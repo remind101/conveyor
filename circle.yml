@@ -1,7 +1,5 @@
 machine:
   timezone: America/Los_Angeles
-  services:
-    - docker
 
 checkout:
   post:
@@ -11,10 +9,7 @@ checkout:
 
 dependencies:
   override:
-    - mkdir /home/ubuntu/.docker
-    - echo '{}' > /home/ubuntu/.docker/config.json
     - cd ~/.go_workspace/src/github.com/remind101/conveyor && make bootstrap
-    - docker inspect data
     - go install -a -race std
     - go get github.com/tools/godep
     - go version
