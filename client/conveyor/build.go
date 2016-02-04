@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"time"
 )
 
@@ -39,12 +40,22 @@ func (s *Service) Build(w io.Writer, o BuildCreateOpts) (*Artifact, error) {
 		}
 
 		io.WriteString(w, fmt.Sprintf("Build: %s\n", b.ID))
+	} else {
+		// Create a new build if the existing build is failed.
+		if b.State == "failed" {
+			b, err = s.BuildCreate(o)
+			if err != nil {
+				return nil, err
+			}
+
+			io.WriteString(w, fmt.Sprintf("Build: %s\n", b.ID))
+		}
 	}
 
 	buildID := b.ID
 
 	if err := s.LogsStream(w, buildID); err != nil {
-		return nil, err
+		fmt.Fprintf(os.Stderr, "error streaming logs: %v\n", err)
 	}
 
 	for {
