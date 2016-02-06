@@ -15,7 +15,7 @@ import (
 
 const (
 	// DefaultBuilderImage is the docker image used to build docker images.
-	DefaultBuilderImage = "remind101/conveyor-builder"
+	DefaultBuilderImage = "remind101/conveyor-builder:master"
 
 	// DefaultDataVolume is the default name of a container serving as a
 	// data volume for ssh keys and docker credentials. In general, you
