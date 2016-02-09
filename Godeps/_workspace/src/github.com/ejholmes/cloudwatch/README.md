@@ -12,3 +12,7 @@ io.WriteString(w, "Hello World")
 r, err := group.Open("stream")
 io.Copy(os.Stdout, r)
 ```
+
+## Dependencies
+
+This library depends on [aws-sdk-go](https://github.com/aws/aws-sdk-go/).

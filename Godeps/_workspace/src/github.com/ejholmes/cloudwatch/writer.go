@@ -22,13 +22,6 @@ func (e *RejectedLogEventsInfoError) Error() string {
 
 // Writer is an io.Writer implementation that writes lines to a cloudwatch logs
 // stream.
-//
-// The writer will only flush log events every 1 second or when the buffer
-// becomes full according to the following from http://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html
-//
-//	 The maximum batch size is 1,048,576 bytes, and this size is calculated
-//	 as the sum of all event messages in UTF-8, plus 26 bytes for each log
-//	 event.
 type Writer struct {
 	group, stream, sequenceToken *string
 

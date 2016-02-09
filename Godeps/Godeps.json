@@ -85,7 +85,7 @@
 		},
 		{
 			"ImportPath": "github.com/ejholmes/cloudwatch",
-			"Rev": "23863004fe255454b2336ac715daf19d320b8706"
+			"Rev": "301ca47d977c61ad2bf72d84a9429db0e063c15b"
 		},
 		{
 			"ImportPath": "github.com/ejholmes/hookshot",
