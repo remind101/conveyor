@@ -19,9 +19,17 @@ type Reader struct {
 	throttle <-chan time.Time
 
 	b lockingBuffer
+
+	// If an error occurs when getting events from the stream, this will be
+	// populated and subsequent calls to Read will return the error.
+	err error
 }
 
 func NewReader(group, stream string, client *cloudwatchlogs.CloudWatchLogs) *Reader {
+	return newReader(group, stream, client)
+}
+
+func newReader(group, stream string, client client) *Reader {
 	r := &Reader{
 		group:    aws.String(group),
 		stream:   aws.String(stream),
@@ -32,11 +40,11 @@ func NewReader(group, stream string, client *cloudwatchlogs.CloudWatchLogs) *Rea
 	return r
 }
 
-func (r *Reader) start() error {
+func (r *Reader) start() {
 	for {
 		<-r.throttle
-		if err := r.read(); err != nil {
-			return err
+		if r.err = r.read(); r.err != nil {
+			return
 		}
 	}
 }
@@ -71,6 +79,11 @@ func (r *Reader) read() error {
 }
 
 func (r *Reader) Read(b []byte) (int, error) {
+	// Return the AWS error if there is one.
+	if r.err != nil {
+		return 0, r.err
+	}
+
 	// If there is not data right now, return. Reading from the buffer would
 	// result in io.EOF being returned, which is not what we want.
 	if r.b.Len() == 0 {
