@@ -1,2 +1,5 @@
 language: go
-install: make prepare
+install: make deps
+go:
+  - 1.4
+  - tip

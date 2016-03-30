@@ -28,6 +28,10 @@ func (e Error) Error() string {
 	return e.Message
 }
 
+func NewError(msg interface{}) Error {
+	return newError(msg, 2)
+}
+
 func newError(thing interface{}, stackOffset int) Error {
 	var err error
 

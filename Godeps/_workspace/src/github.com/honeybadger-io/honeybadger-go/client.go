@@ -17,12 +17,15 @@ type Backend interface {
 	Notify(feature Feature, payload Payload) error
 }
 
+type noticeHandler func(*Notice) error
+
 // Client is the manager for interacting with the Honeybadger service. It holds
 // the configuration and implements the public API.
 type Client struct {
-	Config  *Configuration
-	context *Context
-	worker  worker
+	Config               *Configuration
+	context              *Context
+	worker               worker
+	beforeNotifyHandlers []noticeHandler
 }
 
 // Configure updates the client configuration with the supplied config.
@@ -40,10 +43,22 @@ func (client *Client) Flush() {
 	client.worker.Flush()
 }
 
+// BeforeNotify adds a callback function which is run before a notice is
+// reported to Honeybadger. If any function returns an error the notification
+// will be skipped, otherwise it will be sent.
+func (client *Client) BeforeNotify(handler func(notice *Notice) error) {
+	client.beforeNotifyHandlers = append(client.beforeNotifyHandlers, handler)
+}
+
 // Notify reports the error err to the Honeybadger service.
 func (client *Client) Notify(err interface{}, extra ...interface{}) (string, error) {
 	extra = append([]interface{}{*client.context}, extra...)
 	notice := newNotice(client.Config, newError(err, 2), extra...)
+	for _, handler := range client.beforeNotifyHandlers {
+		if err := handler(notice); err != nil {
+			return "", err
+		}
+	}
 	workerErr := client.worker.Push(func() error {
 		if err := client.Config.Backend.Notify(Notices, notice); err != nil {
 			return err
