@@ -6,8 +6,8 @@ import (
 	"os"
 	"strings"
 
-	"code.google.com/p/go-uuid/uuid"
 	"github.com/fsouza/go-dockerclient"
+	"github.com/pborman/uuid"
 	"github.com/remind101/conveyor/builder"
 	"github.com/remind101/pkg/reporter"
 	"golang.org/x/net/context"

@@ -6,11 +6,10 @@ import (
 
 	"github.com/google/go-github/github"
 	"github.com/jmoiron/sqlx"
+	"github.com/pborman/uuid"
 	"github.com/remind101/conveyor/builder"
 	"github.com/remind101/conveyor/logs"
 	"golang.org/x/net/context"
-
-	"code.google.com/p/go-uuid/uuid"
 )
 
 // newID returns a new unique identifier.

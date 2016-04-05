@@ -1,4 +1,6 @@
 machine:
+  environment:
+    GO15VENDOREXPERIMENT: 1
   timezone: America/Los_Angeles
 
 checkout:
@@ -11,7 +13,7 @@ dependencies:
   override:
     - cd ~/.go_workspace/src/github.com/remind101/conveyor && make bootstrap
     - go install -a -race std
-    - go get github.com/tools/godep
+    - go get -u github.com/kardianos/govendor
     - go version
 
 test:

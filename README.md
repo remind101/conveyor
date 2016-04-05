@@ -34,7 +34,7 @@ OPTIONS:
    --dry          Enable dry run mode. [$DRY]
    --builder.image 'remind101/conveyor-builder' A docker image to use to perform the build. [$BUILDER_IMAGE]
    --logger 'stdout://'       The logger to use. Available options are `stdout://`, or `s3://bucket`. [$LOGGER]
-   
+
 ```
 
 ## Performance
@@ -126,11 +126,11 @@ Then add a new `push` webhook to a repo, pointed at the ngrok URL. No secret is 
 To run the full test suite. Note that you need to run `make bootstrap` prior to running this:
 
 ```console
-$ godep go test ./...
+$ govendor test ./...
 ```
 
 To run only the unit tests (no need to run `make bootstrap`):
 
 ```console
-$ godep go test ./... -short
+$ govendor test ./... -short
 ```
