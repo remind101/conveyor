@@ -1,4 +1,6 @@
 machine:
+  environment:
+    GO15VENDOREXPERIMENT: 1
   timezone: America/Los_Angeles
 
 checkout:
