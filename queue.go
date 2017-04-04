@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/remind101/conveyor/builder"
 	"golang.org/x/net/context"
@@ -89,7 +90,7 @@ type SQSBuildQueue struct {
 
 // NewSQSBuildQueue returns a new SQSBuildQueue instance backed by a
 // pre-configured sqs client.
-func NewSQSBuildQueue(config *aws.Config) *SQSBuildQueue {
+func NewSQSBuildQueue(config client.ConfigProvider) *SQSBuildQueue {
 	return &SQSBuildQueue{
 		sqs: sqs.New(config),
 	}

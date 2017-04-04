@@ -11,7 +11,7 @@ import (
 	"golang.org/x/oauth2"
 
 	"github.com/DataDog/datadog-go/statsd"
-	"github.com/aws/aws-sdk-go/aws/defaults"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/codegangsta/cli"
 	"github.com/codegangsta/negroni"
 	"github.com/ejholmes/slash"
@@ -59,7 +59,7 @@ func newBuildQueue(c *cli.Context) conveyor.BuildQueue {
 	case "memory":
 		return conveyor.NewBuildQueue(100)
 	case "sqs":
-		q := conveyor.NewSQSBuildQueue(defaults.DefaultConfig)
+		q := conveyor.NewSQSBuildQueue(session.New())
 		if u.Host == "" {
 			q.QueueURL = os.Getenv("SQS_QUEUE_URL")
 		} else {
@@ -172,9 +172,9 @@ func newLogger(c *cli.Context) logs.Logger {
 
 	switch u.Scheme {
 	case "s3":
-		return s3.NewLogger(u.Host)
+		return s3.NewLogger(session.New(), u.Host)
 	case "cloudwatch":
-		return cloudwatch.NewLogger(u.Host)
+		return cloudwatch.NewLogger(session.New(), u.Host)
 	case "stdout":
 		return logs.Stdout
 	default:

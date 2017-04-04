@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/defaults"
+	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/service/s3"
 )
 
@@ -21,12 +21,10 @@ type Logs struct {
 	client *s3.S3
 }
 
-func NewLogger(bucket string) *Logs {
-	c := s3.New(defaults.DefaultConfig)
-
+func NewLogger(config client.ConfigProvider, bucket string) *Logs {
 	return &Logs{
 		Bucket: bucket,
-		client: c,
+		client: s3.New(config),
 	}
 }
 

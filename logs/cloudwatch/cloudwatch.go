@@ -3,13 +3,13 @@ package cloudwatch
 import (
 	"io"
 
-	"github.com/aws/aws-sdk-go/aws/defaults"
+	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/ejholmes/cloudwatch"
 )
 
-func NewLogger(group string) *Group {
-	c := cloudwatchlogs.New(defaults.DefaultConfig)
+func NewLogger(config client.ConfigProvider, group string) *Group {
+	c := cloudwatchlogs.New(config)
 	return &Group{cloudwatch.NewGroup(group, c)}
 }
 
