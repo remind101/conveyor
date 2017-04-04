@@ -28,6 +28,8 @@ type Builder struct {
 // NewBuilder returns a new Builder instance backed by b. It also wraps it with
 // cancellation and closes the logs when the build finishes.
 func NewBuilder(b builder.Builder) *Builder {
+	// fmt.Printf("NewBuilder")
+	// fmt.Printf("%+v\n", b)
 	return &Builder{
 		builder: builder.CloseWriter(b),
 		Timeout: DefaultTimeout,
@@ -36,6 +38,7 @@ func NewBuilder(b builder.Builder) *Builder {
 
 // Build builds the image.
 func (b *Builder) Build(ctx context.Context, w io.Writer, opts builder.BuildOptions) (image string, err error) {
+	// fmt.Printf("Builder Build Called")
 	log.Printf("Starting build: id=%s repository=%s branch=%s sha=%s",
 		opts.ID,
 		opts.Repository,
@@ -61,7 +64,20 @@ func (b *Builder) Build(ctx context.Context, w io.Writer, opts builder.BuildOpti
 		}
 	}()
 
+	log.Printf("HERE BEFORE BUILD")
+
 	image, err = b.builder.Build(ctx, w, opts)
+
+	log.Printf("DONE")
+	log.Printf( image )
+
+	if err != nil {
+		log.Printf("THERE WAS AN ERROR!")
+		log.Fatal(err)
+	}
+
+	log.Printf("HERE AFTER BUILD")
+
 	return
 }
 

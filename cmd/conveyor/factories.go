@@ -21,8 +21,8 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/remind101/conveyor"
 	"github.com/remind101/conveyor/builder"
+	"github.com/remind101/conveyor/builder/codebuild"
 	"github.com/remind101/conveyor/builder/datadog"
-	"github.com/remind101/conveyor/builder/docker"
 	"github.com/remind101/conveyor/logs"
 	"github.com/remind101/conveyor/logs/cloudwatch"
 	"github.com/remind101/conveyor/logs/s3"
@@ -118,12 +118,12 @@ func newSlackServer(cy *conveyor.Conveyor, c *cli.Context) http.Handler {
 }
 
 func newBuilder(c *cli.Context) builder.Builder {
-	db, err := docker.NewBuilderFromEnv()
+	db, err := codebuild.NewBuilderFromEnv()
 	if err != nil {
 		must(err)
 	}
-	db.DryRun = c.Bool("dry")
-	db.Image = c.String("builder.image")
+	// db.DryRun = c.Bool("dry")
+	// db.Image = c.String("builder.image")
 
 	g := builder.NewGitHubClient(c.String("github.token"))
 
@@ -150,6 +150,7 @@ func newBuilder(c *cli.Context) builder.Builder {
 	b.Reporter = newReporter(c)
 
 	return b
+
 }
 
 func newReporter(c *cli.Context) reporter.Reporter {
