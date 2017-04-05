@@ -27,6 +27,7 @@ const (
 	DefaultCodebuildComputeType = "BUILD_GENERAL1_SMALL"
 
 )
+
 // Builder is a builder.Builder implementation that runs the build in a docker
 // container.
 type Builder struct {
@@ -42,6 +43,21 @@ type Builder struct {
 	// The computing instances AWS CodeBuild will use. Defaults to
 	// DefaultCodebuildComputeType
 	ComputeType string
+
+	// Credentials for Dockerhub
+	DockerUsername string
+	DockerPassword string
+}
+
+type BuildSpecInput struct {
+	// Extend all the values already given in builder
+	*Builder
+
+	// The repository which is being built
+	Repository string
+
+	// The commit sha at which to do the build
+	Sha string
 }
 
 // NewBuilder returns a new Builder backed by the codebuild client.
@@ -73,6 +89,13 @@ func NewBuilderFromEnv() (*Builder, error) {
 		computeType = DefaultCodebuildComputeType
 	}
 
+	dockerUsername := os.Getenv("DOCKER_USERNAME")
+	dockerPassword := os.Getenv("DOCKER_PASSWORD")
+
+	if dockerUsername == "" || dockerPassword == "" {
+		return nil, errors.New("DOCKER_USERNAME and DOCKER_PASSWORD env vars must be set when using codebuild builder")
+	}
+
 	sess := session.Must(session.NewSession())
 
 	return &Builder{
@@ -80,6 +103,8 @@ func NewBuilderFromEnv() (*Builder, error) {
 		ServiceRole: serviceRole,
 		Image: image,
 		ComputeType: computeType,
+		DockerUsername: dockerUsername,
+		DockerPassword: dockerPassword,
 	}, nil
 }
 
@@ -185,22 +210,33 @@ func (b *Builder) startBuild(opts builder.BuildOptions, projectName string) (res
 
 func (b *Builder) generateBuildspec(opts builder.BuildOptions) (buildspec string, err error) {
 	
+	params := BuildSpecInput{b, opts.Repository, opts.Sha}
+	
 	specTemplate := `version: 0.1
+
+environment_variables:
+  plaintext:
+    DOCKER_USERNAME: {{.DockerUsername}}
+    DOCKER_PASSWORD: {{.DockerPassword}}
 
 phases:
   pre_build:
     commands:
+      - docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}
+      - echo "Logged into Docker"
       - docker pull "{{.Repository}}:master" || docker pull "{{.Repository}}:latest" || true
+      - echo "Pulled Image"
   build:
     commands:
-      - docker build -t {{.Repository}} .
+      - docker build -t "{{.Repository}}:latest" .
+      - echo "Built Image with tag {{.Repository}}"
 `
 
 	tmpl, err := template.New("buildspec").Parse(specTemplate)
 	check(err)
 
 	buf := new(bytes.Buffer)
-	err = tmpl.Execute(buf, opts)
+	err = tmpl.Execute(buf, params)
 	check(err)
 
 	buildspec = buf.String()
