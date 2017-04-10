@@ -67,7 +67,6 @@ func (b *Builder) Build(ctx context.Context, w io.Writer, opts builder.BuildOpti
 	image, err = b.builder.Build(ctx, w, opts)
 
 	if err != nil {
-		log.Printf("THERE WAS AN ERROR!")
 		log.Fatal(err)
 	}
 
