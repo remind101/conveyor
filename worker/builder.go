@@ -64,19 +64,12 @@ func (b *Builder) Build(ctx context.Context, w io.Writer, opts builder.BuildOpti
 		}
 	}()
 
-	log.Printf("HERE BEFORE BUILD")
-
 	image, err = b.builder.Build(ctx, w, opts)
-
-	log.Printf("DONE")
-	log.Printf( image )
 
 	if err != nil {
 		log.Printf("THERE WAS AN ERROR!")
 		log.Fatal(err)
 	}
-
-	log.Printf("HERE AFTER BUILD")
 
 	return
 }
