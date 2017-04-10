@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 	"errors"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -17,6 +18,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/codebuild"
 	"github.com/remind101/conveyor/builder"
 	"golang.org/x/net/context"
+	"github.com/remind101/conveyor/logs/cloudwatch"
 )
 
 const (
@@ -25,6 +27,9 @@ const (
 
 	// Default AWS resource used by codebuild
 	DefaultCodebuildComputeType = "BUILD_GENERAL1_SMALL"
+
+	// Number of times to retry fetching the logs
+	RetryCall = 5
 
 )
 
@@ -58,6 +63,17 @@ type BuildSpecInput struct {
 
 	// The commit sha at which to do the build
 	Sha string
+
+	// The branch at which the build is happening
+	Branch string
+}
+
+type LogInfo struct {
+	// Name of the cloudwatch group
+	GroupName string
+
+	// Name of cloudwatch stream
+	StreamName string
 }
 
 // NewBuilder returns a new Builder backed by the codebuild client.
@@ -109,12 +125,6 @@ func NewBuilderFromEnv() (*Builder, error) {
 }
 
 
-func check(e error) {
-	if e != nil {
-		panic(e)
-	}
-}
-
 // Build executes the docker image.
 func (b *Builder) Build(ctx context.Context, w io.Writer, opts builder.BuildOptions) (image string, err error) {
 	image = fmt.Sprintf("%s:%s", opts.Repository, opts.Sha)
@@ -138,32 +148,103 @@ func (b *Builder) build(ctx context.Context, w io.Writer, opts builder.BuildOpti
 
     	if ok && awsErr.Code() == "ResourceNotFoundException" {
 
-	        createResp, err := b.createProject(opts, projectName)
-			check(err)
-			log.Printf("%v", createResp)  
+	        _, err = b.createProject(opts, projectName)
+
+			if err != nil {
+				return err
+			} 
 
 			startBuild, err = b.startBuild(opts, projectName)
-			check(err)
+			
+			if err != nil {
+				log.Fatal(err)
+				return err
+			}
 	        
 	    } else {
-
+	    	log.Fatal(err)
 	    	return err
 	   	}
 
     }
 
-    log.Printf("%v", startBuild)
+    logInfo, err := b.getLogInfo(*startBuild.Build.Id)
 
-	return nil
+    if err != nil {
+    	log.Fatal(err)
+    	return err
+    }
+
+
+    sess := session.Must(session.NewSession())
+
+    r, err := cloudwatch.NewLogger(sess, logInfo.GroupName).Open(logInfo.StreamName)
+   	
+   	if err != nil {
+   		log.Fatal(err)
+   		return err
+   	}
+
+    _, err = io.Copy(w, r)
+
+    if err != nil {
+    	log.Fatal(err)
+    	return err
+    }
+
+    return nil
+}
+
+func (b *Builder) getLogInfo(buildId string) (logInfo *LogInfo, err error) {
+
+	params := &codebuild.BatchGetBuildsInput{
+	    Ids: []*string{ 
+	        aws.String(buildId),
+	    },
+	}
+
+	buildInfoResp, err := b.codebuild.BatchGetBuilds(params)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for i := 0; i <= RetryCall; i++ {
+
+		if i == RetryCall {
+			return nil, errors.New("Log stream name could not be fetched, retry limit hit")
+		}
+    	
+    	if buildInfoResp.Builds[0].Logs == nil {
+
+    		time.Sleep(time.Second * 1)
+    		buildInfoResp, err = b.codebuild.BatchGetBuilds(params)
+
+    		if err != nil {
+    			return nil, err
+    		}
+
+
+    	} else {
+    		break;
+    	}
+
+    }
+
+    return &LogInfo{
+    	GroupName: *buildInfoResp.Builds[0].Logs.GroupName,
+    	StreamName: *buildInfoResp.Builds[0].Logs.StreamName,
+    }, nil
+
 }
 
 func (b *Builder) createProject(opts builder.BuildOptions, projectName string) (resp *codebuild.CreateProjectOutput, err error) {
 
-	log.Printf("Creating new codebuild project")
+	log.Printf("Creating a new codebuild project: %s", projectName)
 
 	githubSource := fmt.Sprintf("https://github.com/%s", opts.Repository)
 	
-	params := &codebuild.CreateProjectInput{
+	buildParams := &codebuild.CreateProjectInput{
 	    Artifacts: &codebuild.ProjectArtifacts{
 	        Type:          aws.String("NO_ARTIFACTS"),
 	    },
@@ -183,18 +264,23 @@ func (b *Builder) createProject(opts builder.BuildOptions, projectName string) (
 	    ServiceRole:   aws.String(b.ServiceRole),
 	}
 
-	resp, err = b.codebuild.CreateProject(params)
-	check(err)
-	return
+	resp, err = b.codebuild.CreateProject(buildParams)
+
+	if err != nil {
+
+		return nil, err
+	}
+
+	return resp, nil
 }
 
 func (b *Builder) startBuild(opts builder.BuildOptions, projectName string) (resp *codebuild.StartBuildOutput, err error) {
-
-	log.Printf("Starting codebuild build")
-
+	
 	buildspec, err := b.generateBuildspec(opts)
-	check(err)
-	fmt.Printf(buildspec)
+
+	if err != nil {
+		return
+	}
 
 	params := &codebuild.StartBuildInput{
 		ProjectName:   aws.String(projectName),
@@ -210,7 +296,12 @@ func (b *Builder) startBuild(opts builder.BuildOptions, projectName string) (res
 
 func (b *Builder) generateBuildspec(opts builder.BuildOptions) (buildspec string, err error) {
 	
-	params := BuildSpecInput{b, opts.Repository, opts.Sha}
+	if b.Image != DefaultCodebuildImage {
+		err = errors.New("Please include a custom buildspec when using a different build Image")
+		return
+	}
+
+	params := BuildSpecInput{b, opts.Repository, opts.Sha, opts.Branch}
 	
 	specTemplate := `version: 0.1
 
@@ -224,20 +315,34 @@ phases:
     commands:
       - docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}
       - echo "Logged into Docker"
-      - docker pull "{{.Repository}}:master" || docker pull "{{.Repository}}:latest" || true
+      - docker pull "{{.Repository}}:${{.Branch}}" || docker pull "{{.Repository}}:master" || true
       - echo "Pulled Image"
   build:
     commands:
-      - docker build -t "{{.Repository}}:latest" .
+      - docker build -t "{{.Repository}}" .
       - echo "Built Image with tag {{.Repository}}"
+      - docker tag "{{.Repository}}" "{{.Repository}}:{{.Branch}}"
+      - docker tag "{{.Repository}}" "{{.Repository}}:{{.Sha}}"
+  post_build:
+    commands:
+      - docker push "{{.Repository}}:{{.Sha}}"
+      - docker push "{{.Repository}}:{{.Branch}}"
+      - docker push "{{.Repository}}:latest"
+      - echo "Done pushing to docker registry"
 `
 
 	tmpl, err := template.New("buildspec").Parse(specTemplate)
-	check(err)
+
+	if err != nil {
+		return
+	}
 
 	buf := new(bytes.Buffer)
 	err = tmpl.Execute(buf, params)
-	check(err)
+
+	if err != nil {
+		return
+	}
 
 	buildspec = buf.String()
 	return
