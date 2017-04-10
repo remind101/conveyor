@@ -25,7 +25,7 @@ bootstrap: database .env
 bindata.go: db/migrations/*.sql
 	go-bindata -pkg conveyor -o bindata.go db/migrations/
 
-database:: bindata.go
+database::
 	dropdb conveyor || true
 	createdb conveyor || true
 	dropdb conveyor_api || true
