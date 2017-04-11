@@ -24,14 +24,14 @@ type Artifact struct {
 
 // artifactsCreate creates a new artifact linked to the build.
 func artifactsCreate(tx *sqlx.Tx, a *Artifact) error {
-	const createArtifactSql = `INSERT INTO artifacts (build_id, image, repository, sha)
+	const createArtifactSQL = `INSERT INTO artifacts (build_id, image, repository, sha)
 (
 	SELECT :build_id, :image, repository, sha
 	FROM builds
 	WHERE id = :build_id
 )
 RETURNING id, repository, sha`
-	return insert(tx, createArtifactSql, a, &a.ID, &a.Repository, &a.Sha)
+	return insert(tx, createArtifactSQL, a, &a.ID, &a.Repository, &a.Sha)
 }
 
 // artifactsFindByID finds an artifact by ID.

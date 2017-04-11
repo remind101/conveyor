@@ -94,8 +94,8 @@ func (s BuildState) Value() (driver.Value, error) {
 
 // buildsCreate inserts a new build into the database.
 func buildsCreate(tx *sqlx.Tx, b *Build) error {
-	const createBuildSql = `INSERT INTO builds (repository, branch, sha, state) VALUES (:repository, :branch, :sha, :state) RETURNING id`
-	err := insert(tx, createBuildSql, b, &b.ID)
+	const createBuildSQL = `INSERT INTO builds (repository, branch, sha, state) VALUES (:repository, :branch, :sha, :state) RETURNING id`
+	err := insert(tx, createBuildSQL, b, &b.ID)
 	if err, ok := err.(*pq.Error); ok {
 		if err.Constraint == uniqueBuildConstraint {
 			return ErrDuplicateBuild
@@ -106,9 +106,9 @@ func buildsCreate(tx *sqlx.Tx, b *Build) error {
 
 // buildsFindByID finds a build by ID.
 func buildsFindByID(tx *sqlx.Tx, buildID string) (*Build, error) {
-	const findBuildSql = `SELECT * FROM builds WHERE id = ? LIMIT 1`
+	const findBuildSQL = `SELECT * FROM builds WHERE id = ? LIMIT 1`
 	var b Build
-	err := tx.Get(&b, tx.Rebind(findBuildSql), buildID)
+	err := tx.Get(&b, tx.Rebind(findBuildSQL), buildID)
 	return &b, err
 }
 
