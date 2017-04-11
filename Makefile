@@ -41,3 +41,9 @@ client/conveyor/conveyor.go: schema.json
 	schematic schema.json > client/conveyor/conveyor.go
 
 schema:: schema.md client/conveyor/conveyor.go
+
+lint:
+	golint $(go list ./... | grep -v /vendor/) | grep -v -E 'exported|comment'
+
+lint-all:
+	golint $(go list ./... | grep -v /vendor/)

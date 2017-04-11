@@ -134,3 +134,10 @@ To run only the unit tests (no need to run `make bootstrap`):
 ```console
 $ go test ./... -short
 ```
+
+To lint the repository using `golint`, install it first:
+```
+    go get -u github.com/golang/lint/golint
+```
+
+Then run `make lint` for actionable suggestions or `make lint-all` for all suggestions.
