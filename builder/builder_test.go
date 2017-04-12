@@ -108,7 +108,7 @@ func TestWithCancel(t *testing.T) {
 				return "", nil
 			}
 
-			numCanceled += 1
+			numCanceled++
 		}
 
 		return "", nil
