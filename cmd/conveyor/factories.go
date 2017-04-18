@@ -122,7 +122,7 @@ func newBuilder(c *cli.Context) builder.Builder {
 	if err != nil {
 		must(err)
 	}
-	
+
 	g := builder.NewGitHubClient(c.String("github.token"))
 
 	var backend builder.Builder = builder.UpdateGitHubCommitStatus(db, g, fmt.Sprintf(logsURLTemplate, c.String("url")))
@@ -169,11 +169,17 @@ func newReporter(c *cli.Context) reporter.Reporter {
 func newLogger(c *cli.Context) logs.Logger {
 	u := urlParse(c.String("logger"))
 
+	sess, err := session.NewSession()
+	if err != nil {
+		must(err)
+		return nil
+	}
+
 	switch u.Scheme {
 	case "s3":
-		return s3.NewLogger(session.New(), u.Host)
+		return s3.NewLogger(sess, u.Host)
 	case "cloudwatch":
-		return cloudwatch.NewLogger(session.New(), u.Host)
+		return cloudwatch.NewLogger(sess, u.Host)
 	case "stdout":
 		return logs.Stdout
 	default:

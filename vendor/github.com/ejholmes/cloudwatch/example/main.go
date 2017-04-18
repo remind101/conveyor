@@ -7,15 +7,16 @@ import (
 	"os"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws/defaults"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/ejholmes/cloudwatch"
-
-	"code.google.com/p/go-uuid/uuid"
+	"github.com/pborman/uuid"
 )
 
 func main() {
-	g := cloudwatch.NewGroup("test", cloudwatchlogs.New(defaults.DefaultConfig))
+	sess := session.Must(session.NewSession())	
+
+	g := cloudwatch.NewGroup("test", cloudwatchlogs.New(sess))
 
 	stream := uuid.New()
 

@@ -1,24 +1,24 @@
 package codebuild
 
 import (
-	"fmt"
-	"log"
-	"text/template"
 	"bytes"
-	"strings"
-	"io"
-	"os"
 	"errors"
+	"fmt"
+	"io"
+	"log"
+	"os"
+	"strings"
+	"text/template"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/client"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/codebuild"
 	"github.com/remind101/conveyor/builder"
-	"golang.org/x/net/context"
 	"github.com/remind101/conveyor/logs/cloudwatch"
+	"golang.org/x/net/context"
 )
 
 const (
@@ -31,6 +31,7 @@ const (
 	// Number of times to retry fetching the logs
 	RetryCall = 5
 
+	endOfText = '\x03'
 )
 
 // Builder is a builder.Builder implementation that runs the build in a docker
@@ -41,7 +42,7 @@ type Builder struct {
 	// Required field, arn of the instance-role required by codebuild
 	ServiceRole string
 
-	// The Image used by codebuild to build images. Defaults to 
+	// The Image used by codebuild to build images. Defaults to
 	// DefaultCodebuildImage
 	Image string
 
@@ -85,7 +86,7 @@ func NewBuilder(config client.ConfigProvider) *Builder {
 
 // NewBuilderFromEnv returns a new Builder with a codebuild client
 // configured from the standard Docker environment variables.
-func NewBuilderFromEnv() (*Builder, error) {	
+func NewBuilderFromEnv() (*Builder, error) {
 
 	serviceRole := os.Getenv("CODEBUILD_SERVICE_ROLE")
 
@@ -115,15 +116,14 @@ func NewBuilderFromEnv() (*Builder, error) {
 	sess := session.Must(session.NewSession())
 
 	return &Builder{
-		codebuild: codebuild.New(sess),
-		ServiceRole: serviceRole,
-		Image: image,
-		ComputeType: computeType,
+		codebuild:      codebuild.New(sess),
+		ServiceRole:    serviceRole,
+		Image:          image,
+		ComputeType:    computeType,
 		DockerUsername: dockerUsername,
 		DockerPassword: dockerPassword,
 	}, nil
 }
-
 
 // Build executes the docker image.
 func (b *Builder) Build(ctx context.Context, w io.Writer, opts builder.BuildOptions) (image string, err error) {
@@ -132,9 +132,13 @@ func (b *Builder) Build(ctx context.Context, w io.Writer, opts builder.BuildOpti
 	return
 }
 
+func (b *Builder) Bob() string {
+	return "bob"
+}
+
 // Build executes the codebuild image.
 func (b *Builder) build(ctx context.Context, w io.Writer, opts builder.BuildOptions) error {
-	
+
 	projectName := strings.Join([]string{
 		"conveyor",
 		strings.Replace(opts.Repository, "/", "_", -1),
@@ -146,64 +150,85 @@ func (b *Builder) build(ctx context.Context, w io.Writer, opts builder.BuildOpti
 
 		awsErr, ok := err.(awserr.Error)
 
-    	if ok && awsErr.Code() == "ResourceNotFoundException" {
+		if ok && awsErr.Code() == "ResourceNotFoundException" {
 
-	        _, err = b.createProject(opts, projectName)
+			_, err = b.createProject(opts, projectName)
 
 			if err != nil {
-				return err
-			} 
-
-			startBuild, err = b.startBuild(opts, projectName)
-			
-			if err != nil {
-				log.Fatal(err)
 				return err
 			}
-	        
-	    } else {
-	    	log.Fatal(err)
-	    	return err
-	   	}
 
-    }
+			startBuild, err = b.startBuild(opts, projectName)
 
-    logInfo, err := b.getLogInfo(*startBuild.Build.Id)
+			if err != nil {
+				return err
+			}
 
-    if err != nil {
-    	log.Fatal(err)
-    	return err
-    }
+		} else {
+			return err
+		}
 
+	}
 
-    sess := session.Must(session.NewSession())
+	buildId := *startBuild.Build.Id
 
-    r, err := cloudwatch.NewLogger(sess, logInfo.GroupName).Open(logInfo.StreamName)
-   	
-   	if err != nil {
-   		log.Fatal(err)
-   		return err
-   	}
+	fmt.Println("Starting build with codebuild id: %s", buildId)
 
-    _, err = io.Copy(w, r)
+	logInfo, err := b.getLogInfo(buildId)
 
-    if err != nil {
-    	log.Fatal(err)
-    	return err
-    }
+	if err != nil {
+		return err
+	}
 
-    return nil
+	sess := session.Must(session.NewSession())
+
+	r, err := cloudwatch.NewLogger(sess, logInfo.GroupName).Open(logInfo.StreamName)
+
+	if err != nil {
+		return err
+	}
+
+	go func() {
+		io.Copy(w, r)
+	}()
+
+	build, err := b.getBuild(buildId)
+
+	for {
+
+		if *build.BuildComplete == true {
+			break
+		}
+
+		time.Sleep(time.Second * 3)
+		build, err = b.getBuild(buildId)
+
+	}
+
+	log.Println("RETURNING AFTER FINISH")
+
+	return nil
+}
+
+func (b *Builder) getBuild(buildId string) (build *codebuild.Build, err error) {
+	params := &codebuild.BatchGetBuildsInput{
+		Ids: []*string{
+			aws.String(buildId),
+		},
+	}
+
+	resp, err := b.codebuild.BatchGetBuilds(params)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return resp.Builds[0], err
 }
 
 func (b *Builder) getLogInfo(buildId string) (logInfo *LogInfo, err error) {
 
-	params := &codebuild.BatchGetBuildsInput{
-	    Ids: []*string{ 
-	        aws.String(buildId),
-	    },
-	}
-
-	buildInfoResp, err := b.codebuild.BatchGetBuilds(params)
+	build, err := b.getBuild(buildId)
 
 	if err != nil {
 		return nil, err
@@ -214,27 +239,26 @@ func (b *Builder) getLogInfo(buildId string) (logInfo *LogInfo, err error) {
 		if i == RetryCall {
 			return nil, errors.New("Log stream name could not be fetched, retry limit hit")
 		}
-    	
-    	if buildInfoResp.Builds[0].Logs == nil {
 
-    		time.Sleep(time.Second * 1)
-    		buildInfoResp, err = b.codebuild.BatchGetBuilds(params)
+		if build.Logs == nil {
 
-    		if err != nil {
-    			return nil, err
-    		}
+			time.Sleep(time.Second * 1)
+			build, err = b.getBuild(buildId)
 
+			if err != nil {
+				return nil, err
+			}
 
-    	} else {
-    		break;
-    	}
+		} else {
+			break
+		}
 
-    }
+	}
 
-    return &LogInfo{
-    	GroupName: *buildInfoResp.Builds[0].Logs.GroupName,
-    	StreamName: *buildInfoResp.Builds[0].Logs.StreamName,
-    }, nil
+	return &LogInfo{
+		GroupName:  *build.Logs.GroupName,
+		StreamName: *build.Logs.StreamName,
+	}, nil
 
 }
 
@@ -243,31 +267,30 @@ func (b *Builder) createProject(opts builder.BuildOptions, projectName string) (
 	log.Printf("Creating a new codebuild project: %s", projectName)
 
 	githubSource := fmt.Sprintf("https://github.com/%s", opts.Repository)
-	
+
 	buildParams := &codebuild.CreateProjectInput{
-	    Artifacts: &codebuild.ProjectArtifacts{
-	        Type:          aws.String("NO_ARTIFACTS"),
-	    },
-	    Environment: &codebuild.ProjectEnvironment{
-	        ComputeType: aws.String(b.ComputeType),
-	        Image:       aws.String(b.Image),
-	        Type:        aws.String("LINUX_CONTAINER"),
-	    },
-	    Name: aws.String(projectName),
-	    Source: &codebuild.ProjectSource{ 
-	        Type: aws.String("GITHUB"), 
-	        Auth: &codebuild.SourceAuth{
-	            Type:     aws.String("OAUTH"),
-	        },
-	        Location:  aws.String(githubSource),
-	    },
-	    ServiceRole:   aws.String(b.ServiceRole),
+		Artifacts: &codebuild.ProjectArtifacts{
+			Type: aws.String("NO_ARTIFACTS"),
+		},
+		Environment: &codebuild.ProjectEnvironment{
+			ComputeType: aws.String(b.ComputeType),
+			Image:       aws.String(b.Image),
+			Type:        aws.String("LINUX_CONTAINER"),
+		},
+		Name: aws.String(projectName),
+		Source: &codebuild.ProjectSource{
+			Type: aws.String("GITHUB"),
+			Auth: &codebuild.SourceAuth{
+				Type: aws.String("OAUTH"),
+			},
+			Location: aws.String(githubSource),
+		},
+		ServiceRole: aws.String(b.ServiceRole),
 	}
 
 	resp, err = b.codebuild.CreateProject(buildParams)
 
 	if err != nil {
-
 		return nil, err
 	}
 
@@ -275,7 +298,7 @@ func (b *Builder) createProject(opts builder.BuildOptions, projectName string) (
 }
 
 func (b *Builder) startBuild(opts builder.BuildOptions, projectName string) (resp *codebuild.StartBuildOutput, err error) {
-	
+
 	buildspec, err := b.generateBuildspec(opts)
 
 	if err != nil {
@@ -283,8 +306,8 @@ func (b *Builder) startBuild(opts builder.BuildOptions, projectName string) (res
 	}
 
 	params := &codebuild.StartBuildInput{
-		ProjectName:   aws.String(projectName),
-		SourceVersion: aws.String(opts.Sha),
+		ProjectName:       aws.String(projectName),
+		SourceVersion:     aws.String(opts.Sha),
 		BuildspecOverride: aws.String(buildspec),
 	}
 
@@ -293,16 +316,20 @@ func (b *Builder) startBuild(opts builder.BuildOptions, projectName string) (res
 
 }
 
-
 func (b *Builder) generateBuildspec(opts builder.BuildOptions) (buildspec string, err error) {
-	
+
 	if b.Image != DefaultCodebuildImage {
 		err = errors.New("Please include a custom buildspec when using a different build Image")
 		return
 	}
 
-	params := BuildSpecInput{b, opts.Repository, opts.Sha, opts.Branch}
-	
+	params := BuildSpecInput{
+		b,
+		opts.Repository,
+		opts.Sha,
+		opts.Branch,
+	}
+
 	specTemplate := `version: 0.1
 
 environment_variables:
@@ -346,5 +373,5 @@ phases:
 
 	buildspec = buf.String()
 	return
-	
+
 }

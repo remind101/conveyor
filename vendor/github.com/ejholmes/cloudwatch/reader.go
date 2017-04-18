@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"sync"
 	"time"
+	"fmt"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
@@ -30,6 +31,7 @@ func NewReader(group, stream string, client *cloudwatchlogs.CloudWatchLogs) *Rea
 }
 
 func newReader(group, stream string, client client) *Reader {
+	fmt.Println("Creating a new reader")
 	r := &Reader{
 		group:    aws.String(group),
 		stream:   aws.String(stream),
@@ -50,24 +52,30 @@ func (r *Reader) start() {
 }
 
 func (r *Reader) read() error {
-	resp, err := r.client.GetLogEvents(&cloudwatchlogs.GetLogEventsInput{
+
+	params := &cloudwatchlogs.GetLogEventsInput{
 		LogGroupName:  r.group,
 		LogStreamName: r.stream,
-		NextToken:     r.nextToken,
-	})
+		StartFromHead: aws.Bool(true),
+		NextToken: r.nextToken,
+	}
+
+	resp, err := r.client.GetLogEvents(params)
+
 	if err != nil {
 		return err
 	}
 
-	// We want to re-use the existing token in the event that
-	// NextForwardToken is nil, which means there's no new messages to
-	// consume.
+	// // We want to re-use the existing token in the event that
+	// // NextForwardToken is nil, which means there's no new messages to
+	// // consume.
 	if resp.NextForwardToken != nil {
 		r.nextToken = resp.NextForwardToken
 	}
 
-	// If there are no messages, return so that the consumer can read again.
+	// // If there are no messages, return so that the consumer can read again.
 	if len(resp.Events) == 0 {
+		fmt.Println("Empty Events")
 		return nil
 	}
 
