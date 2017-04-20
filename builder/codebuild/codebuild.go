@@ -199,9 +199,7 @@ func (b *Builder) build(ctx context.Context, w io.Writer, opts builder.BuildOpti
 	for {
 
 		if *build.BuildComplete == true {
-			log.Println("BUILD COMPLETE DETECTED")
 			r.Close()
-			log.Println("CLOSED STREAM SUCCESFULLY")
 			// block until io.Copy is done
 			<-copyDone
 			break
@@ -212,7 +210,7 @@ func (b *Builder) build(ctx context.Context, w io.Writer, opts builder.BuildOpti
 
 	}
 
-	log.Println("RETURNING AFTER FINISH")
+	log.Printf("Build %s completed succesfully", buildId)
 
 	return nil
 }

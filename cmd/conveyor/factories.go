@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -23,6 +24,7 @@ import (
 	"github.com/remind101/conveyor/builder"
 	"github.com/remind101/conveyor/builder/codebuild"
 	"github.com/remind101/conveyor/builder/datadog"
+	"github.com/remind101/conveyor/builder/docker"
 	"github.com/remind101/conveyor/logs"
 	"github.com/remind101/conveyor/logs/cloudwatch"
 	"github.com/remind101/conveyor/logs/s3"
@@ -117,7 +119,53 @@ func newSlackServer(cy *conveyor.Conveyor, c *cli.Context) http.Handler {
 	return slash.NewServer(slash.ValidateToken(s, c.String("slack.token")))
 }
 
+func selectBuilder(c *cli.Context) builder.Builder {
+	selectedBuilder := c.String("builder")
+
+	switch selectedBuilder {
+	case "docker":
+		db, err := docker.NewBuilderFromEnv()
+		if err != nil {
+			must(err)
+		}
+		db.DryRun = c.Bool("dry")
+		db.Image = c.String("builder.image")
+
+		return db
+
+	case "codebuild":
+		cb := codebuild.NewBuilder(session.Must(session.NewSession()))
+
+		// Codebuild configs
+		cb.ServiceRole = c.String("builder.codebuild.serviceRole")
+		cb.ComputeType = c.String("builder.codebuild.computeType")
+		cb.Image = c.String("builder.image")
+
+		// Dockerhub configuration
+		cb.DockerUsername = c.String("docker.username")
+		cb.DockerUsername = c.String("docker.password")
+
+		return cb
+
+	default:
+		must(fmt.Errorf("Unknown builder: %v", selectedBuilder))
+		return nil
+	}
+}
+
 func newBuilder(c *cli.Context) builder.Builder {
+	selectedBuilder := c.String("builder")
+
+	switch selectedBuilder {
+	case "docker":
+		log.Println("Selected Docker builder")
+	case "codebuild":
+		log.Println("Selected Codebuild builder")
+	default:
+		must(fmt.Errorf("Unknown builder: %v", selectedBuilder))
+		return nil
+	}
+
 	db, err := codebuild.NewBuilderFromEnv()
 	if err != nil {
 		must(err)

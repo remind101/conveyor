@@ -8,7 +8,6 @@ import (
 
 	"github.com/codegangsta/cli"
 	"github.com/remind101/conveyor"
-	"github.com/remind101/conveyor/builder/docker"
 	"github.com/remind101/conveyor/worker"
 )
 
@@ -26,10 +25,34 @@ var workerFlags = []cli.Flag{
 		EnvVar: "DRY",
 	},
 	cli.StringFlag{
+		Name:   "builder",
+		Usage:  "Which builder should be used for creating images. Options: codebuild, docker",
+		EnvVar: "BUILDER",
+	},
+	cli.StringFlag{
 		Name:   "builder.image",
-		Value:  docker.DefaultBuilderImage,
 		Usage:  "A docker image to use to perform the build.",
 		EnvVar: "BUILDER_IMAGE",
+	},
+	cli.StringFlag{
+		Name:   "builder.codebuild.serviceRole",
+		Usage:  "The service role given to codebuild when performing builds.",
+		EnvVar: "CODEBUILD_SERVICE_ROLE",
+	},
+	cli.StringFlag{
+		Name:   "builder.codebuild.computeType",
+		Usage:  "The AWS compute resources for codebuild.",
+		EnvVar: "CODEBUILD_COMPUTE_TYPE",
+	},
+	cli.StringFlag{
+		Name:   "docker.username",
+		Usage:  "Username for your docker registry",
+		EnvVar: "DOCKER_USERNAME",
+	},
+	cli.StringFlag{
+		Name:   "docker.password",
+		Usage:  "Password for your docker registry",
+		EnvVar: "DOCKER_PASSWORD",
 	},
 	cli.StringFlag{
 		Name:   "reporter",
