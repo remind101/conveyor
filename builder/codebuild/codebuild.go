@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"os"
 	"strings"
 	"text/template"
 	"time"
@@ -83,47 +82,6 @@ func NewBuilder(config client.ConfigProvider) *Builder {
 	return &Builder{
 		codebuild: codebuild.New(config),
 	}
-}
-
-// NewBuilderFromEnv returns a new Builder with a codebuild client
-// configured from the standard Docker environment variables.
-func NewBuilderFromEnv() (*Builder, error) {
-
-	serviceRole := os.Getenv("CODEBUILD_SERVICE_ROLE")
-
-	if serviceRole == "" {
-		return nil, errors.New("CODEBUILD_SERVICE_ROLE must be set when using codebuild builder")
-	}
-
-	image := os.Getenv("CODEBUILD_IMAGE")
-
-	if image == "" {
-		image = DefaultCodebuildImage
-	}
-
-	computeType := os.Getenv("CODEBUILD_COMPUTE_TYPE")
-
-	if computeType == "" {
-		computeType = DefaultCodebuildComputeType
-	}
-
-	dockerUsername := os.Getenv("DOCKER_USERNAME")
-	dockerPassword := os.Getenv("DOCKER_PASSWORD")
-
-	if dockerUsername == "" || dockerPassword == "" {
-		return nil, errors.New("DOCKER_USERNAME and DOCKER_PASSWORD env vars must be set when using codebuild builder")
-	}
-
-	sess := session.Must(session.NewSession())
-
-	return &Builder{
-		codebuild:      codebuild.New(sess),
-		ServiceRole:    serviceRole,
-		Image:          image,
-		ComputeType:    computeType,
-		DockerUsername: dockerUsername,
-		DockerPassword: dockerPassword,
-	}, nil
 }
 
 // Build executes the docker image.
