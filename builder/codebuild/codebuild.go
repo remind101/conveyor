@@ -15,9 +15,10 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go/service/codebuild"
 	"github.com/remind101/conveyor/builder"
-	"github.com/remind101/conveyor/logs/cloudwatch"
+	"github.com/remind101/conveyor/pkg/cloudwatch"
 	"golang.org/x/net/context"
 )
 
@@ -132,12 +133,10 @@ func (b *Builder) Build(ctx context.Context, w io.Writer, opts builder.BuildOpti
 	return
 }
 
-func (b *Builder) Bob() string {
-	return "bob"
-}
-
 // Build executes the codebuild image.
 func (b *Builder) build(ctx context.Context, w io.Writer, opts builder.BuildOptions) error {
+
+	log.Println("Starting the build")
 
 	projectName := strings.Join([]string{
 		"conveyor",
@@ -182,14 +181,17 @@ func (b *Builder) build(ctx context.Context, w io.Writer, opts builder.BuildOpti
 
 	sess := session.Must(session.NewSession())
 
-	r, err := cloudwatch.NewLogger(sess, logInfo.GroupName).Open(logInfo.StreamName)
+	r, err := cloudwatch.NewGroup(logInfo.GroupName, cloudwatchlogs.New(sess)).Open(logInfo.StreamName)
 
 	if err != nil {
 		return err
 	}
 
+	copyDone := make(chan bool)
+
 	go func() {
 		io.Copy(w, r)
+		copyDone <- true
 	}()
 
 	build, err := b.getBuild(buildId)
@@ -197,6 +199,11 @@ func (b *Builder) build(ctx context.Context, w io.Writer, opts builder.BuildOpti
 	for {
 
 		if *build.BuildComplete == true {
+			log.Println("BUILD COMPLETE DETECTED")
+			r.Close()
+			log.Println("CLOSED STREAM SUCCESFULLY")
+			// block until io.Copy is done
+			<-copyDone
 			break
 		}
 

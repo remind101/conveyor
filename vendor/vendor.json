@@ -286,12 +286,6 @@
 			"revisionTime": "2017-01-28T05:05:32Z"
 		},
 		{
-			"checksumSHA1": "5n2LT2xl7th2kjw4gbZr01KyWI0=",
-			"path": "github.com/pborman/uuid",
-			"revision": "1b00554d822231195d1babd97ff4a781231955c9",
-			"revisionTime": "2017-01-12T15:04:04Z"
-		},
-		{
 			"checksumSHA1": "zKKp5SZ3d3ycKe4EKMNT0BqAWBw=",
 			"origin": "github.com/stretchr/testify/vendor/github.com/pmezard/go-difflib/difflib",
 			"path": "github.com/pmezard/go-difflib/difflib",
@@ -305,5 +299,5 @@
 			"revisionTime": "2016-11-17T07:43:51Z"
 		}
 	],
-	"rootPath": "conveyor"
+	"rootPath": "github.com/remind101/conveyor"
 }
