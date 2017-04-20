@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -154,26 +153,12 @@ func selectBuilder(c *cli.Context) builder.Builder {
 }
 
 func newBuilder(c *cli.Context) builder.Builder {
-	selectedBuilder := c.String("builder")
 
-	switch selectedBuilder {
-	case "docker":
-		log.Println("Selected Docker builder")
-	case "codebuild":
-		log.Println("Selected Codebuild builder")
-	default:
-		must(fmt.Errorf("Unknown builder: %v", selectedBuilder))
-		return nil
-	}
-
-	db, err := codebuild.NewBuilderFromEnv()
-	if err != nil {
-		must(err)
-	}
+	sb := selectBuilder(c)
 
 	g := builder.NewGitHubClient(c.String("github.token"))
 
-	var backend builder.Builder = builder.UpdateGitHubCommitStatus(db, g, fmt.Sprintf(logsURLTemplate, c.String("url")))
+	var backend builder.Builder = builder.UpdateGitHubCommitStatus(sb, g, fmt.Sprintf(logsURLTemplate, c.String("url")))
 
 	if uri := c.String("stats"); uri != "" {
 		u := urlParse(uri)
