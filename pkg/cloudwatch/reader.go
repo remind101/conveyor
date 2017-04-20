@@ -105,12 +105,7 @@ func (r *Reader) Read(b []byte) (int, error) {
 }
 
 func (r *Reader) Close() error {
-	_, err := r.b.Write([]byte{endOfText})
-
-	if err != nil {
-		return err
-	}
-
+	r.err = io.EOF
 	return nil
 }
 
@@ -122,22 +117,13 @@ type lockingBuffer struct {
 }
 
 func (r *lockingBuffer) Read(b []byte) (int, error) {
-	if r.closed == true {
-		return 0, io.EOF
-	}
-
 	r.Lock()
 	defer r.Unlock()
 
 	n, err := r.Buffer.Read(b)
 
 	if err != nil {
-		return n, err
-	}
-
-	if n > 0 && b[n-1] == endOfText {
-		r.closed = true
-		return n, io.EOF
+		return 0, err
 	}
 
 	return n, nil
