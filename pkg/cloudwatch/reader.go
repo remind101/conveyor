@@ -2,6 +2,7 @@ package cloudwatch
 
 import (
 	"bytes"
+	"io"
 	"sync"
 	"time"
 
@@ -20,10 +21,15 @@ type Reader struct {
 
 	b lockingBuffer
 
+	closed bool
+
 	// If an error occurs when getting events from the stream, this will be
 	// populated and subsequent calls to Read will return the error.
 	err error
 }
+
+// http://www.nthelp.com/ascii.htm
+const endOfText = '\x03'
 
 func NewReader(group, stream string, client *cloudwatchlogs.CloudWatchLogs) *Reader {
 	return newReader(group, stream, client)
@@ -98,17 +104,44 @@ func (r *Reader) Read(b []byte) (int, error) {
 	return r.b.Read(b)
 }
 
+func (r *Reader) Close() error {
+	_, err := r.b.Write([]byte{endOfText})
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // lockingBuffer is a bytes.Buffer that locks Reads and Writes.
 type lockingBuffer struct {
 	sync.Mutex
 	bytes.Buffer
+	closed bool
 }
 
 func (r *lockingBuffer) Read(b []byte) (int, error) {
+	if r.closed == true {
+		return 0, io.EOF
+	}
+
 	r.Lock()
 	defer r.Unlock()
 
-	return r.Buffer.Read(b)
+	n, err := r.Buffer.Read(b)
+
+	if err != nil {
+		return n, err
+	}
+
+	if n > 0 && b[n-1] == endOfText {
+		r.closed = true
+		return n, io.EOF
+	}
+
+	return n, nil
+
 }
 
 func (r *lockingBuffer) Write(b []byte) (int, error) {
