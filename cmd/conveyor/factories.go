@@ -142,7 +142,7 @@ func selectBuilder(c *cli.Context) builder.Builder {
 
 		// Dockerhub configuration
 		cb.DockerUsername = c.String("docker.username")
-		cb.DockerUsername = c.String("docker.password")
+		cb.DockerPassword = c.String("docker.password")
 
 		return cb
 

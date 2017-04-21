@@ -293,7 +293,7 @@ func (b *Builder) generateBuildspec(opts builder.BuildOptions) (buildspec string
 		opts.Branch,
 	}
 
-	specTemplate := `version: 0.1
+	const specTemplate = `version: 0.1
 
 environment_variables:
   plaintext:
@@ -305,7 +305,7 @@ phases:
     commands:
       - docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}
       - echo "Logged into Docker"
-      - docker pull "{{.Repository}}:${{.Branch}}" || docker pull "{{.Repository}}:master" || true
+      - docker pull "{{.Repository}}:{{.Branch}}" || docker pull "{{.Repository}}:master" || true
       - echo "Pulled Image"
   build:
     commands:
