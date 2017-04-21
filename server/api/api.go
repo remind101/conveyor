@@ -151,6 +151,8 @@ func (s *Server) BuildInfo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
 	encode(w, newBuild(b))
 }
 
