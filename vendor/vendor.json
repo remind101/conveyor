@@ -421,18 +421,6 @@
 			"revisionTime": "2017-01-30T11:31:45Z"
 		},
 		{
-			"checksumSHA1": "Nf7W+WZkKCkenbcpgwVEvipk1b4=",
-			"path": "github.com/remind101/newrelic",
-			"revision": "2671e3bb51df9a8573b30593dde83c910b113cba",
-			"revisionTime": "2016-10-25T00:57:55Z"
-		},
-		{
-			"checksumSHA1": "5IfMJfI9J1hj/NPITK5LuDGBDmU=",
-			"path": "github.com/remind101/newrelic/sdk",
-			"revision": "2671e3bb51df9a8573b30593dde83c910b113cba",
-			"revisionTime": "2016-10-25T00:57:55Z"
-		},
-		{
 			"checksumSHA1": "BpFbfnxs4jrjGldU6aMIMcrDmXM=",
 			"path": "github.com/smartystreets/assertions",
 			"revision": "c9ee7d9e9a2aeec0bee7c4a516f3e0ad7cb7e558",
