@@ -29,6 +29,25 @@ var tableName = "gorp_migrations"
 var schemaName = ""
 var numberPrefixRegex = regexp.MustCompile(`^(\d+).*$`)
 
+// TxError is returned when any error is encountered during a database
+// transaction. It contains the relevant *Migration and notes it's Id in the
+// Error function output.
+type TxError struct {
+	Migration *Migration
+	Err       error
+}
+
+func newTxError(migration *PlannedMigration, err error) error {
+	return &TxError{
+		Migration: migration.Migration,
+		Err:       err,
+	}
+}
+
+func (e *TxError) Error() string {
+	return e.Err.Error() + " handling " + e.Migration.Id
+}
+
 // Set the name of the table used to store migration info.
 //
 // Should be called before any other call such as (Exec, ExecMax, ...).
@@ -45,24 +64,18 @@ func SetSchema(name string) {
 	}
 }
 
-func getTableName() string {
-	t := tableName
-	if schemaName != "" {
-		t = fmt.Sprintf("%s.%s", schemaName, t)
-	}
-
-	return t
-}
-
 type Migration struct {
 	Id   string
 	Up   []string
 	Down []string
+
+	DisableTransactionUp   bool
+	DisableTransactionDown bool
 }
 
 func (m Migration) Less(other *Migration) bool {
 	switch {
-	case m.isNumeric() && other.isNumeric():
+	case m.isNumeric() && other.isNumeric() && m.VersionInt() != other.VersionInt():
 		return m.VersionInt() < other.VersionInt()
 	case m.isNumeric() && !other.isNumeric():
 		return true
@@ -92,7 +105,9 @@ func (m Migration) VersionInt() int64 {
 
 type PlannedMigration struct {
 	*Migration
-	Queries []string
+
+	DisableTransaction bool
+	Queries            []string
 }
 
 type byId []*Migration
@@ -109,7 +124,7 @@ type MigrationRecord struct {
 var MigrationDialects = map[string]gorp.Dialect{
 	"sqlite3":  gorp.SqliteDialect{},
 	"postgres": gorp.PostgresDialect{},
-	"mysql":    gorp.MySQLDialect{"InnoDB", "UTF8"},
+	"mysql":    gorp.MySQLDialect{Engine: "InnoDB", Encoding: "UTF8"},
 	"mssql":    gorp.SqlServerDialect{},
 	"oci8":     gorp.OracleDialect{},
 }
@@ -227,20 +242,24 @@ func ParseMigration(id string, r io.ReadSeeker) (*Migration, error) {
 		Id: id,
 	}
 
-	up, err := sqlparse.SplitSQLStatements(r, true)
+	parsed, err := sqlparse.ParseMigration(r)
 	if err != nil {
 		return nil, err
 	}
 
-	down, err := sqlparse.SplitSQLStatements(r, false)
-	if err != nil {
-		return nil, err
-	}
+	m.Up = parsed.UpStatements
+	m.Down = parsed.DownStatements
 
-	m.Up = up
-	m.Down = down
+	m.DisableTransactionUp = parsed.DisableTransactionUp
+	m.DisableTransactionDown = parsed.DisableTransactionDown
 
 	return m, nil
+}
+
+type SqlExecutor interface {
+	Exec(query string, args ...interface{}) (sql.Result, error)
+	Insert(list ...interface{}) error
+	Delete(list ...interface{}) (int64, error)
 }
 
 // Execute a set of migrations
@@ -264,41 +283,50 @@ func ExecMax(db *sql.DB, dialect string, m MigrationSource, dir MigrationDirecti
 	// Apply migrations
 	applied := 0
 	for _, migration := range migrations {
-		trans, err := dbMap.Begin()
-		if err != nil {
-			return applied, err
+		var executor SqlExecutor
+
+		if migration.DisableTransaction {
+			executor = dbMap
+		} else {
+			executor, err = dbMap.Begin()
+			if err != nil {
+				return applied, newTxError(migration, err)
+			}
 		}
 
 		for _, stmt := range migration.Queries {
-			_, err := trans.Exec(stmt)
-			if err != nil {
-				trans.Rollback()
-				return applied, err
+			if _, err := executor.Exec(stmt); err != nil {
+				if trans, ok := executor.(*gorp.Transaction); ok {
+					trans.Rollback()
+				}
+
+				return applied, newTxError(migration, err)
 			}
 		}
 
 		if dir == Up {
-			err = trans.Insert(&MigrationRecord{
+			err = executor.Insert(&MigrationRecord{
 				Id:        migration.Id,
 				AppliedAt: time.Now(),
 			})
 			if err != nil {
-				return applied, err
+				return applied, newTxError(migration, err)
 			}
 		} else if dir == Down {
-			_, err := trans.Delete(&MigrationRecord{
+			_, err := executor.Delete(&MigrationRecord{
 				Id: migration.Id,
 			})
 			if err != nil {
-				return applied, err
+				return applied, newTxError(migration, err)
 			}
 		} else {
 			panic("Not possible")
 		}
 
-		err = trans.Commit()
-		if err != nil {
-			return applied, err
+		if trans, ok := executor.(*gorp.Transaction); ok {
+			if err := trans.Commit(); err != nil {
+				return applied, newTxError(migration, err)
+			}
 		}
 
 		applied++
@@ -320,7 +348,7 @@ func PlanMigration(db *sql.DB, dialect string, m MigrationSource, dir MigrationD
 	}
 
 	var migrationRecords []MigrationRecord
-	_, err = dbMap.Select(&migrationRecords, fmt.Sprintf("SELECT * FROM %s", getTableName()))
+	_, err = dbMap.Select(&migrationRecords, fmt.Sprintf("SELECT * FROM %s", dbMap.Dialect.QuotedTableForQuery(schemaName, tableName)))
 	if err != nil {
 		return nil, nil, err
 	}
@@ -358,13 +386,15 @@ func PlanMigration(db *sql.DB, dialect string, m MigrationSource, dir MigrationD
 
 		if dir == Up {
 			result = append(result, &PlannedMigration{
-				Migration: v,
-				Queries:   v.Up,
+				Migration:          v,
+				Queries:            v.Up,
+				DisableTransaction: v.DisableTransactionUp,
 			})
 		} else if dir == Down {
 			result = append(result, &PlannedMigration{
-				Migration: v,
-				Queries:   v.Down,
+				Migration:          v,
+				Queries:            v.Down,
+				DisableTransaction: v.DisableTransactionDown,
 			})
 		}
 	}
@@ -413,7 +443,11 @@ func ToCatchup(migrations, existingMigrations []*Migration, lastRun *Migration) 
 			}
 		}
 		if !found && migration.Less(lastRun) {
-			missing = append(missing, &PlannedMigration{Migration: migration, Queries: migration.Up})
+			missing = append(missing, &PlannedMigration{
+				Migration:          migration,
+				Queries:            migration.Up,
+				DisableTransaction: migration.DisableTransactionUp,
+			})
 		}
 	}
 	return missing
@@ -426,7 +460,7 @@ func GetMigrationRecords(db *sql.DB, dialect string) ([]*MigrationRecord, error)
 	}
 
 	var records []*MigrationRecord
-	query := fmt.Sprintf("SELECT * FROM %s ORDER BY id ASC", getTableName())
+	query := fmt.Sprintf("SELECT * FROM %s ORDER BY id ASC", dbMap.Dialect.QuotedTableForQuery(schemaName, tableName))
 	_, err = dbMap.Select(&records, query)
 	if err != nil {
 		return nil, err
@@ -448,7 +482,8 @@ func getMigrationDbMap(db *sql.DB, dialect string) (*gorp.DbMap, error) {
 		var out *time.Time
 		err := db.QueryRow("SELECT NOW()").Scan(&out)
 		if err != nil {
-			if err.Error() == "sql: Scan error on column index 0: unsupported driver -> Scan pair: []uint8 -> *time.Time" {
+			if err.Error() == "sql: Scan error on column index 0: unsupported driver -> Scan pair: []uint8 -> *time.Time" ||
+				err.Error() == "sql: Scan error on column index 0: unsupported Scan, storing driver.Value type []uint8 into type *time.Time" {
 				return nil, errors.New(`Cannot parse dates.
 
 Make sure that the parseTime option is supplied to your database connection.

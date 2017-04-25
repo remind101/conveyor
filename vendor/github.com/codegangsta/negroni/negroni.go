@@ -29,8 +29,8 @@ type middleware struct {
 	next    *middleware
 }
 
-func (h middleware) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
-	h.handler.ServeHTTP(rw, r, h.next.ServeHTTP)
+func (m middleware) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
+	m.handler.ServeHTTP(rw, r, m.next.ServeHTTP)
 }
 
 // Wrap converts a http.Handler into a negroni.Handler so it can be used as a Negroni
@@ -52,10 +52,19 @@ type Negroni struct {
 }
 
 // New returns a new Negroni instance with no middleware preconfigured.
-func New() *Negroni {
+func New(handlers ...Handler) *Negroni {
 	return &Negroni{
-		middleware: middleware{HandlerFunc(voidHandler), &middleware{}},
+		handlers:   handlers,
+		middleware: build(handlers),
 	}
+}
+
+// With returns a new Negroni instance that is a combination of the negroni
+// receiver's handlers and the provided handlers.
+func (n *Negroni) With(handlers ...Handler) *Negroni {
+	return New(
+		append(n.handlers, handlers...)...,
+	)
 }
 
 // Classic returns a new Negroni instance with the default middleware already
@@ -65,11 +74,7 @@ func New() *Negroni {
 // Logger - Request/Response Logging
 // Static - Static File Serving
 func Classic() *Negroni {
-	n := New()
-	n.Use(NewRecovery())
-	n.Use(NewLogger())
-	n.Use(NewStatic(http.Dir("public")))
-	return n
+	return New(NewRecovery(), NewLogger(), NewStatic(http.Dir("public")))
 }
 
 func (n *Negroni) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
@@ -78,13 +83,27 @@ func (n *Negroni) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 // Use adds a Handler onto the middleware stack. Handlers are invoked in the order they are added to a Negroni.
 func (n *Negroni) Use(handler Handler) {
+	if handler == nil {
+		panic("handler cannot be nil")
+	}
+
 	n.handlers = append(n.handlers, handler)
-	n.middleware = build(0, n.handlers)
+	n.middleware = build(n.handlers)
+}
+
+// UseFunc adds a Negroni-style handler function onto the middleware stack.
+func (n *Negroni) UseFunc(handlerFunc func(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc)) {
+	n.Use(HandlerFunc(handlerFunc))
 }
 
 // UseHandler adds a http.Handler onto the middleware stack. Handlers are invoked in the order they are added to a Negroni.
 func (n *Negroni) UseHandler(handler http.Handler) {
 	n.Use(Wrap(handler))
+}
+
+// UseHandler adds a http.HandlerFunc-style handler function onto the middleware stack.
+func (n *Negroni) UseHandlerFunc(handlerFunc func(rw http.ResponseWriter, r *http.Request)) {
+	n.UseHandler(http.HandlerFunc(handlerFunc))
 }
 
 // Run is a convenience function that runs the negroni stack as an HTTP
@@ -95,19 +114,28 @@ func (n *Negroni) Run(addr string) {
 	l.Fatal(http.ListenAndServe(addr, n))
 }
 
-func build(i int, handlers []Handler) middleware {
-	var next middleware
-
-	h := handlers[i]
-	if i < len(handlers)-1 {
-		next = build(i+1, handlers)
-	} else {
-		next = middleware{HandlerFunc(voidHandler), &middleware{}}
-	}
-
-	return middleware{h, &next}
+// Returns a list of all the handlers in the current Negroni middleware chain.
+func (n *Negroni) Handlers() []Handler {
+	return n.handlers
 }
 
-func voidHandler(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
-	// do nothing
+func build(handlers []Handler) middleware {
+	var next middleware
+
+	if len(handlers) == 0 {
+		return voidMiddleware()
+	} else if len(handlers) > 1 {
+		next = build(handlers[1:])
+	} else {
+		next = voidMiddleware()
+	}
+
+	return middleware{handlers[0], &next}
+}
+
+func voidMiddleware() middleware {
+	return middleware{
+		HandlerFunc(func(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc) {}),
+		&middleware{},
+	}
 }

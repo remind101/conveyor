@@ -86,6 +86,23 @@ func CommandFromValues(v url.Values) (Command, error) {
 	}, nil
 }
 
+// ValuesFromCommand returns a url.Values from the Command object. This is
+// mostly usefuly for testing.
+func ValuesFromCommand(cmd Command) url.Values {
+	v := make(url.Values)
+	v.Set("token", cmd.Token)
+	v.Set("team_id", cmd.TeamID)
+	v.Set("team_domain", cmd.TeamDomain)
+	v.Set("channel_id", cmd.ChannelID)
+	v.Set("channel_name", cmd.ChannelName)
+	v.Set("user_id", cmd.UserID)
+	v.Set("user_name", cmd.UserName)
+	v.Set("command", cmd.Command)
+	v.Set("text", cmd.Text)
+	v.Set("response_url", cmd.ResponseURL.String())
+	return v
+}
+
 // ParseRequest parses the form an then returns the extracted Command.
 func ParseRequest(r *http.Request) (Command, error) {
 	err := r.ParseForm()

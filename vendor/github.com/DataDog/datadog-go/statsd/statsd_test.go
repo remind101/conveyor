@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 )
 
 var dogstatsdTests = []struct {
@@ -32,6 +33,7 @@ var dogstatsdTests = []struct {
 	{"", nil, "Set", "test.set", "uuid", []string{"tagA"}, 1.0, "test.set:uuid|s|#tagA"},
 	{"flubber.", nil, "Set", "test.set", "uuid", []string{"tagA"}, 1.0, "flubber.test.set:uuid|s|#tagA"},
 	{"", []string{"tagC"}, "Set", "test.set", "uuid", []string{"tagA"}, 1.0, "test.set:uuid|s|#tagC,tagA"},
+	{"", nil, "Count", "test.count", int64(1), []string{"hello\nworld"}, 1.0, "test.count:1|c|#helloworld"},
 }
 
 func assertNotPanics(t *testing.T, f func()) {
@@ -105,7 +107,7 @@ func TestBufferedClient(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	bufferLength := 5
+	bufferLength := 8
 	client := &Client{
 		conn:         conn,
 		commands:     make([]string, 0, bufferLength),
@@ -115,13 +117,18 @@ func TestBufferedClient(t *testing.T) {
 	client.Namespace = "foo."
 	client.Tags = []string{"dd:2"}
 
+	dur, _ := time.ParseDuration("123us")
+
+	client.Incr("ic", nil, 1)
+	client.Decr("dc", nil, 1)
 	client.Count("cc", 1, nil, 1)
 	client.Gauge("gg", 10, nil, 1)
 	client.Histogram("hh", 1, nil, 1)
+	client.Timing("tt", dur, nil, 1)
 	client.Set("ss", "ss", nil, 1)
 
-	if len(client.commands) != 4 {
-		t.Errorf("Expected client to have buffered 4 commands, but found %d\n", len(client.commands))
+	if len(client.commands) != 7 {
+		t.Errorf("Expected client to have buffered 7 commands, but found %d\n", len(client.commands))
 	}
 
 	client.Set("ss", "xx", nil, 1)
@@ -143,9 +150,12 @@ func TestBufferedClient(t *testing.T) {
 	}
 
 	expected := []string{
+		`foo.ic:1|c|#dd:2`,
+		`foo.dc:-1|c|#dd:2`,
 		`foo.cc:1|c|#dd:2`,
 		`foo.gg:10.000000|g|#dd:2`,
 		`foo.hh:1.000000|h|#dd:2`,
+		`foo.tt:0.123000|ms|#dd:2`,
 		`foo.ss:ss|s|#dd:2`,
 		`foo.ss:xx|s|#dd:2`,
 	}
@@ -198,6 +208,227 @@ func TestBufferedClient(t *testing.T) {
 
 }
 
+func TestJoinMaxSize(t *testing.T) {
+	c := Client{}
+	elements := []string{"abc", "abcd", "ab", "xyz", "foobaz", "x", "wwxxyyzz"}
+	res, n := c.joinMaxSize(elements, " ", 8)
+
+	if len(res) != len(n) && len(res) != 4 {
+		t.Errorf("Was expecting 4 frames to flush but got: %v - %v", n, res)
+	}
+	if n[0] != 2 {
+		t.Errorf("Was expecting 2 elements in first frame but got: %v", n[0])
+	}
+	if string(res[0]) != "abc abcd" {
+		t.Errorf("Join should have returned \"abc abcd\" in frame, but found: %s", res[0])
+	}
+	if n[1] != 2 {
+		t.Errorf("Was expecting 2 elements in second frame but got: %v - %v", n[1], n)
+	}
+	if string(res[1]) != "ab xyz" {
+		t.Errorf("Join should have returned \"ab xyz\" in frame, but found: %s", res[1])
+	}
+	if n[2] != 2 {
+		t.Errorf("Was expecting 2 elements in third frame but got: %v - %v", n[2], n)
+	}
+	if string(res[2]) != "foobaz x" {
+		t.Errorf("Join should have returned \"foobaz x\" in frame, but found: %s", res[2])
+	}
+	if n[3] != 1 {
+		t.Errorf("Was expecting 1 element in fourth frame but got: %v - %v", n[3], n)
+	}
+	if string(res[3]) != "wwxxyyzz" {
+		t.Errorf("Join should have returned \"wwxxyyzz\" in frame, but found: %s", res[3])
+	}
+
+	res, n = c.joinMaxSize(elements, " ", 11)
+
+	if len(res) != len(n) && len(res) != 3 {
+		t.Errorf("Was expecting 3 frames to flush but got: %v - %v", n, res)
+	}
+	if n[0] != 3 {
+		t.Errorf("Was expecting 3 elements in first frame but got: %v", n[0])
+	}
+	if string(res[0]) != "abc abcd ab" {
+		t.Errorf("Join should have returned \"abc abcd ab\" in frame, but got: %s", res[0])
+	}
+	if n[1] != 2 {
+		t.Errorf("Was expecting 2 elements in second frame but got: %v", n[1])
+	}
+	if string(res[1]) != "xyz foobaz" {
+		t.Errorf("Join should have returned \"xyz foobaz\" in frame, but got: %s", res[1])
+	}
+	if n[2] != 2 {
+		t.Errorf("Was expecting 2 elements in third frame but got: %v", n[2])
+	}
+	if string(res[2]) != "x wwxxyyzz" {
+		t.Errorf("Join should have returned \"x wwxxyyzz\" in frame, but got: %s", res[2])
+	}
+
+	res, n = c.joinMaxSize(elements, "    ", 8)
+
+	if len(res) != len(n) && len(res) != 7 {
+		t.Errorf("Was expecting 7 frames to flush but got: %v - %v", n, res)
+	}
+	if n[0] != 1 {
+		t.Errorf("Separator is long, expected a single element in frame but got: %d - %v", n[0], res)
+	}
+	if string(res[0]) != "abc" {
+		t.Errorf("Join should have returned \"abc\" in first frame, but got: %s", res)
+	}
+	if n[1] != 1 {
+		t.Errorf("Separator is long, expected a single element in frame but got: %d - %v", n[1], res)
+	}
+	if string(res[1]) != "abcd" {
+		t.Errorf("Join should have returned \"abcd\" in second frame, but got: %s", res[1])
+	}
+	if n[2] != 1 {
+		t.Errorf("Separator is long, expected a single element in third frame but got: %d - %v", n[2], res)
+	}
+	if string(res[2]) != "ab" {
+		t.Errorf("Join should have returned \"ab\" in third frame, but got: %s", res[2])
+	}
+	if n[3] != 1 {
+		t.Errorf("Separator is long, expected a single element in fourth frame but got: %d - %v", n[3], res)
+	}
+	if string(res[3]) != "xyz" {
+		t.Errorf("Join should have returned \"xyz\" in fourth frame, but got: %s", res[3])
+	}
+	if n[4] != 1 {
+		t.Errorf("Separator is long, expected a single element in fifth frame but got: %d - %v", n[4], res)
+	}
+	if string(res[4]) != "foobaz" {
+		t.Errorf("Join should have returned \"foobaz\" in fifth frame, but got: %s", res[4])
+	}
+	if n[5] != 1 {
+		t.Errorf("Separator is long, expected a single element in sixth frame but got: %d - %v", n[5], res)
+	}
+	if string(res[5]) != "x" {
+		t.Errorf("Join should have returned \"x\" in sixth frame, but got: %s", res[5])
+	}
+	if n[6] != 1 {
+		t.Errorf("Separator is long, expected a single element in seventh frame but got: %d - %v", n[6], res)
+	}
+	if string(res[6]) != "wwxxyyzz" {
+		t.Errorf("Join should have returned \"wwxxyyzz\" in seventh frame, but got: %s", res[6])
+	}
+
+	res, n = c.joinMaxSize(elements[4:], " ", 6)
+	if len(res) != len(n) && len(res) != 3 {
+		t.Errorf("Was expecting 3 frames to flush but got: %v - %v", n, res)
+
+	}
+	if n[0] != 1 {
+		t.Errorf("Element should just fit in frame - expected single element in frame: %d - %v", n[0], res)
+	}
+	if string(res[0]) != "foobaz" {
+		t.Errorf("Join should have returned \"foobaz\" in first frame, but got: %s", res[0])
+	}
+	if n[1] != 1 {
+		t.Errorf("Single element expected in frame, but got. %d - %v", n[1], res)
+	}
+	if string(res[1]) != "x" {
+		t.Errorf("Join should' have returned \"x\" in second frame, but got: %s", res[1])
+	}
+	if n[2] != 1 {
+		t.Errorf("Even though element is greater then max size we still try to send it. %d - %v", n[2], res)
+	}
+	if string(res[2]) != "wwxxyyzz" {
+		t.Errorf("Join should have returned \"wwxxyyzz\" in third frame, but got: %s", res[2])
+	}
+}
+
+func TestSendMsg(t *testing.T) {
+	addr := "localhost:1201"
+	udpAddr, err := net.ResolveUDPAddr("udp", addr)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	server, err := net.ListenUDP("udp", udpAddr)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer server.Close()
+
+	conn, err := net.DialUDP("udp", nil, udpAddr)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer conn.Close()
+
+	client := &Client{
+		conn:         conn,
+		bufferLength: 0,
+	}
+
+	err = client.sendMsg(strings.Repeat("x", MaxUDPPayloadSize+1))
+	if err == nil {
+		t.Error("Expected error to be returned if message size is bigger than MaxUDPPayloadSize")
+	}
+
+	longMsg := strings.Repeat("x", MaxUDPPayloadSize)
+
+	err = client.sendMsg(longMsg)
+	if err != nil {
+		t.Errorf("Expected no error to be returned if message size is smaller or equal to MaxUDPPayloadSize, got: %s", err.Error())
+	}
+
+	buffer := make([]byte, MaxUDPPayloadSize+1)
+	n, err := io.ReadAtLeast(server, buffer, 1)
+
+	if err != nil {
+		t.Fatalf("Expected no error to be returned reading the buffer, got: %s", err.Error())
+	}
+
+	if n != MaxUDPPayloadSize {
+		t.Fatalf("Failed to read full message from buffer. Got size `%d` expected `%d`", n, MaxUDPPayloadSize)
+	}
+
+	if string(buffer[:n]) != longMsg {
+		t.Fatalf("The received message did not match what we expect.")
+	}
+
+	client = &Client{
+		conn:         conn,
+		commands:     make([]string, 0, 1),
+		bufferLength: 1,
+	}
+
+	err = client.sendMsg(strings.Repeat("x", MaxUDPPayloadSize+1))
+	if err == nil {
+		t.Error("Expected error to be returned if message size is bigger than MaxUDPPayloadSize")
+	}
+
+	err = client.sendMsg(longMsg)
+	if err != nil {
+		t.Errorf("Expected no error to be returned if message size is smaller or equal to MaxUDPPayloadSize, got: %s", err.Error())
+	}
+
+	client.Lock()
+	err = client.flush()
+	client.Unlock()
+
+	if err != nil {
+		t.Fatalf("Expected no error to be returned flushing the client, got: %s", err.Error())
+	}
+
+	buffer = make([]byte, MaxUDPPayloadSize+1)
+	n, err = io.ReadAtLeast(server, buffer, 1)
+
+	if err != nil {
+		t.Fatalf("Expected no error to be returned reading the buffer, got: %s", err.Error())
+	}
+
+	if n != MaxUDPPayloadSize {
+		t.Fatalf("Failed to read full message from buffer. Got size `%d` expected `%d`", n, MaxUDPPayloadSize)
+	}
+
+	if string(buffer[:n]) != longMsg {
+		t.Fatalf("The received message did not match what we expect.")
+	}
+}
+
 func TestNilSafe(t *testing.T) {
 	var c *Client
 	assertNotPanics(t, func() { c.Close() })
@@ -206,6 +437,7 @@ func TestNilSafe(t *testing.T) {
 	assertNotPanics(t, func() { c.Gauge("", 0, nil, 1) })
 	assertNotPanics(t, func() { c.Set("", "", nil, 1) })
 	assertNotPanics(t, func() { c.send("", "", nil, 1) })
+	assertNotPanics(t, func() { c.SimpleEvent("", "") })
 }
 
 func TestEvents(t *testing.T) {
@@ -228,6 +460,9 @@ func TestEvents(t *testing.T) {
 		}, {
 			&Event{Title: "hi", Text: "uh", Tags: []string{"host:foo", "app:bar"}},
 			`_e{2,2}:hi|uh|#host:foo,app:bar`,
+		}, {
+			&Event{Title: "hi", Text: "line1\nline2", Tags: []string{"hello\nworld"}},
+			`_e{2,12}:hi|line1\nline2|#helloworld`,
 		},
 	}
 
@@ -263,6 +498,79 @@ func TestEvents(t *testing.T) {
 	}
 	if len(e.Tags) != 0 {
 		t.Errorf("Modified event in place illegally.")
+	}
+}
+
+func TestServiceChecks(t *testing.T) {
+	matrix := []struct {
+		serviceCheck *ServiceCheck
+		encoded      string
+	}{
+		{
+			NewServiceCheck("DataCatService", Ok),
+			`_sc|DataCatService|0`,
+		}, {
+			NewServiceCheck("DataCatService", Warn),
+			`_sc|DataCatService|1`,
+		}, {
+			NewServiceCheck("DataCatService", Critical),
+			`_sc|DataCatService|2`,
+		}, {
+			NewServiceCheck("DataCatService", Unknown),
+			`_sc|DataCatService|3`,
+		}, {
+			&ServiceCheck{Name: "DataCatService", Status: Ok, Hostname: "DataStation.Cat"},
+			`_sc|DataCatService|0|h:DataStation.Cat`,
+		}, {
+			&ServiceCheck{Name: "DataCatService", Status: Ok, Hostname: "DataStation.Cat", Message: "Here goes valuable message"},
+			`_sc|DataCatService|0|h:DataStation.Cat|m:Here goes valuable message`,
+		}, {
+			&ServiceCheck{Name: "DataCatService", Status: Ok, Hostname: "DataStation.Cat", Message: "Here are some cyrillic chars: к л м н о п р с т у ф х ц ч ш"},
+			`_sc|DataCatService|0|h:DataStation.Cat|m:Here are some cyrillic chars: к л м н о п р с т у ф х ц ч ш`,
+		}, {
+			&ServiceCheck{Name: "DataCatService", Status: Ok, Hostname: "DataStation.Cat", Message: "Here goes valuable message", Tags: []string{"host:foo", "app:bar"}},
+			`_sc|DataCatService|0|h:DataStation.Cat|#host:foo,app:bar|m:Here goes valuable message`,
+		}, {
+			&ServiceCheck{Name: "DataCatService", Status: Ok, Hostname: "DataStation.Cat", Message: "Here goes \n that should be escaped", Tags: []string{"host:foo", "app:b\nar"}},
+			`_sc|DataCatService|0|h:DataStation.Cat|#host:foo,app:bar|m:Here goes \n that should be escaped`,
+		}, {
+			&ServiceCheck{Name: "DataCatService", Status: Ok, Hostname: "DataStation.Cat", Message: "Here goes m: that should be escaped", Tags: []string{"host:foo", "app:bar"}},
+			`_sc|DataCatService|0|h:DataStation.Cat|#host:foo,app:bar|m:Here goes m\: that should be escaped`,
+		},
+	}
+
+	for _, m := range matrix {
+		r, err := m.serviceCheck.Encode()
+		if err != nil {
+			t.Errorf("Error encoding: %s\n", err)
+			continue
+		}
+		if r != m.encoded {
+			t.Errorf("Expected `%s`, got `%s`\n", m.encoded, r)
+		}
+	}
+
+	sc := NewServiceCheck("", Ok)
+	if _, err := sc.Encode(); err == nil {
+		t.Errorf("Expected error on empty Name.")
+	}
+
+	sc = NewServiceCheck("sc", ServiceCheckStatus(5))
+	if _, err := sc.Encode(); err == nil {
+		t.Errorf("Expected error on invalid status value.")
+	}
+
+	sc = NewServiceCheck("hello", Warn)
+	s, err := sc.Encode("tag1", "tag2")
+	if err != nil {
+		t.Error(err)
+	}
+	expected := "_sc|hello|1|#tag1,tag2"
+	if s != expected {
+		t.Errorf("Expected %s, got %s", expected, s)
+	}
+	if len(sc.Tags) != 0 {
+		t.Errorf("Modified serviceCheck in place illegally.")
 	}
 }
 

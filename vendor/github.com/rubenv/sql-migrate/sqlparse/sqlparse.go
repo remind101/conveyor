@@ -4,12 +4,43 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 
 	"strings"
 )
 
-const sqlCmdPrefix = "-- +migrate "
+const (
+	sqlCmdPrefix        = "-- +migrate "
+	optionNoTransaction = "notransaction"
+)
+
+type ParsedMigration struct {
+	UpStatements   []string
+	DownStatements []string
+
+	DisableTransactionUp   bool
+	DisableTransactionDown bool
+}
+
+var (
+	// LineSeparator can be used to split migrations by an exact line match. This line
+	// will be removed from the output. If left blank, it is not considered. It is defaulted
+	// to blank so you will have to set it manually.
+	// Use case: in MSSQL, it is convenient to separate commands by GO statements like in
+	// SQL Query Analyzer.
+	LineSeparator = ""
+)
+
+func errNoTerminator() error {
+	if len(LineSeparator) == 0 {
+		return errors.New(`ERROR: The last statement must be ended by a semicolon or '-- +migrate StatementEnd' marker.
+			See https://github.com/rubenv/sql-migrate for details.`)
+	}
+
+	return errors.New(fmt.Sprintf(`ERROR: The last statement must be ended by a semicolon, a line whose contents are %q, or '-- +migrate StatementEnd' marker.
+			See https://github.com/rubenv/sql-migrate for details.`, LineSeparator))
+}
 
 // Checks the line to see if the line has a statement-ending semicolon
 // or if the line contains a double-dash comment.
@@ -30,6 +61,48 @@ func endsWithSemicolon(line string) bool {
 	return strings.HasSuffix(prev, ";")
 }
 
+type migrationDirection int
+
+const (
+	directionNone migrationDirection = iota
+	directionUp
+	directionDown
+)
+
+type migrateCommand struct {
+	Command string
+	Options []string
+}
+
+func (c *migrateCommand) HasOption(opt string) bool {
+	for _, specifiedOption := range c.Options {
+		if specifiedOption == opt {
+			return true
+		}
+	}
+
+	return false
+}
+
+func parseCommand(line string) (*migrateCommand, error) {
+	cmd := &migrateCommand{}
+
+	if !strings.HasPrefix(line, sqlCmdPrefix) {
+		return nil, errors.New("ERROR: not a sql-migrate command")
+	}
+
+	fields := strings.Fields(line[len(sqlCmdPrefix):])
+	if len(fields) == 0 {
+		return nil, errors.New(`ERROR: incomplete migration command`)
+	}
+
+	cmd.Command = fields[0]
+
+	cmd.Options = fields[1:]
+
+	return cmd, nil
+}
+
 // Split the given sql script into individual statements.
 //
 // The base case is to simply split on semicolons, as these
@@ -39,7 +112,9 @@ func endsWithSemicolon(line string) bool {
 // within a statement. For these cases, we provide the explicit annotations
 // 'StatementBegin' and 'StatementEnd' to allow the script to
 // tell us to ignore semicolons.
-func SplitSQLStatements(r io.ReadSeeker, direction bool) ([]string, error) {
+func ParseMigration(r io.ReadSeeker) (*ParsedMigration, error) {
+	p := &ParsedMigration{}
+
 	_, err := r.Seek(0, 0)
 	if err != nil {
 		return nil, err
@@ -48,43 +123,49 @@ func SplitSQLStatements(r io.ReadSeeker, direction bool) ([]string, error) {
 	var buf bytes.Buffer
 	scanner := bufio.NewScanner(r)
 
-	// track the count of each section
-	// so we can diagnose scripts with no annotations
-	upSections := 0
-	downSections := 0
-
 	statementEnded := false
 	ignoreSemicolons := false
-	directionIsActive := false
-
-	stmts := make([]string, 0)
+	currentDirection := directionNone
 
 	for scanner.Scan() {
-
 		line := scanner.Text()
 
 		// handle any migrate-specific commands
 		if strings.HasPrefix(line, sqlCmdPrefix) {
-			cmd := strings.TrimSpace(line[len(sqlCmdPrefix):])
-			switch cmd {
+			cmd, err := parseCommand(line)
+			if err != nil {
+				return nil, err
+			}
+
+			switch cmd.Command {
 			case "Up":
-				directionIsActive = (direction == true)
-				upSections++
+				if len(strings.TrimSpace(buf.String())) > 0 {
+					return nil, errNoTerminator()
+				}
+				currentDirection = directionUp
+				if cmd.HasOption(optionNoTransaction) {
+					p.DisableTransactionUp = true
+				}
 				break
 
 			case "Down":
-				directionIsActive = (direction == false)
-				downSections++
+				if len(strings.TrimSpace(buf.String())) > 0 {
+					return nil, errNoTerminator()
+				}
+				currentDirection = directionDown
+				if cmd.HasOption(optionNoTransaction) {
+					p.DisableTransactionDown = true
+				}
 				break
 
 			case "StatementBegin":
-				if directionIsActive {
+				if currentDirection != directionNone {
 					ignoreSemicolons = true
 				}
 				break
 
 			case "StatementEnd":
-				if directionIsActive {
+				if currentDirection != directionNone {
 					statementEnded = (ignoreSemicolons == true)
 					ignoreSemicolons = false
 				}
@@ -92,20 +173,34 @@ func SplitSQLStatements(r io.ReadSeeker, direction bool) ([]string, error) {
 			}
 		}
 
-		if !directionIsActive {
+		if currentDirection == directionNone {
 			continue
 		}
 
-		if _, err := buf.WriteString(line + "\n"); err != nil {
-			return nil, err
+		isLineSeparator := !ignoreSemicolons && len(LineSeparator) > 0 && line == LineSeparator
+
+		if !isLineSeparator {
+			if _, err := buf.WriteString(line + "\n"); err != nil {
+				return nil, err
+			}
 		}
 
 		// Wrap up the two supported cases: 1) basic with semicolon; 2) psql statement
 		// Lines that end with semicolon that are in a statement block
 		// do not conclude statement.
-		if (!ignoreSemicolons && endsWithSemicolon(line)) || statementEnded {
+		if (!ignoreSemicolons && (endsWithSemicolon(line) || isLineSeparator)) || statementEnded {
 			statementEnded = false
-			stmts = append(stmts, buf.String())
+			switch currentDirection {
+			case directionUp:
+				p.UpStatements = append(p.UpStatements, buf.String())
+
+			case directionDown:
+				p.DownStatements = append(p.DownStatements, buf.String())
+
+			default:
+				panic("impossible state")
+			}
+
 			buf.Reset()
 		}
 	}
@@ -119,10 +214,14 @@ func SplitSQLStatements(r io.ReadSeeker, direction bool) ([]string, error) {
 		return nil, errors.New("ERROR: saw '-- +migrate StatementBegin' with no matching '-- +migrate StatementEnd'")
 	}
 
-	if upSections == 0 && downSections == 0 {
+	if currentDirection == directionNone {
 		return nil, errors.New(`ERROR: no Up/Down annotations found, so no statements were executed.
 			See https://github.com/rubenv/sql-migrate for details.`)
 	}
 
-	return stmts, nil
+	if len(strings.TrimSpace(buf.String())) > 0 {
+		return nil, errNoTerminator()
+	}
+
+	return p, nil
 }

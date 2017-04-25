@@ -50,11 +50,16 @@ func (r *Reader) start() {
 }
 
 func (r *Reader) read() error {
-	resp, err := r.client.GetLogEvents(&cloudwatchlogs.GetLogEventsInput{
+
+	params := &cloudwatchlogs.GetLogEventsInput{
 		LogGroupName:  r.group,
 		LogStreamName: r.stream,
+		StartFromHead: aws.Bool(true),
 		NextToken:     r.nextToken,
-	})
+	}
+
+	resp, err := r.client.GetLogEvents(params)
+
 	if err != nil {
 		return err
 	}

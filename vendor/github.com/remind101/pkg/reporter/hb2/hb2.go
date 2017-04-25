@@ -3,11 +3,14 @@
 package hb2
 
 import (
+	"fmt"
 	"net/http"
+	"reflect"
 	"strings"
 
-	"github.com/honeybadger-io/honeybadger-go"
+	"github.com/pkg/errors"
 	"github.com/remind101/pkg/reporter"
+	"github.com/remind101/pkg/reporter/hb2/internal/honeybadger-go"
 	"golang.org/x/net/context"
 )
 
@@ -36,6 +39,29 @@ func NewReporter(cfg Config) *hbReporter {
 	return &hbReporter{honeybadger.New(hbCfg)}
 }
 
+func makeHoneybadgerFrames(stack errors.StackTrace) []*honeybadger.Frame {
+	length := len(stack)
+	frames := make([]*honeybadger.Frame, length)
+	for index, frame := range stack[:length] {
+		frames[index] = &honeybadger.Frame{
+			Number: fmt.Sprintf("%d", frame),
+			File:   fmt.Sprintf("%s", frame),
+			Method: fmt.Sprintf("%n", frame),
+		}
+	}
+	return frames
+}
+
+func makeHoneybadgerError(err *reporter.Error) honeybadger.Error {
+	cause := err.Cause()
+	frames := makeHoneybadgerFrames(err.StackTrace())
+	return honeybadger.Error{
+		Message: err.Error(),
+		Class:   reflect.TypeOf(cause).String(),
+		Stack:   frames,
+	}
+}
+
 // Report reports the error to honeybadger.
 func (r *hbReporter) Report(ctx context.Context, err error) error {
 	extras := []interface{}{}
@@ -45,7 +71,7 @@ func (r *hbReporter) Report(ctx context.Context, err error) error {
 		if r := e.Request; r != nil {
 			extras = append(extras, honeybadger.Params(r.Form), getRequestData(r), *r.URL)
 		}
-		err = e.Err
+		err = makeHoneybadgerError(e)
 	}
 
 	_, clientErr := r.client.Notify(err, extras...)

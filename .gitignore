@@ -2,3 +2,5 @@
 build
 .vagrant
 scripts
+dynamo-local
+.DS_Store

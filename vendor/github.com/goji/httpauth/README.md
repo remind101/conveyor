@@ -102,7 +102,7 @@ func main() {
 
 // myAuthFunc is not secure.  It checks to see if the password is simply
 // the username repeated three times.
-func myAuthFunc(user, pass string) bool {
+func myAuthFunc(user, pass string, r *http.Request) bool {
     return pass == strings.Repeat(user, 3)
 }
 ```

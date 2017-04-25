@@ -6,10 +6,11 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"os"
 
 	"github.com/rubenv/sql-migrate"
 	"gopkg.in/gorp.v1"
-	"gopkg.in/yaml.v1"
+	"gopkg.in/yaml.v2"
 
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/lib/pq"
@@ -19,7 +20,7 @@ import (
 var dialects = map[string]gorp.Dialect{
 	"sqlite3":  gorp.SqliteDialect{},
 	"postgres": gorp.PostgresDialect{},
-	"mysql":    gorp.MySQLDialect{"InnoDB", "UTF8"},
+	"mysql":    gorp.MySQLDialect{Engine: "InnoDB", Encoding: "UTF8"},
 }
 
 var ConfigFile string
@@ -71,6 +72,7 @@ func GetEnvironment() (*Environment, error) {
 	if env.DataSource == "" {
 		return nil, errors.New("No data source specified")
 	}
+	env.DataSource = os.ExpandEnv(env.DataSource)
 
 	if env.Dir == "" {
 		env.Dir = "migrations"

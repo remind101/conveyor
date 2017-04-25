@@ -3,67 +3,27 @@
 package mem
 
 import (
-	"os/exec"
+	"encoding/binary"
 	"strconv"
 	"strings"
+	"syscall"
 
-	common "github.com/shirou/gopsutil/common"
+	"github.com/shirou/gopsutil/internal/common"
 )
 
-func getPageSize() (uint64, error) {
-	out, err := exec.Command("pagesize").Output()
-	if err != nil {
-		return 0, err
-	}
-	o := strings.TrimSpace(string(out))
-	p, err := strconv.ParseUint(o, 10, 64)
+func getHwMemsize() (uint64, error) {
+	totalString, err := syscall.Sysctl("hw.memsize")
 	if err != nil {
 		return 0, err
 	}
 
-	return p, nil
-}
+	// syscall.sysctl() helpfully assumes the result is a null-terminated string and
+	// removes the last byte of the result if it's 0 :/
+	totalString += "\x00"
 
-// VirtualMemory returns VirtualmemoryStat.
-func VirtualMemory() (*VirtualMemoryStat, error) {
-	p, err := getPageSize()
-	if err != nil {
-		return nil, err
-	}
+	total := uint64(binary.LittleEndian.Uint64([]byte(totalString)))
 
-	total, err := common.DoSysctrl("hw.memsize")
-	if err != nil {
-		return nil, err
-	}
-	free, err := common.DoSysctrl("vm.page_free_count")
-	if err != nil {
-		return nil, err
-	}
-	parsed := make([]uint64, 0, 7)
-	vv := []string{
-		total[0],
-		free[0],
-	}
-	for _, target := range vv {
-		t, err := strconv.ParseUint(target, 10, 64)
-		if err != nil {
-			return nil, err
-		}
-		parsed = append(parsed, t)
-	}
-
-	ret := &VirtualMemoryStat{
-		Total: parsed[0] * p,
-		Free:  parsed[1] * p,
-	}
-
-	// TODO: platform independent (worked freebsd?)
-	ret.Available = ret.Free + ret.Buffers + ret.Cached
-
-	ret.Used = ret.Total - ret.Free
-	ret.UsedPercent = float64(ret.Total-ret.Available) / float64(ret.Total) * 100.0
-
-	return ret, nil
+	return total, nil
 }
 
 // SwapMemory returns swapinfo.
@@ -97,11 +57,11 @@ func SwapMemory() (*SwapMemoryStat, error) {
 		u = ((total_v - free_v) / total_v) * 100.0
 	}
 
-	// vm.swapusage shows "M", multiply 1000
+	// vm.swapusage shows "M", multiply 1024 * 1024 to convert bytes.
 	ret = &SwapMemoryStat{
-		Total:       uint64(total_v * 1000),
-		Used:        uint64(used_v * 1000),
-		Free:        uint64(free_v * 1000),
+		Total:       uint64(total_v * 1024 * 1024),
+		Used:        uint64(used_v * 1024 * 1024),
+		Free:        uint64(free_v * 1024 * 1024),
 		UsedPercent: u,
 	}
 

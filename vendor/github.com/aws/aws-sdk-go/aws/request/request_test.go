@@ -3,11 +3,13 @@ package request_test
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"runtime"
 	"strconv"
 	"testing"
@@ -15,9 +17,15 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/aws/client"
+	"github.com/aws/aws-sdk-go/aws/client/metadata"
+	"github.com/aws/aws-sdk-go/aws/corehandlers"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/request"
+	"github.com/aws/aws-sdk-go/aws/signer/v4"
 	"github.com/aws/aws-sdk-go/awstesting"
+	"github.com/aws/aws-sdk-go/awstesting/unit"
+	"github.com/aws/aws-sdk-go/private/protocol/jsonrpc"
 	"github.com/aws/aws-sdk-go/private/protocol/rest"
 )
 
@@ -506,6 +514,39 @@ func TestRequest_NoBody(t *testing.T) {
 	}
 }
 
+func TestIsSerializationErrorRetryable(t *testing.T) {
+	testCases := []struct {
+		err      error
+		expected bool
+	}{
+		{
+			err:      awserr.New(request.ErrCodeSerialization, "foo error", nil),
+			expected: false,
+		},
+		{
+			err:      awserr.New("ErrFoo", "foo error", nil),
+			expected: false,
+		},
+		{
+			err:      nil,
+			expected: false,
+		},
+		{
+			err:      awserr.New(request.ErrCodeSerialization, "foo error", stubConnectionResetError),
+			expected: true,
+		},
+	}
+
+	for i, c := range testCases {
+		r := &request.Request{
+			Error: c.err,
+		}
+		if r.IsErrorRetryable() != c.expected {
+			t.Errorf("Case %d: Expected %v, but received %v", i+1, c.expected, !c.expected)
+		}
+	}
+}
+
 func TestWithLogLevel(t *testing.T) {
 	r := &request.Request{}
 
@@ -564,5 +605,188 @@ func TestWithGetResponseHeaders(t *testing.T) {
 
 	if e, a := "headerValue", headers.Get("x-a-header"); e != a {
 		t.Errorf("expect %q header value got %q", e, a)
+	}
+}
+
+type connResetCloser struct {
+}
+
+func (rc *connResetCloser) Read(b []byte) (int, error) {
+	return 0, stubConnectionResetError
+}
+
+func (rc *connResetCloser) Close() error {
+	return nil
+}
+
+func TestSerializationErrConnectionReset(t *testing.T) {
+	count := 0
+	handlers := request.Handlers{}
+	handlers.Send.PushBack(func(r *request.Request) {
+		count++
+		r.HTTPResponse = &http.Response{}
+		r.HTTPResponse.Body = &connResetCloser{}
+	})
+
+	handlers.Sign.PushBackNamed(v4.SignRequestHandler)
+	handlers.Build.PushBackNamed(jsonrpc.BuildHandler)
+	handlers.Unmarshal.PushBackNamed(jsonrpc.UnmarshalHandler)
+	handlers.UnmarshalMeta.PushBackNamed(jsonrpc.UnmarshalMetaHandler)
+	handlers.UnmarshalError.PushBackNamed(jsonrpc.UnmarshalErrorHandler)
+	handlers.AfterRetry.PushBackNamed(corehandlers.AfterRetryHandler)
+
+	op := &request.Operation{
+		Name:       "op",
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
+	}
+
+	meta := metadata.ClientInfo{
+		ServiceName:   "fooService",
+		SigningName:   "foo",
+		SigningRegion: "foo",
+		Endpoint:      "localhost",
+		APIVersion:    "2001-01-01",
+		JSONVersion:   "1.1",
+		TargetPrefix:  "Foo",
+	}
+	cfg := unit.Session.Config.Copy()
+	cfg.MaxRetries = aws.Int(5)
+
+	req := request.New(
+		*cfg,
+		meta,
+		handlers,
+		client.DefaultRetryer{NumMaxRetries: 5},
+		op,
+		&struct {
+		}{},
+		&struct {
+		}{},
+	)
+
+	osErr := stubConnectionResetError
+	req.ApplyOptions(request.WithResponseReadTimeout(time.Second))
+	err := req.Send()
+	if err == nil {
+		t.Error("Expected rror 'SerializationError', but received nil")
+	}
+	if aerr, ok := err.(awserr.Error); ok && aerr.Code() != "SerializationError" {
+		t.Errorf("Expected 'SerializationError', but received %q", aerr.Code())
+	} else if !ok {
+		t.Errorf("Expected 'awserr.Error', but received %v", reflect.TypeOf(err))
+	} else if aerr.OrigErr().Error() != osErr.Error() {
+		t.Errorf("Expected %q, but received %q", osErr.Error(), aerr.OrigErr().Error())
+	}
+
+	if count != 6 {
+		t.Errorf("Expected '6', but received %d", count)
+	}
+}
+
+type testRetryer struct {
+	shouldRetry bool
+}
+
+func (d *testRetryer) MaxRetries() int {
+	return 3
+}
+
+// RetryRules returns the delay duration before retrying this request again
+func (d *testRetryer) RetryRules(r *request.Request) time.Duration {
+	return time.Duration(time.Millisecond)
+}
+
+func (d *testRetryer) ShouldRetry(r *request.Request) bool {
+	d.shouldRetry = true
+	if r.Retryable != nil {
+		return *r.Retryable
+	}
+
+	if r.HTTPResponse.StatusCode >= 500 {
+		return true
+	}
+	return r.IsErrorRetryable()
+}
+
+func TestEnforceShouldRetryCheck(t *testing.T) {
+	tp := &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		ResponseHeaderTimeout: 1 * time.Millisecond,
+	}
+
+	client := &http.Client{Transport: tp}
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(5 * time.Millisecond)
+	}))
+
+	retryer := &testRetryer{}
+	s := awstesting.NewClient(&aws.Config{
+		Region:                  aws.String("mock-region"),
+		MaxRetries:              aws.Int(0),
+		Endpoint:                aws.String(server.URL),
+		DisableSSL:              aws.Bool(true),
+		Retryer:                 retryer,
+		HTTPClient:              client,
+		EnforceShouldRetryCheck: aws.Bool(true),
+	})
+
+	s.Handlers.Validate.Clear()
+	s.Handlers.Unmarshal.PushBack(unmarshal)
+	s.Handlers.UnmarshalError.PushBack(unmarshalError)
+
+	out := &testData{}
+	r := s.NewRequest(&request.Operation{Name: "Operation"}, nil, out)
+	err := r.Send()
+	if err == nil {
+		t.Fatalf("expect error, but got nil")
+	}
+	if e, a := 3, int(r.RetryCount); e != a {
+		t.Errorf("expect %d retry count, got %d", e, a)
+	}
+	if !retryer.shouldRetry {
+		t.Errorf("expect 'true' for ShouldRetry, but got %v", retryer.shouldRetry)
+	}
+}
+
+type errReader struct {
+	err error
+}
+
+func (reader *errReader) Read(b []byte) (int, error) {
+	return 0, reader.err
+}
+
+func (reader *errReader) Close() error {
+	return nil
+}
+
+func TestLoggerNotIgnoringErrors(t *testing.T) {
+	s := awstesting.NewClient(&aws.Config{
+		Region:     aws.String("mock-region"),
+		MaxRetries: aws.Int(0),
+		DisableSSL: aws.Bool(true),
+		LogLevel:   aws.LogLevel(aws.LogDebugWithHTTPBody),
+	})
+
+	s.Handlers.Validate.Clear()
+	s.Handlers.Send.Clear()
+	s.Handlers.Send.PushBack(func(r *request.Request) {
+		r.HTTPResponse = &http.Response{StatusCode: 200, Body: &errReader{errors.New("Foo error")}}
+	})
+	s.AddDebugHandlers()
+
+	out := &testData{}
+	r := s.NewRequest(&request.Operation{Name: "Operation"}, nil, out)
+	err := r.Send()
+	if err == nil {
+		t.Error("expected error, but got nil")
+	}
+
+	if aerr, ok := err.(awserr.Error); !ok {
+		t.Errorf("expected awserr.Error, but got different error, %v", err)
+	} else if aerr.Code() != request.ErrCodeRead {
+		t.Errorf("expected %q, but received %q", request.ErrCodeRead, aerr.Code())
 	}
 }

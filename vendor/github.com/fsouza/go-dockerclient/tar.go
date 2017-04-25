@@ -1,4 +1,4 @@
-// Copyright 2015 go-dockerclient authors. All rights reserved.
+// Copyright 2014 go-dockerclient authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -13,8 +13,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/fsouza/go-dockerclient/external/github.com/docker/docker/pkg/archive"
-	"github.com/fsouza/go-dockerclient/external/github.com/docker/docker/pkg/fileutils"
+	"github.com/moby/moby/pkg/archive"
+	"github.com/moby/moby/pkg/fileutils"
 )
 
 func createTarStream(srcPath, dockerfilePath string) (io.ReadCloser, error) {
@@ -32,7 +32,7 @@ func createTarStream(srcPath, dockerfilePath string) (io.ReadCloser, error) {
 	// removed.  The deamon will remove them for us, if needed, after it
 	// parses the Dockerfile.
 	//
-	// https://github.com/docker/docker/issues/8330
+	// https://github.com/moby/moby/issues/8330
 	//
 	forceIncludeFiles := []string{".dockerignore", dockerfilePath}
 
@@ -67,10 +67,10 @@ func createTarStream(srcPath, dockerfilePath string) (io.ReadCloser, error) {
 func validateContextDirectory(srcPath string, excludes []string) error {
 	return filepath.Walk(filepath.Join(srcPath, "."), func(filePath string, f os.FileInfo, err error) error {
 		// skip this directory/file if it's not in the path, it won't get added to the context
-		if relFilePath, err := filepath.Rel(srcPath, filePath); err != nil {
-			return err
-		} else if skip, err := fileutils.Matches(relFilePath, excludes); err != nil {
-			return err
+		if relFilePath, relErr := filepath.Rel(srcPath, filePath); relErr != nil {
+			return relErr
+		} else if skip, matchErr := fileutils.Matches(relFilePath, excludes); matchErr != nil {
+			return matchErr
 		} else if skip {
 			if f.IsDir() {
 				return filepath.SkipDir

@@ -1,4 +1,4 @@
-// Copyright 2015 go-dockerclient authors. All rights reserved.
+// Copyright 2013 go-dockerclient authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -9,6 +9,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -18,14 +19,17 @@ import (
 	"time"
 )
 
-func newTestClient(rt *FakeRoundTripper) Client {
+func newTestClient(rt http.RoundTripper) Client {
 	endpoint := "http://localhost:4243"
 	u, _ := parseEndpoint("http://localhost:4243", false)
+	testAPIVersion, _ := NewAPIVersion("1.17")
 	client := Client{
 		HTTPClient:             &http.Client{Transport: rt},
+		Dialer:                 &net.Dialer{},
 		endpoint:               endpoint,
 		endpointURL:            u,
 		SkipServerVersionCheck: true,
+		serverAPIVersion:       testAPIVersion,
 	}
 	return client
 }
@@ -239,7 +243,14 @@ func TestInspectImage(t *testing.T) {
      "Created":"2013-03-23T22:24:18.818426Z",
      "Container":"3d67245a8d72ecf13f33dffac9f79dcdf70f75acb84d308770391510e0c23ad0",
      "ContainerConfig":{"Memory":1},
-     "VirtualSize":12345
+     "VirtualSize":12345,
+     "RootFS": {
+       "Type": "layers",
+       "Layers": [
+         "sha256:05a0deb2e405eb3095ab646dc1695a26bffe8bd4071e3af90efcf16e9d3f6d93",
+         "sha256:4c5db681b9aa9ab1cf666ec969a810c8ff4410e70e06394670dc4f3bf595532f"
+       ]
+    }
 }`
 
 	created, err := time.Parse(time.RFC3339Nano, "2013-03-23T22:24:18.818426Z")
@@ -256,6 +267,13 @@ func TestInspectImage(t *testing.T) {
 			Memory: 1,
 		},
 		VirtualSize: 12345,
+		RootFS: &RootFS{
+			Type: "layers",
+			Layers: []string{
+				"sha256:05a0deb2e405eb3095ab646dc1695a26bffe8bd4071e3af90efcf16e9d3f6d93",
+				"sha256:4c5db681b9aa9ab1cf666ec969a810c8ff4410e70e06394670dc4f3bf595532f",
+			},
+		},
 	}
 	fakeRT := &FakeRoundTripper{message: body, status: http.StatusOK}
 	client := newTestClient(fakeRT)
@@ -433,6 +451,74 @@ func TestPullImage(t *testing.T) {
 	expectedQuery := "fromImage=base"
 	if query := req.URL.Query().Encode(); query != expectedQuery {
 		t.Errorf("PullImage: Wrong query strin. Want %q. Got %q.", expectedQuery, query)
+	}
+}
+
+func TestPullImageWithDigest(t *testing.T) {
+	fakeRT := &FakeRoundTripper{message: "Pulling 1/100", status: http.StatusOK}
+	client := newTestClient(fakeRT)
+	var buf bytes.Buffer
+	err := client.PullImage(PullImageOptions{
+		Repository:   "tsuru/bs:latest@sha256:504a2f04aa5d07768e4f7467ddd2618b07dd6013cfabca7dc527a3d9fa786580",
+		OutputStream: &buf,
+	}, AuthConfiguration{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	expected := "Pulling 1/100"
+	if buf.String() != expected {
+		t.Errorf("PullImage: Wrong output. Want %q. Got %q.", expected, buf.String())
+	}
+	req := fakeRT.requests[0]
+	if req.Method != "POST" {
+		t.Errorf("PullImage: Wrong HTTP method. Want POST. Got %s.", req.Method)
+	}
+	u, _ := url.Parse(client.getURL("/images/create"))
+	if req.URL.Path != u.Path {
+		t.Errorf("PullImage: Wrong request path. Want %q. Got %q.", u.Path, req.URL.Path)
+	}
+	expectedQuery := url.Values{
+		"fromImage": {"tsuru/bs:latest"},
+		"tag":       {"sha256:504a2f04aa5d07768e4f7467ddd2618b07dd6013cfabca7dc527a3d9fa786580"},
+	}
+	if !reflect.DeepEqual(req.URL.Query(), expectedQuery) {
+		t.Errorf("PullImage: Wrong query string\nWant %#v\nGot  %#v", expectedQuery, req.URL.Query())
+	}
+}
+
+func TestPullImageWithDigestAndTag(t *testing.T) {
+	// This is probably a wrong use of the Docker API, but let's let users
+	// send the request to the API. And also changing this behavior would
+	// be a breaking change on go-dockerclient.
+	fakeRT := &FakeRoundTripper{message: "Pulling 1/100", status: http.StatusOK}
+	client := newTestClient(fakeRT)
+	var buf bytes.Buffer
+	err := client.PullImage(PullImageOptions{
+		Repository:   "tsuru/bs:latest@sha256:504a2f04aa5d07768e4f7467ddd2618b07dd6013cfabca7dc527a3d9fa786580",
+		Tag:          "latest",
+		OutputStream: &buf,
+	}, AuthConfiguration{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	expected := "Pulling 1/100"
+	if buf.String() != expected {
+		t.Errorf("PullImage: Wrong output. Want %q. Got %q.", expected, buf.String())
+	}
+	req := fakeRT.requests[0]
+	if req.Method != "POST" {
+		t.Errorf("PullImage: Wrong HTTP method. Want POST. Got %s.", req.Method)
+	}
+	u, _ := url.Parse(client.getURL("/images/create"))
+	if req.URL.Path != u.Path {
+		t.Errorf("PullImage: Wrong request path. Want %q. Got %q.", u.Path, req.URL.Path)
+	}
+	expectedQuery := url.Values{
+		"fromImage": {"tsuru/bs:latest@sha256:504a2f04aa5d07768e4f7467ddd2618b07dd6013cfabca7dc527a3d9fa786580"},
+		"tag":       {"latest"},
+	}
+	if !reflect.DeepEqual(req.URL.Query(), expectedQuery) {
+		t.Errorf("PullImage: Wrong query string\nWant %#vGot  %#v", expectedQuery, req.URL.Query())
 	}
 }
 
@@ -670,6 +756,7 @@ func TestBuildImageParameters(t *testing.T) {
 	opts := BuildImageOptions{
 		Name:                "testImage",
 		NoCache:             true,
+		CacheFrom:           []string{"test1", "test2"},
 		SuppressOutput:      true,
 		Pull:                true,
 		RmTmpContainer:      true,
@@ -677,26 +764,40 @@ func TestBuildImageParameters(t *testing.T) {
 		Memory:              1024,
 		Memswap:             2048,
 		CPUShares:           10,
+		CPUQuota:            7500,
+		CPUPeriod:           100000,
 		CPUSetCPUs:          "0-3",
+		Ulimits:             []ULimit{{Name: "nofile", Soft: 100, Hard: 200}},
+		BuildArgs:           []BuildArg{{Name: "SOME_VAR", Value: "some_value"}},
 		InputStream:         &buf,
 		OutputStream:        &buf,
+		Labels:              map[string]string{"k": "v"},
+		NetworkMode:         "host",
+		CgroupParent:        "cgparent",
 	}
 	err := client.BuildImage(opts)
-	if err != nil && strings.Index(err.Error(), "build image fail") == -1 {
+	if err != nil && !strings.Contains(err.Error(), "build image fail") {
 		t.Fatal(err)
 	}
 	req := fakeRT.requests[0]
 	expected := map[string][]string{
-		"t":          {opts.Name},
-		"nocache":    {"1"},
-		"q":          {"1"},
-		"pull":       {"1"},
-		"rm":         {"1"},
-		"forcerm":    {"1"},
-		"memory":     {"1024"},
-		"memswap":    {"2048"},
-		"cpushares":  {"10"},
-		"cpusetcpus": {"0-3"},
+		"t":            {opts.Name},
+		"nocache":      {"1"},
+		"q":            {"1"},
+		"pull":         {"1"},
+		"rm":           {"1"},
+		"forcerm":      {"1"},
+		"memory":       {"1024"},
+		"memswap":      {"2048"},
+		"cpushares":    {"10"},
+		"cpuquota":     {"7500"},
+		"cpuperiod":    {"100000"},
+		"cpusetcpus":   {"0-3"},
+		"labels":       {`{"k":"v"}`},
+		"ulimits":      {`[{"Name":"nofile","Soft":100,"Hard":200}]`},
+		"buildargs":    {`{"SOME_VAR":"some_value"}`},
+		"networkmode":  {"host"},
+		"cgroupparent": {"cgparent"},
 	}
 	got := map[string][]string(req.URL.Query())
 	if !reflect.DeepEqual(got, expected) {
@@ -815,7 +916,7 @@ func TestTagImageParameters(t *testing.T) {
 	client := newTestClient(fakeRT)
 	opts := TagImageOptions{Repo: "testImage"}
 	err := client.TagImage("base", opts)
-	if err != nil && strings.Index(err.Error(), "tag image fail") == -1 {
+	if err != nil && !strings.Contains(err.Error(), "tag image fail") {
 		t.Fatal(err)
 	}
 	req := fakeRT.requests[0]
@@ -963,5 +1064,71 @@ func TestSearchImages(t *testing.T) {
 	}
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("SearchImages: Wrong return value. Want %#v. Got %#v.", expected, result)
+	}
+}
+
+func TestSearchImagesEx(t *testing.T) {
+	body := `[
+	{
+		"description":"A container with Cassandra 2.0.3",
+		"is_official":true,
+		"is_automated":true,
+		"name":"poklet/cassandra",
+		"star_count":17
+	},
+	{
+		"description":"A container with Cassandra 2.0.3",
+		"is_official":true,
+		"is_automated":false,
+		"name":"poklet/cassandra",
+		"star_count":17
+	}
+	,
+	{
+		"description":"A container with Cassandra 2.0.3",
+		"is_official":false,
+		"is_automated":true,
+		"name":"poklet/cassandra",
+		"star_count":17
+	}
+]`
+	var expected []APIImageSearch
+	err := json.Unmarshal([]byte(body), &expected)
+	if err != nil {
+		t.Fatal(err)
+	}
+	client := newTestClient(&FakeRoundTripper{message: body, status: http.StatusOK})
+	auth := AuthConfiguration{}
+	result, err := client.SearchImagesEx("cassandra", auth)
+	if err != nil {
+		t.Error(err)
+	}
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("SearchImages: Wrong return value. Want %#v. Got %#v.", expected, result)
+	}
+}
+
+func TestPruneImages(t *testing.T) {
+	results := `{
+		"ImagesDeleted": [
+			{"Deleted": "a"},
+			{"Deleted": "b"},
+			{"Deleted": "c"}
+		],
+		"SpaceReclaimed": 123
+	}`
+
+	expected := &PruneImagesResults{}
+	err := json.Unmarshal([]byte(results), expected)
+	if err != nil {
+		t.Fatal(err)
+	}
+	client := newTestClient(&FakeRoundTripper{message: results, status: http.StatusOK})
+	got, err := client.PruneImages(PruneImagesOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(got, expected) {
+		t.Errorf("PruneImages: Expected %#v. Got %#v.", expected, got)
 	}
 }

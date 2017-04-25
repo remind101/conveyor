@@ -49,3 +49,7 @@ func (r *TestReporter) ReportError(id int64, exceptionType, errorMessage, stackT
 	r.f(id, exceptionType, errorMessage, stackTrace, stackFrameDelim)
 	return 0, nil
 }
+
+func (r *TestReporter) ReportCustomMetric(name string, value float64) (int, error) {
+	return 0, nil
+}

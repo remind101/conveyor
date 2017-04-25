@@ -1,6 +1,12 @@
+// Copyright 2014 The go-github AUTHORS. All rights reserved.
+//
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package github
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -22,7 +28,7 @@ func TestGitService_GetBlob(t *testing.T) {
 			}`)
 	})
 
-	blob, _, err := client.Git.GetBlob("o", "r", "s")
+	blob, _, err := client.Git.GetBlob(context.Background(), "o", "r", "s")
 	if err != nil {
 		t.Errorf("Git.GetBlob returned error: %v", err)
 	}
@@ -38,7 +44,7 @@ func TestGitService_GetBlob(t *testing.T) {
 }
 
 func TestGitService_GetBlob_invalidOwner(t *testing.T) {
-	_, _, err := client.Git.GetBlob("%", "%", "%")
+	_, _, err := client.Git.GetBlob(context.Background(), "%", "%", "%")
 	testURLParseError(t, err)
 }
 
@@ -74,7 +80,7 @@ func TestGitService_CreateBlob(t *testing.T) {
 		}`)
 	})
 
-	blob, _, err := client.Git.CreateBlob("o", "r", input)
+	blob, _, err := client.Git.CreateBlob(context.Background(), "o", "r", input)
 	if err != nil {
 		t.Errorf("Git.CreateBlob returned error: %v", err)
 	}
@@ -87,6 +93,6 @@ func TestGitService_CreateBlob(t *testing.T) {
 }
 
 func TestGitService_CreateBlob_invalidOwner(t *testing.T) {
-	_, _, err := client.Git.CreateBlob("%", "%", &Blob{})
+	_, _, err := client.Git.CreateBlob(context.Background(), "%", "%", &Blob{})
 	testURLParseError(t, err)
 }

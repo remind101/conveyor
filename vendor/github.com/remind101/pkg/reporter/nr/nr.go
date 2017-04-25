@@ -35,8 +35,8 @@ func (r *Reporter) Report(ctx context.Context, err error) error {
 		if e, ok := err.(*reporter.Error); ok {
 			exceptionType = util.ClassName(e.Err)
 
-			for _, l := range e.Backtrace {
-				stackTrace = append(stackTrace, fmt.Sprintf("%s:%d %s", l.File, l.Line, util.FunctionName(l.PC)))
+			for _, frame := range e.StackTrace() {
+				stackTrace = append(stackTrace, fmt.Sprintf("%s:%d %n", frame, frame, frame))
 			}
 
 		}

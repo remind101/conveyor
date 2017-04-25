@@ -7,12 +7,14 @@ import (
 	"strings"
 	"syscall"
 
-	common "github.com/shirou/gopsutil/common"
+	"github.com/shirou/gopsutil/internal/common"
 )
 
 func VirtualMemory() (*VirtualMemoryStat, error) {
-	filename := "/proc/meminfo"
+	filename := common.HostProc("meminfo")
 	lines, _ := common.ReadLines(filename)
+	// flag if MemAvailable is in /proc/meminfo (kernel 3.14+)
+	memavail := false
 
 	ret := &VirtualMemoryStat{}
 	for _, line := range lines {
@@ -30,21 +32,40 @@ func VirtualMemory() (*VirtualMemoryStat, error) {
 		}
 		switch key {
 		case "MemTotal":
-			ret.Total = t * 1000
+			ret.Total = t * 1024
 		case "MemFree":
-			ret.Free = t * 1000
+			ret.Free = t * 1024
+		case "MemAvailable":
+			memavail = true
+			ret.Available = t * 1024
 		case "Buffers":
-			ret.Buffers = t * 1000
+			ret.Buffers = t * 1024
 		case "Cached":
-			ret.Cached = t * 1000
+			ret.Cached = t * 1024
 		case "Active":
-			ret.Active = t * 1000
+			ret.Active = t * 1024
 		case "Inactive":
-			ret.Inactive = t * 1000
+			ret.Inactive = t * 1024
+		case "Writeback":
+			ret.Writeback = t * 1024
+		case "WritebackTmp":
+			ret.WritebackTmp = t * 1024
+		case "Dirty":
+			ret.Dirty = t * 1024
+		case "Shmem":
+			ret.Shared = t * 1024
+		case "Slab":
+			ret.Slab = t * 1024
+		case "PageTables":
+			ret.PageTables = t * 1024
+		case "SwapCached":
+			ret.SwapCached = t * 1024
 		}
 	}
-	ret.Available = ret.Free + ret.Buffers + ret.Cached
-	ret.Used = ret.Total - ret.Free
+	if !memavail {
+		ret.Available = ret.Free + ret.Buffers + ret.Cached
+	}
+	ret.Used = ret.Total - ret.Available
 	ret.UsedPercent = float64(ret.Total-ret.Available) / float64(ret.Total) * 100.0
 
 	return ret, nil
@@ -57,8 +78,8 @@ func SwapMemory() (*SwapMemoryStat, error) {
 		return nil, err
 	}
 	ret := &SwapMemoryStat{
-		Total: uint64(sysinfo.Totalswap),
-		Free:  uint64(sysinfo.Freeswap),
+		Total: uint64(sysinfo.Totalswap) * uint64(sysinfo.Unit),
+		Free:  uint64(sysinfo.Freeswap) * uint64(sysinfo.Unit),
 	}
 	ret.Used = ret.Total - ret.Free
 	//check Infinity
@@ -67,7 +88,8 @@ func SwapMemory() (*SwapMemoryStat, error) {
 	} else {
 		ret.UsedPercent = 0
 	}
-	lines, _ := common.ReadLines("/proc/vmstat")
+	filename := common.HostProc("vmstat")
+	lines, _ := common.ReadLines(filename)
 	for _, l := range lines {
 		fields := strings.Fields(l)
 		if len(fields) < 2 {

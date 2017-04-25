@@ -1,6 +1,12 @@
+// Copyright 2014 The go-github AUTHORS. All rights reserved.
+//
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package github
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -8,27 +14,56 @@ import (
 	"testing"
 )
 
-func TestDecode(t *testing.T) {
-	setup()
-	defer teardown()
-	r := RepositoryContent{Encoding: String("base64"), Content: String("aGVsbG8=")}
-	o, err := r.Decode()
-	if err != nil {
-		t.Errorf("Failed to decode content.")
+func TestRepositoryContent_GetContent(t *testing.T) {
+	tests := []struct {
+		encoding, content *string // input encoding and content
+		want              string  // desired output
+		wantErr           bool    // whether an error is expected
+	}{
+		{
+			encoding: String(""),
+			content:  String("hello"),
+			want:     "hello",
+			wantErr:  false,
+		},
+		{
+			encoding: nil,
+			content:  String("hello"),
+			want:     "hello",
+			wantErr:  false,
+		},
+		{
+			encoding: nil,
+			content:  nil,
+			want:     "",
+			wantErr:  false,
+		},
+		{
+			encoding: String("base64"),
+			content:  String("aGVsbG8="),
+			want:     "hello",
+			wantErr:  false,
+		},
+		{
+			encoding: String("bad"),
+			content:  String("aGVsbG8="),
+			want:     "",
+			wantErr:  true,
+		},
 	}
-	want := "hello"
-	if string(o) != want {
-		t.Errorf("RepositoryContent.Decode returned %+v, want %+v", string(o), want)
-	}
-}
 
-func TestDecodeBadEncoding(t *testing.T) {
-	setup()
-	defer teardown()
-	r := RepositoryContent{Encoding: String("bad")}
-	_, err := r.Decode()
-	if err == nil {
-		t.Errorf("Should fail to decode non-base64")
+	for _, tt := range tests {
+		r := RepositoryContent{Encoding: tt.encoding, Content: tt.content}
+		got, err := r.GetContent()
+		if err != nil && !tt.wantErr {
+			t.Errorf("RepositoryContent(%q, %q) returned unexpected error: %v", tt.encoding, tt.content, err)
+		}
+		if err == nil && tt.wantErr {
+			t.Errorf("RepositoryContent(%q, %q) did not return unexpected error", tt.encoding, tt.content)
+		}
+		if want := tt.want; got != want {
+			t.Errorf("RepositoryContent.GetContent returned %+v, want %+v", got, want)
+		}
 	}
 }
 
@@ -45,7 +80,7 @@ func TestRepositoriesService_GetReadme(t *testing.T) {
 		  "path": "README.md"
 		}`)
 	})
-	readme, _, err := client.Repositories.GetReadme("o", "r", &RepositoryContentGetOptions{})
+	readme, _, err := client.Repositories.GetReadme(context.Background(), "o", "r", &RepositoryContentGetOptions{})
 	if err != nil {
 		t.Errorf("Repositories.GetReadme returned error: %v", err)
 	}
@@ -71,7 +106,7 @@ func TestRepositoriesService_DownloadContents_Success(t *testing.T) {
 		fmt.Fprint(w, "foo")
 	})
 
-	r, err := client.Repositories.DownloadContents("o", "r", "d/f", nil)
+	r, err := client.Repositories.DownloadContents(context.Background(), "o", "r", "d/f", nil)
 	if err != nil {
 		t.Errorf("Repositories.DownloadContents returned error: %v", err)
 	}
@@ -98,7 +133,7 @@ func TestRepositoriesService_DownloadContents_NoDownloadURL(t *testing.T) {
 		}]`)
 	})
 
-	_, err := client.Repositories.DownloadContents("o", "r", "d/f", nil)
+	_, err := client.Repositories.DownloadContents(context.Background(), "o", "r", "d/f", nil)
 	if err == nil {
 		t.Errorf("Repositories.DownloadContents did not return expected error")
 	}
@@ -112,7 +147,7 @@ func TestRepositoriesService_DownloadContents_NoFile(t *testing.T) {
 		fmt.Fprint(w, `[]`)
 	})
 
-	_, err := client.Repositories.DownloadContents("o", "r", "d/f", nil)
+	_, err := client.Repositories.DownloadContents(context.Background(), "o", "r", "d/f", nil)
 	if err == nil {
 		t.Errorf("Repositories.DownloadContents did not return expected error")
 	}
@@ -131,13 +166,52 @@ func TestRepositoriesService_GetContents_File(t *testing.T) {
 		  "path": "LICENSE"
 		}`)
 	})
-	fileContents, _, _, err := client.Repositories.GetContents("o", "r", "p", &RepositoryContentGetOptions{})
+	fileContents, _, _, err := client.Repositories.GetContents(context.Background(), "o", "r", "p", &RepositoryContentGetOptions{})
 	if err != nil {
 		t.Errorf("Repositories.GetContents returned error: %v", err)
 	}
 	want := &RepositoryContent{Type: String("file"), Name: String("LICENSE"), Size: Int(20678), Encoding: String("base64"), Path: String("LICENSE")}
 	if !reflect.DeepEqual(fileContents, want) {
 		t.Errorf("Repositories.GetContents returned %+v, want %+v", fileContents, want)
+	}
+}
+
+func TestRepositoriesService_GetContents_FilenameNeedsEscape(t *testing.T) {
+	setup()
+	defer teardown()
+	mux.HandleFunc("/repos/o/r/contents/p#?%/中.go", func(w http.ResponseWriter, r *http.Request) {
+		testMethod(t, r, "GET")
+		fmt.Fprint(w, `{}`)
+	})
+	_, _, _, err := client.Repositories.GetContents(context.Background(), "o", "r", "p#?%/中.go", &RepositoryContentGetOptions{})
+	if err != nil {
+		t.Fatalf("Repositories.GetContents returned error: %v", err)
+	}
+}
+
+func TestRepositoriesService_GetContents_DirectoryWithSpaces(t *testing.T) {
+	setup()
+	defer teardown()
+	mux.HandleFunc("/repos/o/r/contents/some directory/file.go", func(w http.ResponseWriter, r *http.Request) {
+		testMethod(t, r, "GET")
+		fmt.Fprint(w, `{}`)
+	})
+	_, _, _, err := client.Repositories.GetContents(context.Background(), "o", "r", "some directory/file.go", &RepositoryContentGetOptions{})
+	if err != nil {
+		t.Fatalf("Repositories.GetContents returned error: %v", err)
+	}
+}
+
+func TestRepositoriesService_GetContents_DirectoryWithPlusChars(t *testing.T) {
+	setup()
+	defer teardown()
+	mux.HandleFunc("/repos/o/r/contents/some directory+name/file.go", func(w http.ResponseWriter, r *http.Request) {
+		testMethod(t, r, "GET")
+		fmt.Fprint(w, `{}`)
+	})
+	_, _, _, err := client.Repositories.GetContents(context.Background(), "o", "r", "some directory+name/file.go", &RepositoryContentGetOptions{})
+	if err != nil {
+		t.Fatalf("Repositories.GetContents returned error: %v", err)
 	}
 }
 
@@ -158,7 +232,7 @@ func TestRepositoriesService_GetContents_Directory(t *testing.T) {
 		  "path": "LICENSE"
 		}]`)
 	})
-	_, directoryContents, _, err := client.Repositories.GetContents("o", "r", "p", &RepositoryContentGetOptions{})
+	_, directoryContents, _, err := client.Repositories.GetContents(context.Background(), "o", "r", "p", &RepositoryContentGetOptions{})
 	if err != nil {
 		t.Errorf("Repositories.GetContents returned error: %v", err)
 	}
@@ -191,7 +265,7 @@ func TestRepositoriesService_CreateFile(t *testing.T) {
 		Content:   content,
 		Committer: &CommitAuthor{Name: String("n"), Email: String("e")},
 	}
-	createResponse, _, err := client.Repositories.CreateFile("o", "r", "p", repositoryContentsOptions)
+	createResponse, _, err := client.Repositories.CreateFile(context.Background(), "o", "r", "p", repositoryContentsOptions)
 	if err != nil {
 		t.Errorf("Repositories.CreateFile returned error: %v", err)
 	}
@@ -231,7 +305,7 @@ func TestRepositoriesService_UpdateFile(t *testing.T) {
 		SHA:       &sha,
 		Committer: &CommitAuthor{Name: String("n"), Email: String("e")},
 	}
-	updateResponse, _, err := client.Repositories.UpdateFile("o", "r", "p", repositoryContentsOptions)
+	updateResponse, _, err := client.Repositories.UpdateFile(context.Background(), "o", "r", "p", repositoryContentsOptions)
 	if err != nil {
 		t.Errorf("Repositories.UpdateFile returned error: %v", err)
 	}
@@ -267,7 +341,7 @@ func TestRepositoriesService_DeleteFile(t *testing.T) {
 		SHA:       &sha,
 		Committer: &CommitAuthor{Name: String("n"), Email: String("e")},
 	}
-	deleteResponse, _, err := client.Repositories.DeleteFile("o", "r", "p", repositoryContentsOptions)
+	deleteResponse, _, err := client.Repositories.DeleteFile(context.Background(), "o", "r", "p", repositoryContentsOptions)
 	if err != nil {
 		t.Errorf("Repositories.DeleteFile returned error: %v", err)
 	}
@@ -290,7 +364,7 @@ func TestRepositoriesService_GetArchiveLink(t *testing.T) {
 		testMethod(t, r, "GET")
 		http.Redirect(w, r, "http://github.com/a", http.StatusFound)
 	})
-	url, resp, err := client.Repositories.GetArchiveLink("o", "r", Tarball, &RepositoryContentGetOptions{})
+	url, resp, err := client.Repositories.GetArchiveLink(context.Background(), "o", "r", Tarball, &RepositoryContentGetOptions{})
 	if err != nil {
 		t.Errorf("Repositories.GetArchiveLink returned error: %v", err)
 	}
