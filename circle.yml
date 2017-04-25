@@ -18,6 +18,7 @@ checkout:
 
 dependencies:
   override:
+    - go get -u github.com/jteeuwen/go-bindata/...
     - cd ~/.go_workspace/src/github.com/remind101/conveyor && make bootstrap
     - go version
 
