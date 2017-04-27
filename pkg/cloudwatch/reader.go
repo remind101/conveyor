@@ -2,9 +2,9 @@ package cloudwatch
 
 import (
 	"bytes"
+	"io"
 	"sync"
 	"time"
-	"fmt"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
@@ -21,17 +21,21 @@ type Reader struct {
 
 	b lockingBuffer
 
+	closed bool
+
 	// If an error occurs when getting events from the stream, this will be
 	// populated and subsequent calls to Read will return the error.
 	err error
 }
+
+// http://www.nthelp.com/ascii.htm
+const endOfText = '\x03'
 
 func NewReader(group, stream string, client *cloudwatchlogs.CloudWatchLogs) *Reader {
 	return newReader(group, stream, client)
 }
 
 func newReader(group, stream string, client client) *Reader {
-	fmt.Println("Creating a new reader")
 	r := &Reader{
 		group:    aws.String(group),
 		stream:   aws.String(stream),
@@ -57,7 +61,7 @@ func (r *Reader) read() error {
 		LogGroupName:  r.group,
 		LogStreamName: r.stream,
 		StartFromHead: aws.Bool(true),
-		NextToken: r.nextToken,
+		NextToken:     r.nextToken,
 	}
 
 	resp, err := r.client.GetLogEvents(params)
@@ -66,16 +70,15 @@ func (r *Reader) read() error {
 		return err
 	}
 
-	// // We want to re-use the existing token in the event that
-	// // NextForwardToken is nil, which means there's no new messages to
-	// // consume.
+	// We want to re-use the existing token in the event that
+	// NextForwardToken is nil, which means there's no new messages to
+	// consume.
 	if resp.NextForwardToken != nil {
 		r.nextToken = resp.NextForwardToken
 	}
 
-	// // If there are no messages, return so that the consumer can read again.
+	// If there are no messages, return so that the consumer can read again.
 	if len(resp.Events) == 0 {
-		fmt.Println("Empty Events")
 		return nil
 	}
 
@@ -101,17 +104,30 @@ func (r *Reader) Read(b []byte) (int, error) {
 	return r.b.Read(b)
 }
 
+func (r *Reader) Close() error {
+	r.err = io.EOF
+	return nil
+}
+
 // lockingBuffer is a bytes.Buffer that locks Reads and Writes.
 type lockingBuffer struct {
 	sync.Mutex
 	bytes.Buffer
+	closed bool
 }
 
 func (r *lockingBuffer) Read(b []byte) (int, error) {
 	r.Lock()
 	defer r.Unlock()
 
-	return r.Buffer.Read(b)
+	n, err := r.Buffer.Read(b)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return n, nil
+
 }
 
 func (r *lockingBuffer) Write(b []byte) (int, error) {

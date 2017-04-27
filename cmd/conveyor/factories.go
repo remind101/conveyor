@@ -11,7 +11,9 @@ import (
 	"golang.org/x/oauth2"
 
 	"github.com/DataDog/datadog-go/statsd"
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/ssm"
 	"github.com/codegangsta/cli"
 	"github.com/codegangsta/negroni"
 	"github.com/ejholmes/slash"
@@ -21,6 +23,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/remind101/conveyor"
 	"github.com/remind101/conveyor/builder"
+	"github.com/remind101/conveyor/builder/codebuild"
 	"github.com/remind101/conveyor/builder/datadog"
 	"github.com/remind101/conveyor/builder/docker"
 	"github.com/remind101/conveyor/logs"
@@ -117,17 +120,78 @@ func newSlackServer(cy *conveyor.Conveyor, c *cli.Context) http.Handler {
 	return slash.NewServer(slash.ValidateToken(s, c.String("slack.token")))
 }
 
-func newBuilder(c *cli.Context) builder.Builder {
-	db, err := docker.NewBuilderFromEnv()
-	if err != nil {
-		must(err)
+func selectBuilder(c *cli.Context) builder.Builder {
+	selectedBuilder := c.String("builder")
+
+	switch selectedBuilder {
+	case "docker":
+		db, err := docker.NewBuilderFromEnv()
+		if err != nil {
+			must(err)
+		}
+		db.DryRun = c.Bool("dry")
+		db.Image = c.String("builder.image")
+
+		return db
+
+	case "codebuild":
+		cb := codebuild.NewBuilder(session.Must(session.NewSession()))
+
+		// Codebuild configs
+		cb.ServiceRole = c.String("builder.codebuild.serviceRole")
+		cb.ComputeType = c.String("builder.codebuild.computeType")
+		cb.Image = c.String("builder.image")
+
+		// // Dockerhub configuration
+		// cb.DockerUsername = c.String("docker.username")
+		// cb.DockerPassword = c.String("docker.password")
+
+		// Add secrets to SSM store
+		s := ssm.New(session.Must(session.NewSession()))
+
+		password := &ssm.PutParameterInput{
+			Name:      aws.String("conveyor.dockerusername"),   // Required
+			Type:      aws.String("SecureString"),              // Required
+			Value:     aws.String(c.String("docker.username")), // Required
+			KeyId:     aws.String(c.String("key.arn")),
+			Overwrite: aws.Bool(true),
+		}
+
+		username := &ssm.PutParameterInput{
+			Name:      aws.String("conveyor.dockerpassword"),   // Required
+			Type:      aws.String("SecureString"),              // Required
+			Value:     aws.String(c.String("docker.password")), // Required
+			KeyId:     aws.String(c.String("key.arn")),
+			Overwrite: aws.Bool(true),
+		}
+
+		_, err := s.PutParameter(password)
+
+		if err != nil {
+			must(err)
+		}
+
+		_, err = s.PutParameter(username)
+
+		if err != nil {
+			must(err)
+		}
+
+		return cb
+
+	default:
+		must(fmt.Errorf("Unknown builder: %v", selectedBuilder))
+		return nil
 	}
-	db.DryRun = c.Bool("dry")
-	db.Image = c.String("builder.image")
+}
+
+func newBuilder(c *cli.Context) builder.Builder {
+
+	sb := selectBuilder(c)
 
 	g := builder.NewGitHubClient(c.String("github.token"))
 
-	var backend builder.Builder = builder.UpdateGitHubCommitStatus(db, g, fmt.Sprintf(logsURLTemplate, c.String("url")))
+	var backend builder.Builder = builder.UpdateGitHubCommitStatus(sb, g, fmt.Sprintf(logsURLTemplate, c.String("url")))
 
 	if uri := c.String("stats"); uri != "" {
 		u := urlParse(uri)
@@ -150,6 +214,7 @@ func newBuilder(c *cli.Context) builder.Builder {
 	b.Reporter = newReporter(c)
 
 	return b
+
 }
 
 func newReporter(c *cli.Context) reporter.Reporter {
@@ -170,11 +235,17 @@ func newReporter(c *cli.Context) reporter.Reporter {
 func newLogger(c *cli.Context) logs.Logger {
 	u := urlParse(c.String("logger"))
 
+	sess, err := session.NewSession()
+	if err != nil {
+		must(err)
+		return nil
+	}
+
 	switch u.Scheme {
 	case "s3":
-		return s3.NewLogger(session.New(), u.Host)
+		return s3.NewLogger(sess, u.Host)
 	case "cloudwatch":
-		return cloudwatch.NewLogger(session.New(), u.Host)
+		return cloudwatch.NewLogger(sess, u.Host)
 	case "stdout":
 		return logs.Stdout
 	default:

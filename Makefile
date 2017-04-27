@@ -15,7 +15,7 @@ test:
 	go test -short $(shell go list ./... | grep -v /vendor/)
 
 test-payload:
-	curl -H "X-GitHub-Event: push" -X POST http://$(shell docker-machine ip default):8080 -d '{"ref":"refs/heads/master","head_commit": {"id":"827fecd2d36ebeaa2fd05aa8ef3eed1e56a8cd57"},"repository":{"full_name":"remind101/acme-inc"}}'
+	curl -H "X-GitHub-Event: push" -X POST http://$(shell docker-machine ip default):8080 -d '{"ref":"refs/heads/master","head_commit": {"id":"f2cb43dea101ceaa548746dfd959132e91afb807"},"repository":{"full_name":"remind101/codebuild_test"}}'
 
 bootstrap: database .env
 
@@ -25,7 +25,7 @@ bootstrap: database .env
 bindata.go: db/migrations/*.sql
 	go-bindata -pkg conveyor -o bindata.go db/migrations/
 
-database:: bindata.go
+database::
 	dropdb conveyor || true
 	createdb conveyor || true
 	dropdb conveyor_api || true

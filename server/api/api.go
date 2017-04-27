@@ -89,6 +89,9 @@ func (s *Server) LogsStream(rw http.ResponseWriter, req *http.Request) {
 	// http://stackoverflow.com/questions/26164705/chrome-not-handling-chunked-responses-like-firefox-safari.
 	rw.Header().Set("X-Content-Type-Options", "nosniff")
 
+	// Needed for single page apps
+	rw.Header().Set("Access-Control-Allow-Origin", "*")
+
 	w := streamhttp.StreamingResponseWriter(rw)
 	defer close(stream.Heartbeat(w, time.Second*25)) // Send a null character every 25 seconds.
 
@@ -147,6 +150,8 @@ func (s *Server) BuildInfo(w http.ResponseWriter, r *http.Request) {
 		encodeErr(w, err)
 		return
 	}
+
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 
 	encode(w, newBuild(b))
 }

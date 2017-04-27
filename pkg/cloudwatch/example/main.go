@@ -7,14 +7,14 @@ import (
 	"os"
 	"time"
 
+	"code.google.com/p/go-uuid/uuid"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
-	"github.com/ejholmes/cloudwatch"
-	"github.com/pborman/uuid"
+	"github.com/remind101/conveyor/pkg/cloudwatch"
 )
 
 func main() {
-	sess := session.Must(session.NewSession())	
+	sess := session.Must(session.NewSession())
 
 	g := cloudwatch.NewGroup("test", cloudwatchlogs.New(sess))
 
@@ -42,5 +42,14 @@ func main() {
 		}
 	}()
 
-	io.Copy(os.Stdout, r)
+	go func() {
+		time.Sleep(time.Second * 10)
+		log.Println("Time to shutdown logsteam")
+		r.Close()
+	}()
+
+	_, err = io.Copy(os.Stdout, r)
+
+	log.Println("We are at the end of this")
+
 }
