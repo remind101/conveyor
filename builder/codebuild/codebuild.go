@@ -295,15 +295,10 @@ func (b *Builder) generateBuildspec(opts builder.BuildOptions) (buildspec string
 
 	const specTemplate = `version: 0.1
 
-environment_variables:
-  plaintext:
-    DOCKER_USERNAME: {{.DockerUsername}}
-    DOCKER_PASSWORD: {{.DockerPassword}}
-
 phases:
   pre_build:
     commands:
-      - docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}
+      - docker login -u $(aws ssm get-parameters --name conveyor.dockerusername --with-decryption --query Parameters[0].Value --output text) -p $(aws ssm get-parameters --name conveyor.dockerpassword --with-decryption --query Parameters[0].Value --output text)
       - echo "Logged into Docker"
       - docker pull "{{.Repository}}:{{.Branch}}" || docker pull "{{.Repository}}:master" || true
       - echo "Pulled Image"

@@ -11,7 +11,9 @@ import (
 	"golang.org/x/oauth2"
 
 	"github.com/DataDog/datadog-go/statsd"
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/ssm"
 	"github.com/codegangsta/cli"
 	"github.com/codegangsta/negroni"
 	"github.com/ejholmes/slash"
@@ -140,9 +142,40 @@ func selectBuilder(c *cli.Context) builder.Builder {
 		cb.ComputeType = c.String("builder.codebuild.computeType")
 		cb.Image = c.String("builder.image")
 
-		// Dockerhub configuration
-		cb.DockerUsername = c.String("docker.username")
-		cb.DockerPassword = c.String("docker.password")
+		// // Dockerhub configuration
+		// cb.DockerUsername = c.String("docker.username")
+		// cb.DockerPassword = c.String("docker.password")
+
+		// Add secrets to SSM store
+		s := ssm.New(session.Must(session.NewSession()))
+
+		password := &ssm.PutParameterInput{
+			Name:      aws.String("conveyor.dockerusername"),   // Required
+			Type:      aws.String("SecureString"),              // Required
+			Value:     aws.String(c.String("docker.username")), // Required
+			KeyId:     aws.String(c.String("key.arn")),
+			Overwrite: aws.Bool(true),
+		}
+
+		username := &ssm.PutParameterInput{
+			Name:      aws.String("conveyor.dockerpassword"),   // Required
+			Type:      aws.String("SecureString"),              // Required
+			Value:     aws.String(c.String("docker.password")), // Required
+			KeyId:     aws.String(c.String("key.arn")),
+			Overwrite: aws.Bool(true),
+		}
+
+		_, err := s.PutParameter(password)
+
+		if err != nil {
+			must(err)
+		}
+
+		_, err = s.PutParameter(username)
+
+		if err != nil {
+			must(err)
+		}
 
 		return cb
 

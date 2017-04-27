@@ -55,6 +55,11 @@ var workerFlags = []cli.Flag{
 		EnvVar: "DOCKER_PASSWORD",
 	},
 	cli.StringFlag{
+		Name:   "key.arn",
+		Usage:  "Arn for kms key",
+		EnvVar: "KMS_KEY_ARN",
+	},
+	cli.StringFlag{
 		Name:   "reporter",
 		Value:  "",
 		Usage:  "The reporter to use to report errors. Available options are `hb://api.honeybadger.io?key=<key>&environment=<environment>",
