@@ -5,6 +5,7 @@ package logger
 import (
 	"fmt"
 	"log"
+	"os"
 	"strings"
 
 	"golang.org/x/net/context"
@@ -18,6 +19,8 @@ type Logger interface {
 	Error(msg string, pairs ...interface{})
 	Crit(msg string, pairs ...interface{})
 }
+
+var DefaultLogger = New(log.New(os.Stdout, "[default] ", log.LstdFlags))
 
 // logger is an implementation of the Logger interface backed by the stdlib's
 // logging facility. This is a fairly naive implementation, and it's probably
@@ -118,6 +121,8 @@ func Crit(ctx context.Context, msg string, pairs ...interface{}) {
 func withLogger(ctx context.Context, fn func(l Logger)) {
 	if l, ok := FromContext(ctx); ok {
 		fn(l)
+	} else {
+		fn(DefaultLogger)
 	}
 }
 

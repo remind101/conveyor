@@ -29,8 +29,7 @@ import (
 	"github.com/remind101/conveyor/server"
 	"github.com/remind101/conveyor/slack"
 	"github.com/remind101/conveyor/worker"
-	"github.com/remind101/pkg/reporter"
-	"github.com/remind101/pkg/reporter/hb2"
+	"github.com/remind101/pkg/reporter/config"
 )
 
 const logsURLTemplate = "%s/logs/{{.ID}}"
@@ -147,24 +146,9 @@ func newBuilder(c *cli.Context) builder.Builder {
 	}
 
 	b := worker.NewBuilder(backend)
-	b.Reporter = newReporter(c)
+	b.Reporter = config.NewReporterFromUrls(c.StringSlice("reporter"))
 
 	return b
-}
-
-func newReporter(c *cli.Context) reporter.Reporter {
-	u := urlParse(c.String("reporter"))
-
-	switch u.Scheme {
-	case "hb":
-		q := u.Query()
-		return hb2.NewReporter(hb2.Config{
-			ApiKey:      q.Get("key"),
-			Environment: q.Get("environment"),
-		})
-	default:
-		return nil
-	}
 }
 
 func newLogger(c *cli.Context) logs.Logger {

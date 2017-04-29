@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"os/signal"
 	"runtime"
@@ -11,6 +12,9 @@ import (
 	"github.com/remind101/conveyor/builder/docker"
 	"github.com/remind101/conveyor/worker"
 )
+
+const hbExampleURL = "hb://api.honeybadger.io?key=<key>&environment=<environment>"
+const rollbarExampleURL = "rb://api.rollbar.com?key=<key>&environment=<environment>"
 
 // flags for the worker.
 var workerFlags = []cli.Flag{
@@ -31,10 +35,11 @@ var workerFlags = []cli.Flag{
 		Usage:  "A docker image to use to perform the build.",
 		EnvVar: "BUILDER_IMAGE",
 	},
-	cli.StringFlag{
-		Name:   "reporter",
-		Value:  "",
-		Usage:  "The reporter to use to report errors. Available options are `hb://api.honeybadger.io?key=<key>&environment=<environment>",
+	cli.StringSliceFlag{
+		Name:  "reporter",
+		Value: &cli.StringSlice{},
+		Usage: fmt.Sprintf("The reporter to use to report errors. Available options are `%s` or `%s`",
+			hbExampleURL, rollbarExampleURL),
 		EnvVar: "REPORTER",
 	},
 	cli.IntFlag{
