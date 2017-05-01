@@ -3,7 +3,6 @@ package config
 import (
 	"fmt"
 	"net/url"
-	"os"
 
 	"github.com/remind101/pkg/reporter"
 	"github.com/remind101/pkg/reporter/hb2"
@@ -13,44 +12,35 @@ import (
 // Returns a MultiReporter from URL strings such as:
 // "hb://api.honeybadger.io/?key=hbkey&environment=hbenv" or
 // "rollbar://api.rollbar.com/?key=rollbarkey&environment=rollbarenv"
-func NewReporterFromUrls(urls []string) reporter.Reporter {
-	rep := reporter.MultiReporter{}
+func NewReporterFromUrls(urls []string) (reporter.Reporter, error) {
+	multiRep := reporter.MultiReporter{}
 	for _, url := range urls {
-		rep = append(rep, newReporterFromUrl(url))
+		rep, err := newReporterFromUrl(url)
+		if err != nil {
+			return nil, err
+		}
+		multiRep = append(multiRep, rep)
 	}
-	return rep
+	return multiRep, nil
 }
 
-func newReporterFromUrl(url string) reporter.Reporter {
-	u := urlParse(url)
-	switch u.Scheme {
+func newReporterFromUrl(u string) (reporter.Reporter, error) {
+	parsedURL, err := url.Parse(u)
+	if err != nil {
+		return nil, fmt.Errorf("couldn't parse %s: %#v", u, err)
+	}
+	switch parsedURL.Scheme {
 	case "hb":
-		q := u.Query()
+		q := parsedURL.Query()
 		return hb2.NewReporter(hb2.Config{
 			ApiKey:      q.Get("key"),
 			Environment: q.Get("environment"),
-		})
+		}), nil
 	case "rollbar":
-		q := u.Query()
+		q := parsedURL.Query()
 		rollbar.ConfigureReporter(q.Get("key"), q.Get("environment"))
-		return rollbar.Reporter
+		return rollbar.Reporter, nil
 	default:
-		must(fmt.Errorf("unrecognized reporter url scheme: %s", url))
-		return nil
-	}
-}
-
-func urlParse(uri string) *url.URL {
-	u, err := url.Parse(uri)
-	if err != nil {
-		must(err)
-	}
-	return u
-}
-
-func must(err error) {
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
-		os.Exit(1)
+		return nil, fmt.Errorf("unrecognized reporter url scheme: %s", u)
 	}
 }

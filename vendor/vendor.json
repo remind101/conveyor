@@ -435,66 +435,66 @@
 		{
 			"checksumSHA1": "SFAnLY+o3KTTO1ksOO0aZ96TFaA=",
 			"path": "github.com/remind101/pkg/logger",
-			"revision": "dca929e73bae2fb1fcb6529abccb9bda82389bc2",
-			"revisionTime": "2017-04-29T00:02:21Z",
-			"version": "urls",
-			"versionExact": "urls"
+			"revision": "82398077184fb833f2c49c372f1622501d985975",
+			"revisionTime": "2017-05-01T19:00:09Z",
+			"version": "master",
+			"versionExact": "master"
 		},
 		{
 			"checksumSHA1": "RJkLQdWQedoaXAJSzuq/q9gkoJk=",
 			"path": "github.com/remind101/pkg/reporter",
-			"revision": "dca929e73bae2fb1fcb6529abccb9bda82389bc2",
-			"revisionTime": "2017-04-29T00:02:21Z",
-			"version": "urls",
-			"versionExact": "urls"
+			"revision": "82398077184fb833f2c49c372f1622501d985975",
+			"revisionTime": "2017-05-01T19:00:09Z",
+			"version": "master",
+			"versionExact": "master"
 		},
 		{
-			"checksumSHA1": "RjLAVwiv+m20NdwAQKySx9APKSE=",
+			"checksumSHA1": "Jh/CE5ZLooQJNB6NlZZHtBuVXdM=",
 			"path": "github.com/remind101/pkg/reporter/config",
-			"revision": "dca929e73bae2fb1fcb6529abccb9bda82389bc2",
-			"revisionTime": "2017-04-29T00:02:21Z",
-			"version": "urls",
-			"versionExact": "urls"
+			"revision": "82398077184fb833f2c49c372f1622501d985975",
+			"revisionTime": "2017-05-01T19:00:09Z",
+			"version": "master",
+			"versionExact": "master"
 		},
 		{
 			"checksumSHA1": "H83EF4dErUot+DlF4czysYxqqCk=",
 			"path": "github.com/remind101/pkg/reporter/hb2",
-			"revision": "dca929e73bae2fb1fcb6529abccb9bda82389bc2",
-			"revisionTime": "2017-04-29T00:02:21Z",
-			"version": "urls",
-			"versionExact": "urls"
+			"revision": "82398077184fb833f2c49c372f1622501d985975",
+			"revisionTime": "2017-05-01T19:00:09Z",
+			"version": "master",
+			"versionExact": "master"
 		},
 		{
 			"checksumSHA1": "CTOLdRBY3vpKMJzaVJ3z6TDD4+8=",
 			"path": "github.com/remind101/pkg/reporter/hb2/internal/honeybadger-go",
-			"revision": "dca929e73bae2fb1fcb6529abccb9bda82389bc2",
-			"revisionTime": "2017-04-29T00:02:21Z",
-			"version": "urls",
-			"versionExact": "urls"
+			"revision": "82398077184fb833f2c49c372f1622501d985975",
+			"revisionTime": "2017-05-01T19:00:09Z",
+			"version": "master",
+			"versionExact": "master"
 		},
 		{
 			"checksumSHA1": "1vSLRKRsbk46kTdTWPc3oVbLqgo=",
 			"path": "github.com/remind101/pkg/reporter/rollbar",
-			"revision": "dca929e73bae2fb1fcb6529abccb9bda82389bc2",
-			"revisionTime": "2017-04-29T00:02:21Z",
-			"version": "urls",
-			"versionExact": "urls"
+			"revision": "82398077184fb833f2c49c372f1622501d985975",
+			"revisionTime": "2017-05-01T19:00:09Z",
+			"version": "master",
+			"versionExact": "master"
 		},
 		{
 			"checksumSHA1": "AdP5n2PIgbr4p7/7uF6fC+Xf1d0=",
 			"path": "github.com/remind101/pkg/stream",
-			"revision": "dca929e73bae2fb1fcb6529abccb9bda82389bc2",
-			"revisionTime": "2017-04-29T00:02:21Z",
-			"version": "urls",
-			"versionExact": "urls"
+			"revision": "82398077184fb833f2c49c372f1622501d985975",
+			"revisionTime": "2017-05-01T19:00:09Z",
+			"version": "master",
+			"versionExact": "master"
 		},
 		{
 			"checksumSHA1": "bwJKPTm6G66GO/PNwKWz5XtC7Ec=",
 			"path": "github.com/remind101/pkg/stream/http",
-			"revision": "dca929e73bae2fb1fcb6529abccb9bda82389bc2",
-			"revisionTime": "2017-04-29T00:02:21Z",
-			"version": "urls",
-			"versionExact": "urls"
+			"revision": "82398077184fb833f2c49c372f1622501d985975",
+			"revisionTime": "2017-05-01T19:00:09Z",
+			"version": "master",
+			"versionExact": "master"
 		},
 		{
 			"checksumSHA1": "ybNUTILWmzuSNxrRLtrKwvH0MHs=",

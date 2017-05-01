@@ -146,7 +146,8 @@ func newBuilder(c *cli.Context) builder.Builder {
 	}
 
 	b := worker.NewBuilder(backend)
-	b.Reporter = config.NewReporterFromUrls(c.StringSlice("reporter"))
+	b.Reporter, err = config.NewReporterFromUrls(c.StringSlice("reporter"))
+	must(err)
 
 	return b
 }
