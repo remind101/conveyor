@@ -2,9 +2,8 @@ package reporter
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
-	"path"
-	"runtime"
 	"testing"
 
 	"golang.org/x/net/context"
@@ -20,11 +19,14 @@ func TestReport(t *testing.T) {
 			t.Fatal("request information not set")
 		}
 
-		line := e.Backtrace[0]
-		fn := runtime.FuncForPC(line.PC)
+		stack := e.StackTrace()
+		var method string
+		if stack != nil && len(stack) > 0 {
+			method = fmt.Sprintf("%n", stack[0])
+		}
 
-		if got, want := path.Base(fn.Name()), "reporter.TestReport"; got != want {
-			t.Fatalf("expected the first backtrace line to be this function")
+		if got, want := method, "TestReport"; got != want {
+			t.Fatalf("expected the first stacktrace method to be %v, got %v", want, got)
 		}
 
 		return nil
@@ -38,6 +40,16 @@ func TestReport(t *testing.T) {
 	if err := Report(ctx, errBoom); err != nil {
 		t.Fatal(err)
 	}
+}
+
+func TestReportWithNoReporterInContext(t *testing.T) {
+	defer func() {
+		if recover() == nil {
+			t.Error("Expected panic due to context without reporter, got no panic")
+		}
+	}()
+	ctx := context.Background() // no reporter
+	Report(ctx, errBoom)
 }
 
 func TestMonitor(t *testing.T) {

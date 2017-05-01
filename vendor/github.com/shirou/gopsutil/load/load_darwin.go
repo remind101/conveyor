@@ -3,12 +3,14 @@
 package load
 
 import (
+	"os/exec"
 	"strconv"
+	"strings"
 
-	common "github.com/shirou/gopsutil/common"
+	"github.com/shirou/gopsutil/internal/common"
 )
 
-func LoadAvg() (*LoadAvgStat, error) {
+func Avg() (*AvgStat, error) {
 	values, err := common.DoSysctrl("vm.loadavg")
 	if err != nil {
 		return nil, err
@@ -27,11 +29,39 @@ func LoadAvg() (*LoadAvgStat, error) {
 		return nil, err
 	}
 
-	ret := &LoadAvgStat{
+	ret := &AvgStat{
 		Load1:  float64(load1),
 		Load5:  float64(load5),
 		Load15: float64(load15),
 	}
 
 	return ret, nil
+}
+
+// Misc returnes miscellaneous host-wide statistics.
+// darwin use ps command to get process running/blocked count.
+// Almost same as FreeBSD implementation, but state is different.
+// U means 'Uninterruptible Sleep'.
+func Misc() (*MiscStat, error) {
+	bin, err := exec.LookPath("ps")
+	if err != nil {
+		return nil, err
+	}
+	out, err := invoke.Command(bin, "axo", "state")
+	if err != nil {
+		return nil, err
+	}
+	lines := strings.Split(string(out), "\n")
+
+	ret := MiscStat{}
+	for _, l := range lines {
+		if strings.Contains(l, "R") {
+			ret.ProcsRunning++
+		} else if strings.Contains(l, "U") {
+			// uninterruptible sleep == blocked
+			ret.ProcsBlocked++
+		}
+	}
+
+	return &ret, nil
 }
