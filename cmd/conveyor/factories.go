@@ -21,6 +21,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/remind101/conveyor"
 	"github.com/remind101/conveyor/builder"
+	"github.com/remind101/conveyor/builder/codebuild"
 	"github.com/remind101/conveyor/builder/datadog"
 	"github.com/remind101/conveyor/builder/docker"
 	"github.com/remind101/conveyor/logs"
@@ -116,17 +117,42 @@ func newSlackServer(cy *conveyor.Conveyor, c *cli.Context) http.Handler {
 	return slash.NewServer(slash.ValidateToken(s, c.String("slack.token")))
 }
 
-func newBuilder(c *cli.Context) builder.Builder {
-	db, err := docker.NewBuilderFromEnv()
-	if err != nil {
-		must(err)
+var builders = map[string]func(*cli.Context) (builder.Builder, error){
+	"codebuild": func(c *cli.Context) (builder.Builder, error) {
+		s, err := session.NewSession()
+		if err != nil {
+			return nil, err
+		}
+		b := codebuild.NewBuilder(s)
+		b.ServiceRole = c.String("codebuild.role")
+		return b, nil
+	},
+	"docker": func(c *cli.Context) (builder.Builder, error) {
+		b, err := docker.NewBuilderFromEnv()
+		if err != nil {
+			return nil, err
+		}
+		b.DryRun = c.Bool("dry")
+		b.Image = c.String("builder.image")
+		return b, nil
+	},
+}
+
+func newBuilder(c *cli.Context) (builder.Builder, error) {
+	b := c.String("builder")
+	if fn, ok := builders[b]; ok {
+		return fn(c)
 	}
-	db.DryRun = c.Bool("dry")
-	db.Image = c.String("builder.image")
+	return nil, fmt.Errorf("no %s backend", b)
+}
+
+func newWorkerBuilder(c *cli.Context) builder.Builder {
+	bd, err := newBuilder(c)
+	must(err)
 
 	g := builder.NewGitHubClient(c.String("github.token"))
 
-	var backend builder.Builder = builder.UpdateGitHubCommitStatus(db, g, fmt.Sprintf(logsURLTemplate, c.String("url")))
+	var backend builder.Builder = builder.UpdateGitHubCommitStatus(bd, g, fmt.Sprintf(logsURLTemplate, c.String("url")))
 
 	if uri := c.String("stats"); uri != "" {
 		u := urlParse(uri)

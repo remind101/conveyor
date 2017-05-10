@@ -30,10 +30,22 @@ var workerFlags = []cli.Flag{
 		EnvVar: "DRY",
 	},
 	cli.StringFlag{
+		Name:   "builder",
+		Value:  "conveyor",
+		Usage:  "The builder backend to use. Can be \"codebuild\" or \"docker\"",
+		EnvVar: "BUILDER",
+	},
+	cli.StringFlag{
 		Name:   "builder.image",
 		Value:  docker.DefaultBuilderImage,
-		Usage:  "A docker image to use to perform the build.",
+		Usage:  "A docker image to use to perform the build. Only used with the Docker backend.",
 		EnvVar: "BUILDER_IMAGE",
+	},
+	cli.StringFlag{
+		Name:   "codebuild.role",
+		Value:  "",
+		Usage:  "An IAM role to provide as the service role to CodeBuild projects.",
+		EnvVar: "CODEBUILD_SERVICE_ROLE",
 	},
 	cli.StringSliceFlag{
 		Name:  "reporter",
@@ -80,7 +92,7 @@ func runWorker(cy *conveyor.Conveyor, c *cli.Context) error {
 	cy.BuildQueue.Subscribe(ch)
 
 	workers := worker.NewPool(cy, numWorkers, worker.Options{
-		Builder:       newBuilder(c),
+		Builder:       newWorkerBuilder(c),
 		BuildRequests: ch,
 	})
 
