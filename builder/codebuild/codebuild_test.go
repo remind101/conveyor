@@ -34,7 +34,7 @@ func TestBuilder_Build(t *testing.T) {
 	}
 
 	c.On("StartBuild", &codebuild.StartBuildInput{
-		ProjectName:   aws.String("conveyor-remind101-acme-inc-6Xhbd3oyMlG"),
+		ProjectName:   aws.String("remind101-acme-inc-6Xhbd3oyMlG"),
 		SourceVersion: aws.String("6af239b55ee2cfb388085d3797129c4ed88d2f5a"),
 	}).Return(&codebuild.StartBuildOutput{
 		Build: &codebuild.Build{
@@ -100,7 +100,7 @@ func TestBuilder_Build_Fail(t *testing.T) {
 	}
 
 	c.On("StartBuild", &codebuild.StartBuildInput{
-		ProjectName:   aws.String("conveyor-remind101-acme-inc-6Xhbd3oyMlG"),
+		ProjectName:   aws.String("remind101-acme-inc-6Xhbd3oyMlG"),
 		SourceVersion: aws.String("6af239b55ee2cfb388085d3797129c4ed88d2f5a"),
 	}).Return(&codebuild.StartBuildOutput{
 		Build: &codebuild.Build{
@@ -166,7 +166,7 @@ func TestBuilder_Build_ProjectDoesNotExist(t *testing.T) {
 	}
 
 	c.On("StartBuild", &codebuild.StartBuildInput{
-		ProjectName:   aws.String("conveyor-remind101-acme-inc-6Xhbd3oyMlG"),
+		ProjectName:   aws.String("remind101-acme-inc-6Xhbd3oyMlG"),
 		SourceVersion: aws.String("6af239b55ee2cfb388085d3797129c4ed88d2f5a"),
 	}).Return(&codebuild.StartBuildOutput{}, awserr.New("ResourceNotFoundException", "not found", nil)).Once()
 
@@ -179,7 +179,7 @@ func TestBuilder_Build_ProjectDoesNotExist(t *testing.T) {
 			Image:       aws.String("aws/codebuild/docker:1.12.1"),
 			Type:        aws.String("LINUX_CONTAINER"),
 		},
-		Name: aws.String("conveyor-remind101-acme-inc-6Xhbd3oyMlG"),
+		Name: aws.String("remind101-acme-inc-6Xhbd3oyMlG"),
 		Source: &codebuild.ProjectSource{
 			Type: aws.String("GITHUB"),
 			Auth: &codebuild.SourceAuth{
@@ -191,7 +191,7 @@ func TestBuilder_Build_ProjectDoesNotExist(t *testing.T) {
 	}).Return(&codebuild.CreateProjectOutput{}, nil).Once()
 
 	c.On("StartBuild", &codebuild.StartBuildInput{
-		ProjectName:   aws.String("conveyor-remind101-acme-inc-6Xhbd3oyMlG"),
+		ProjectName:   aws.String("remind101-acme-inc-6Xhbd3oyMlG"),
 		SourceVersion: aws.String("6af239b55ee2cfb388085d3797129c4ed88d2f5a"),
 	}).Return(&codebuild.StartBuildOutput{
 		Build: &codebuild.Build{
@@ -259,7 +259,7 @@ func TestBuilder_Build_Cancel(t *testing.T) {
 	}
 
 	c.On("StartBuild", &codebuild.StartBuildInput{
-		ProjectName:   aws.String("conveyor-remind101-acme-inc-6Xhbd3oyMlG"),
+		ProjectName:   aws.String("remind101-acme-inc-6Xhbd3oyMlG"),
 		SourceVersion: aws.String("6af239b55ee2cfb388085d3797129c4ed88d2f5a"),
 	}).Return(&codebuild.StartBuildOutput{
 		Build: &codebuild.Build{

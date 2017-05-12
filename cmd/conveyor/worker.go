@@ -31,8 +31,8 @@ var workerFlags = []cli.Flag{
 	},
 	cli.StringFlag{
 		Name:   "builder",
-		Value:  "conveyor",
-		Usage:  "The builder backend to use. Can be \"codebuild\" or \"docker\"",
+		Value:  "codebuild",
+		Usage:  "The builder backend to use. Available options are `codebuild` or `docker`",
 		EnvVar: "BUILDER",
 	},
 	cli.StringFlag{
@@ -46,6 +46,12 @@ var workerFlags = []cli.Flag{
 		Value:  "",
 		Usage:  "An IAM role to provide as the service role to CodeBuild projects.",
 		EnvVar: "CODEBUILD_SERVICE_ROLE",
+	},
+	cli.StringFlag{
+		Name:   "codebuild.project.prefix",
+		Value:  "conveyor-",
+		Usage:  "A prefix that Conveyor will use when creating CodeBuild projects for repos.",
+		EnvVar: "CODEBUILD_PROJECT_PREFIX",
 	},
 	cli.StringSliceFlag{
 		Name:  "reporter",

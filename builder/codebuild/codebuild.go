@@ -61,7 +61,7 @@ func ProjectName(opts builder.BuildOptions) string {
 	h := fnv.New64()
 	h.Write([]byte(opts.Repository))
 	hash := base62.Encode(h.Sum64())
-	return CleanProjectName(fmt.Sprintf("conveyor-%s-%s", opts.Repository, hash))
+	return CleanProjectName(fmt.Sprintf("%s-%s", opts.Repository, hash))
 }
 
 // BuildOptions extends build.BuildOptions to include the CodeBuild project
