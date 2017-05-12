@@ -148,8 +148,7 @@ func TestBuilder_Build_Fail(t *testing.T) {
 
 	assert.Equal(t, `conveyor: Waiting for CodeBuild build 0f19962d-7300-461b-b3da-49bad396f34f to start
 conveyor: CodeBuild build 0f19962d-7300-461b-b3da-49bad396f34f started, streaming logs...
-`+logs+`conveyor: CodeBuild build 0f19962d-7300-461b-b3da-49bad396f34f completed
-`, buf.String())
+`+logs, buf.String())
 
 	c.AssertExpectations(t)
 }

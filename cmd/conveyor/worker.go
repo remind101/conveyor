@@ -9,6 +9,7 @@ import (
 
 	"github.com/codegangsta/cli"
 	"github.com/remind101/conveyor"
+	"github.com/remind101/conveyor/builder"
 	"github.com/remind101/conveyor/builder/docker"
 	"github.com/remind101/conveyor/worker"
 )
@@ -23,6 +24,12 @@ var workerFlags = []cli.Flag{
 		Value:  "",
 		Usage:  "GitHub API token to use when updating commit statuses and setting up webhooks on repositories.",
 		EnvVar: "GITHUB_TOKEN",
+	},
+	cli.StringFlag{
+		Name:   "github.context",
+		Value:  builder.DefaultGitHubCommitStatusContext,
+		Usage:  "The value that will be used as the GitHub commit status context.",
+		EnvVar: "GITHUB_COMMIT_STATUS_CONTEXT",
 	},
 	cli.BoolFlag{
 		Name:   "dry",

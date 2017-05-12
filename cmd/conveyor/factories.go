@@ -152,12 +152,17 @@ func newBuilder(c *cli.Context) (builder.Builder, error) {
 }
 
 func newWorkerBuilder(c *cli.Context) builder.Builder {
+	var backend builder.Builder
 	bd, err := newBuilder(c)
 	must(err)
+	backend = bd
 
-	g := builder.NewGitHubClient(c.String("github.token"))
-
-	var backend builder.Builder = builder.UpdateGitHubCommitStatus(bd, g, fmt.Sprintf(logsURLTemplate, c.String("url")))
+	if token := c.String("github.token"); token != "" {
+		gc := builder.NewGitHubClient(c.String("github.token"))
+		cs := builder.UpdateGitHubCommitStatus(backend, gc, fmt.Sprintf(logsURLTemplate, c.String("url")))
+		cs.Context = c.String("github.context")
+		backend = cs
+	}
 
 	if uri := c.String("stats"); uri != "" {
 		u := urlParse(uri)

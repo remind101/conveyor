@@ -23,8 +23,8 @@ func TestStatusUpdaterBuilder(t *testing.T) {
 	}
 	g := &MockGitHubClient{}
 	w := &mockLogger{}
-	builder := &statusUpdaterBuilder{
-		Builder: BuilderFunc(b),
+	builder := &GitHubCommitStatusBuilder{
+		builder: BuilderFunc(b),
 		github:  g,
 		urlTmpl: template.Must(template.New("url").Parse("https://google.com")),
 	}
@@ -51,14 +51,14 @@ func TestStatusUpdaterBuilder(t *testing.T) {
 	g.AssertExpectations(t)
 }
 
-func TestStatusUpdaterBuilder_Error(t *testing.T) {
+func TestGitHubCommitStatusBuilder_Error(t *testing.T) {
 	b := func(ctx context.Context, w io.Writer, opts BuildOptions) (string, error) {
 		return "", errors.New("i/o timeout")
 	}
 	g := &MockGitHubClient{}
 	w := &mockLogger{}
-	builder := &statusUpdaterBuilder{
-		Builder: BuilderFunc(b),
+	builder := &GitHubCommitStatusBuilder{
+		builder: BuilderFunc(b),
 		github:  g,
 		urlTmpl: template.Must(template.New("url").Parse("https://google.com")),
 	}

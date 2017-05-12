@@ -223,13 +223,13 @@ func (b *Builder) tailBuild(ctx context.Context, w io.Writer, buildID *string) e
 		return fmt.Errorf("copying logs: %v", err)
 	}
 
-	fmt.Fprintf(w, "conveyor: CodeBuild build %s completed\n", *buildID)
-
 	for _, status := range failedStatuses {
 		if *build.BuildStatus == status {
-			return fmt.Errorf("CodeBuild build %s failed", *buildID)
+			return fmt.Errorf("CodeBuild build %s failed: %s", *buildID, *build.BuildStatus)
 		}
 	}
+
+	fmt.Fprintf(w, "conveyor: CodeBuild build %s completed\n", *buildID)
 
 	return nil
 }
