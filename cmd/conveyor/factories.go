@@ -128,6 +128,7 @@ var builders = map[string]func(*cli.Context) (builder.Builder, error){
 		b.ProjectName = func(opts builder.BuildOptions) string {
 			return fmt.Sprintf("%s%s", c.String("codebuild.project.prefix"), codebuild.ProjectName(opts))
 		}
+		b.DockerCfg = c.String("codebuild.dockercfg")
 		return b, nil
 	},
 	"docker": func(c *cli.Context) (builder.Builder, error) {

@@ -53,6 +53,12 @@ var workerFlags = []cli.Flag{
 		Usage:  "A prefix that Conveyor will use when creating CodeBuild projects for repos.",
 		EnvVar: "CODEBUILD_PROJECT_PREFIX",
 	},
+	cli.StringFlag{
+		Name:   "codebuild.dockercfg",
+		Value:  "conveyor.dockercfg",
+		Usage:  "An SSM parameter that CodeBuild will use to authenticate the docker cli. Should be a valid .dockercfg file.",
+		EnvVar: "CODEBUILD_DOCKERCFG",
+	},
 	cli.StringSliceFlag{
 		Name:  "reporter",
 		Value: &cli.StringSlice{},
