@@ -70,7 +70,7 @@ type BuildOptions struct {
 	builder.BuildOptions
 
 	ProjectName string
-	Dry         bool
+	DryRun      bool
 	DockerCfg   string
 }
 
@@ -88,9 +88,9 @@ type Builder struct {
 	// Role that will be provided to the CodeBuild project.
 	ServiceRole string
 
-	// Dry specifies whether "Dry" run mode is enabled. When true, the
+	// DryRun specifies whether "Dry" run mode is enabled. When true, the
 	// CodeBuild build won't push to the Docker registry.
-	Dry bool
+	DryRun bool
 
 	// DockerCfg can be provided to pass credentials to Docker. This
 	// should point to an SSM parameter containing a valid .dockercfg.
@@ -132,7 +132,7 @@ func (b *Builder) Build(ctx context.Context, w io.Writer, opts builder.BuildOpti
 	err = b.build(ctx, w, BuildOptions{
 		BuildOptions: opts,
 		ProjectName:  projectName,
-		Dry:          b.Dry,
+		DryRun:       b.DryRun,
 		DockerCfg:    b.DockerCfg,
 	})
 	return
@@ -340,7 +340,7 @@ phases:
 {{ end }}
   post_build:
     commands:
-{{ if .Dry }}
+{{ if .DryRun }}
       - echo "Dry run enabled. Not pushing"
 {{ else }}
       - docker push "{{.Repository}}:{{.Sha}}"

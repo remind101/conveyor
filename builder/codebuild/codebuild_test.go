@@ -383,7 +383,7 @@ phases:
 					Repository: "remind101/acme-inc",
 					Sha:        "6af239b55ee2cfb388085d3797129c4ed88d2f5a",
 				},
-				Dry: true,
+				DryRun: true,
 			},
 			`version: 0.1
 phases:

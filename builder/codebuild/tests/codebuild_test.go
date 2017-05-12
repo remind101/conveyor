@@ -18,7 +18,7 @@ var ctx = context.Background()
 
 var (
 	serviceRole = flag.String("test.codebuild.role", "", "Service role to use when testing codebuild")
-	dry         = flag.Bool("test.codebuild.dry", true, "When true, enables dry run mode")
+	dryRun      = flag.Bool("test.codebuild.dry", true, "When true, enables dry run mode")
 )
 
 // This is just a highlevel sanity test.
@@ -56,6 +56,6 @@ func newCodeBuildBuilder(t *testing.T) *codebuild.Builder {
 
 	b := codebuild.NewBuilder(session.New())
 	b.ServiceRole = *serviceRole
-	b.Dry = *dry
+	b.DryRun = *dryRun
 	return b
 }
