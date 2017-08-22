@@ -296,6 +296,31 @@
 			"revisionTime": "2017-04-23T02:16:35Z"
 		},
 		{
+			"checksumSHA1": "VAsOU1TGCoonYVb4gQFiutr7vGI=",
+			"origin": "github.com/remind101/hookshot",
+			"path": "github.com/ejholmes/hookshot",
+			"revision": "dff106e3727968571f36758f63da6bb51ce1c911",
+			"revisionTime": "2017-08-22T21:41:11Z"
+		},
+		{
+			"checksumSHA1": "MIrCAaqsVqnh9iTJrGMCslRL10w=",
+			"origin": "github.com/remind101/hookshot",
+			"path": "github.com/ejholmes/hookshot/..",
+			"revision": "dff106e3727968571f36758f63da6bb51ce1c911",
+			"revisionTime": "2017-08-22T21:41:11Z",
+			"version": "master",
+			"versionExact": "master"
+		},
+		{
+			"checksumSHA1": "zQhDdC/2l+bgEm3E5vBMkDdjzZ4=",
+			"origin": "github.com/remind101/hookshot/events",
+			"path": "github.com/ejholmes/hookshot/events",
+			"revision": "dff106e3727968571f36758f63da6bb51ce1c911",
+			"revisionTime": "2017-08-22T21:41:11Z",
+			"version": "master",
+			"versionExact": "master"
+		},
+		{
 			"path": "github.com/fsouza/go-dockerclient/external/github.com/stretchr/testify/assert",
 			"revision": ""
 		},
