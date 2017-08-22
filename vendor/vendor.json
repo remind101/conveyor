@@ -300,13 +300,6 @@
 			"origin": "github.com/remind101/hookshot",
 			"path": "github.com/ejholmes/hookshot",
 			"revision": "dff106e3727968571f36758f63da6bb51ce1c911",
-			"revisionTime": "2017-08-22T21:41:11Z"
-		},
-		{
-			"checksumSHA1": "MIrCAaqsVqnh9iTJrGMCslRL10w=",
-			"origin": "github.com/remind101/hookshot",
-			"path": "github.com/ejholmes/hookshot/..",
-			"revision": "dff106e3727968571f36758f63da6bb51ce1c911",
 			"revisionTime": "2017-08-22T21:41:11Z",
 			"version": "master",
 			"versionExact": "master"
