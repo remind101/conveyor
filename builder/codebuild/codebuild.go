@@ -22,7 +22,7 @@ import (
 
 const (
 	// Default Image for codebuild
-	DefaultCodebuildImage = "aws/codebuild/docker:1.12.1"
+	DefaultCodebuildImage = "remind101/conveyor-builder:codebuild"
 
 	// Default AWS resource used by codebuild
 	DefaultCodebuildComputeType = "BUILD_GENERAL1_SMALL"
@@ -303,9 +303,10 @@ func (b *Builder) createProject(ctx context.Context, opts BuildOptions) (*codebu
 			Type: aws.String("NO_ARTIFACTS"),
 		},
 		Environment: &codebuild.ProjectEnvironment{
-			ComputeType: aws.String(computeType),
-			Image:       aws.String(image),
-			Type:        aws.String("LINUX_CONTAINER"),
+			ComputeType:    aws.String(computeType),
+			Image:          aws.String(image),
+			Type:           aws.String("LINUX_CONTAINER"),
+			PrivilegedMode: aws.Bool(true),
 		},
 		Name: aws.String(opts.ProjectName),
 		Source: &codebuild.ProjectSource{
@@ -321,6 +322,10 @@ func (b *Builder) createProject(ctx context.Context, opts BuildOptions) (*codebu
 
 const DefaultBuildspec = `version: 0.1
 phases:
+  install:
+    commands:
+      - nohup sh /usr/local/bin/dind /usr/local/bin/docker daemon --host=unix:///var/run/docker.sock --host=tcp://0.0.0.0:2375 --storage-driver=overlay&
+      - timeout 15 sh -c "until docker info; do echo .; sleep 1; done"
   pre_build:
     commands:
 {{ if .DockerCfg }}
@@ -336,7 +341,7 @@ phases:
       - docker build -t "{{.Repository}}" .
       - docker tag "{{.Repository}}" "{{.Repository}}:{{.Sha}}"
 {{ if .Branch }}
-      - docker tag "{{.Repository}}" "{{.Repository}}:{{.Branch}}"
+      - docker tag -f "{{.Repository}}" "{{.Repository}}:{{.Branch}}"
 {{ end }}
   post_build:
     commands:

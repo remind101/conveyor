@@ -174,9 +174,10 @@ func TestBuilder_Build_ProjectDoesNotExist(t *testing.T) {
 			Type: aws.String("NO_ARTIFACTS"),
 		},
 		Environment: &codebuild.ProjectEnvironment{
-			ComputeType: aws.String("BUILD_GENERAL1_SMALL"),
-			Image:       aws.String("aws/codebuild/docker:1.12.1"),
-			Type:        aws.String("LINUX_CONTAINER"),
+			ComputeType:    aws.String("BUILD_GENERAL1_SMALL"),
+			Image:          aws.String("remind101/conveyor-builder:codebuild"),
+			Type:           aws.String("LINUX_CONTAINER"),
+			PrivilegedMode: aws.Bool(true),
 		},
 		Name: aws.String("remind101-acme-inc-6Xhbd3oyMlG"),
 		Source: &codebuild.ProjectSource{
@@ -331,7 +332,7 @@ func TestCleanProjectName(t *testing.T) {
 	}
 }
 
-func TestDefaultBuildspec(t *testing.T) {
+func TestDefaultBuildSpec(t *testing.T) {
 	tmpl := template.Must(template.New("buildspec.yml").Parse(DefaultBuildspec))
 
 	tests := []struct {
@@ -349,6 +350,10 @@ func TestDefaultBuildspec(t *testing.T) {
 			},
 			`version: 0.1
 phases:
+  install:
+    commands:
+      - nohup sh /usr/local/bin/dind /usr/local/bin/docker daemon --host=unix:///var/run/docker.sock --host=tcp://0.0.0.0:2375 --storage-driver=overlay&
+      - timeout 15 sh -c "until docker info; do echo .; sleep 1; done"
   pre_build:
     commands:
 
@@ -362,7 +367,7 @@ phases:
       - docker build -t "remind101/acme-inc" .
       - docker tag "remind101/acme-inc" "remind101/acme-inc:6af239b55ee2cfb388085d3797129c4ed88d2f5a"
 
-      - docker tag "remind101/acme-inc" "remind101/acme-inc:master"
+      - docker tag -f "remind101/acme-inc" "remind101/acme-inc:master"
 
   post_build:
     commands:
@@ -386,6 +391,10 @@ phases:
 			},
 			`version: 0.1
 phases:
+  install:
+    commands:
+      - nohup sh /usr/local/bin/dind /usr/local/bin/docker daemon --host=unix:///var/run/docker.sock --host=tcp://0.0.0.0:2375 --storage-driver=overlay&
+      - timeout 15 sh -c "until docker info; do echo .; sleep 1; done"
   pre_build:
     commands:
 
