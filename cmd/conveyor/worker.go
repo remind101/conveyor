@@ -9,6 +9,7 @@ import (
 
 	"github.com/codegangsta/cli"
 	"github.com/remind101/conveyor"
+	"github.com/remind101/conveyor/builder"
 	"github.com/remind101/conveyor/builder/docker"
 	"github.com/remind101/conveyor/worker"
 )
@@ -24,16 +25,46 @@ var workerFlags = []cli.Flag{
 		Usage:  "GitHub API token to use when updating commit statuses and setting up webhooks on repositories.",
 		EnvVar: "GITHUB_TOKEN",
 	},
+	cli.StringFlag{
+		Name:   "github.context",
+		Value:  builder.DefaultGitHubCommitStatusContext,
+		Usage:  "The value that will be used as the GitHub commit status context.",
+		EnvVar: "GITHUB_COMMIT_STATUS_CONTEXT",
+	},
 	cli.BoolFlag{
 		Name:   "dry",
 		Usage:  "Enable dry run mode.",
 		EnvVar: "DRY",
 	},
 	cli.StringFlag{
+		Name:   "builder",
+		Value:  "codebuild",
+		Usage:  "The builder backend to use. Available options are `codebuild` or `docker`",
+		EnvVar: "BUILDER",
+	},
+	cli.StringFlag{
 		Name:   "builder.image",
 		Value:  docker.DefaultBuilderImage,
-		Usage:  "A docker image to use to perform the build.",
+		Usage:  "A docker image to use to perform the build. Only used with the Docker backend.",
 		EnvVar: "BUILDER_IMAGE",
+	},
+	cli.StringFlag{
+		Name:   "codebuild.role",
+		Value:  "",
+		Usage:  "An IAM role to provide as the service role to CodeBuild projects.",
+		EnvVar: "CODEBUILD_SERVICE_ROLE",
+	},
+	cli.StringFlag{
+		Name:   "codebuild.project.prefix",
+		Value:  "conveyor-",
+		Usage:  "A prefix that Conveyor will use when creating CodeBuild projects for repos.",
+		EnvVar: "CODEBUILD_PROJECT_PREFIX",
+	},
+	cli.StringFlag{
+		Name:   "codebuild.dockercfg",
+		Value:  "conveyor.dockercfg",
+		Usage:  "An SSM parameter that CodeBuild will use to authenticate the docker cli. Should be a valid .dockercfg file.",
+		EnvVar: "CODEBUILD_DOCKERCFG",
 	},
 	cli.StringSliceFlag{
 		Name:  "reporter",
@@ -80,7 +111,7 @@ func runWorker(cy *conveyor.Conveyor, c *cli.Context) error {
 	cy.BuildQueue.Subscribe(ch)
 
 	workers := worker.NewPool(cy, numWorkers, worker.Options{
-		Builder:       newBuilder(c),
+		Builder:       newWorkerBuilder(c),
 		BuildRequests: ch,
 	})
 

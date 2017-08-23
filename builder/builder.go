@@ -18,8 +18,8 @@ import (
 )
 
 const (
-	// Context is used for the commit status context.
-	Context = "container/docker"
+	// DefaultGitHubCommitStatusContext is used for the commit status context.
+	DefaultGitHubCommitStatusContext = "container/docker"
 )
 
 var (
@@ -87,25 +87,28 @@ func (fn BuilderFunc) Build(ctx context.Context, w io.Writer, opts BuildOptions)
 // since is a variable so we can stub it out in tests.
 var since = time.Since
 
-// statusUpdaterBuilder is a Builder implementation that updates the commit
+// GitHubCommitStatusBuilder is a Builder implementation that updates the commit
 // status in github.
-type statusUpdaterBuilder struct {
-	Builder
+type GitHubCommitStatusBuilder struct {
+	Context string
+
 	github  GitHubClient
 	urlTmpl *template.Template
+
+	builder Builder
 }
 
 // UpdateGitHubCommitStatus wraps b to update the GitHub commit status when a
 // build starts, and stops.
-func UpdateGitHubCommitStatus(b Builder, g GitHubClient, urlTmpl string) *statusUpdaterBuilder {
-	return &statusUpdaterBuilder{
-		Builder: b,
+func UpdateGitHubCommitStatus(b Builder, g GitHubClient, urlTmpl string) *GitHubCommitStatusBuilder {
+	return &GitHubCommitStatusBuilder{
+		builder: b,
 		github:  g,
 		urlTmpl: template.Must(template.New("url").Parse(urlTmpl)),
 	}
 }
 
-func (b *statusUpdaterBuilder) Build(ctx context.Context, w io.Writer, opts BuildOptions) (image string, err error) {
+func (b *GitHubCommitStatusBuilder) Build(ctx context.Context, w io.Writer, opts BuildOptions) (image string, err error) {
 	t := time.Now()
 
 	defer func() {
@@ -123,13 +126,16 @@ func (b *statusUpdaterBuilder) Build(ctx context.Context, w io.Writer, opts Buil
 		return
 	}
 
-	image, err = b.Builder.Build(ctx, w, opts)
+	image, err = b.builder.Build(ctx, w, opts)
 	return
 }
 
 // updateStatus updates the given commit with a new status.
-func (b *statusUpdaterBuilder) updateStatus(w io.Writer, opts BuildOptions, status string, description string) error {
-	context := Context
+func (b *GitHubCommitStatusBuilder) updateStatus(w io.Writer, opts BuildOptions, status string, description string) error {
+	context := b.Context
+	if context == "" {
+		context = DefaultGitHubCommitStatusContext
+	}
 	parts := strings.SplitN(opts.Repository, "/", 2)
 
 	var desc *string
@@ -151,7 +157,7 @@ func (b *statusUpdaterBuilder) updateStatus(w io.Writer, opts BuildOptions, stat
 	return err
 }
 
-func (b *statusUpdaterBuilder) url(opts BuildOptions) (string, error) {
+func (b *GitHubCommitStatusBuilder) url(opts BuildOptions) (string, error) {
 	buf := new(bytes.Buffer)
 	err := b.urlTmpl.Execute(buf, opts)
 	return buf.String(), err
