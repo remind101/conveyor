@@ -65,7 +65,7 @@ type Push struct {
 		CompareURL       string      `json:"compare_url"`
 		ContentsURL      string      `json:"contents_url"`
 		ContributorsURL  string      `json:"contributors_url"`
-		CreatedAt        int         `json:"created_at"`
+		CreatedAt        *Timestamp  `json:"created_at"`
 		DefaultBranch    string      `json:"default_branch"`
 		Description      string      `json:"description"`
 		DownloadsURL     string      `json:"downloads_url"`
@@ -106,26 +106,26 @@ type Push struct {
 			Email string `json:"email"`
 			Name  string `json:"name"`
 		} `json:"owner"`
-		Private         bool   `json:"private"`
-		PullsURL        string `json:"pulls_url"`
-		PushedAt        int    `json:"pushed_at"`
-		ReleasesURL     string `json:"releases_url"`
-		Size            int    `json:"size"`
-		SSHURL          string `json:"ssh_url"`
-		Stargazers      int    `json:"stargazers"`
-		StargazersCount int    `json:"stargazers_count"`
-		StargazersURL   string `json:"stargazers_url"`
-		StatusesURL     string `json:"statuses_url"`
-		SubscribersURL  string `json:"subscribers_url"`
-		SubscriptionURL string `json:"subscription_url"`
-		SvnURL          string `json:"svn_url"`
-		TagsURL         string `json:"tags_url"`
-		TeamsURL        string `json:"teams_url"`
-		TreesURL        string `json:"trees_url"`
-		UpdatedAt       string `json:"updated_at"`
-		URL             string `json:"url"`
-		Watchers        int    `json:"watchers"`
-		WatchersCount   int    `json:"watchers_count"`
+		Private         bool       `json:"private"`
+		PullsURL        string     `json:"pulls_url"`
+		PushedAt        *Timestamp `json:"pushed_at"`
+		ReleasesURL     string     `json:"releases_url"`
+		Size            int        `json:"size"`
+		SSHURL          string     `json:"ssh_url"`
+		Stargazers      int        `json:"stargazers"`
+		StargazersCount int        `json:"stargazers_count"`
+		StargazersURL   string     `json:"stargazers_url"`
+		StatusesURL     string     `json:"statuses_url"`
+		SubscribersURL  string     `json:"subscribers_url"`
+		SubscriptionURL string     `json:"subscription_url"`
+		SvnURL          string     `json:"svn_url"`
+		TagsURL         string     `json:"tags_url"`
+		TeamsURL        string     `json:"teams_url"`
+		TreesURL        string     `json:"trees_url"`
+		UpdatedAt       string     `json:"updated_at"`
+		URL             string     `json:"url"`
+		Watchers        int        `json:"watchers"`
+		WatchersCount   int        `json:"watchers_count"`
 	} `json:"repository"`
 	Sender struct {
 		AvatarURL         string `json:"avatar_url"`
