@@ -2,6 +2,7 @@ package cloudwatch
 
 import (
 	"bytes"
+	"io"
 	"sync"
 	"time"
 
@@ -50,11 +51,16 @@ func (r *Reader) start() {
 }
 
 func (r *Reader) read() error {
-	resp, err := r.client.GetLogEvents(&cloudwatchlogs.GetLogEventsInput{
+
+	params := &cloudwatchlogs.GetLogEventsInput{
 		LogGroupName:  r.group,
 		LogStreamName: r.stream,
+		StartFromHead: aws.Bool(true),
 		NextToken:     r.nextToken,
-	})
+	}
+
+	resp, err := r.client.GetLogEvents(params)
+
 	if err != nil {
 		return err
 	}
@@ -91,6 +97,11 @@ func (r *Reader) Read(b []byte) (int, error) {
 	}
 
 	return r.b.Read(b)
+}
+
+func (r *Reader) Close() error {
+	r.err = io.EOF
+	return nil
 }
 
 // lockingBuffer is a bytes.Buffer that locks Reads and Writes.

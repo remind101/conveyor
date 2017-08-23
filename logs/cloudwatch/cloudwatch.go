@@ -5,7 +5,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
-	"github.com/ejholmes/cloudwatch"
+	"github.com/remind101/conveyor/pkg/cloudwatch"
 )
 
 func NewLogger(config client.ConfigProvider, group string) *Group {
