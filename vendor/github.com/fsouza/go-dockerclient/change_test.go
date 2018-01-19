@@ -4,11 +4,10 @@
 
 package docker
 
-import (
-	"testing"
-)
+import "testing"
 
 func TestChangeString(t *testing.T) {
+	t.Parallel()
 	var tests = []struct {
 		change   Change
 		expected string

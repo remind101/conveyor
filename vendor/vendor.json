@@ -1,0 +1,13 @@
+{
+	"comment": "",
+	"ignore": "",
+	"package": [
+		{
+			"checksumSHA1": "OoqLf1pLQIvYd11eGKFZN0phhB0=",
+			"path": "github.com/fsouza/go-dockerclient",
+			"revision": "bf87bce91eb07deea6e58299a0d3913463d08d04",
+			"revisionTime": "2017-08-09T22:53:10Z"
+		}
+	],
+	"rootPath": "github.com/remind101/conveyor"
+}
