@@ -126,11 +126,11 @@ Then add a new `push` webhook to a repo, pointed at the ngrok URL. No secret is 
 To run the full test suite. Note that you need to run `make bootstrap` prior to running this:
 
 ```console
-$ godep go test ./...
+$ go test ./...
 ```
 
 To run only the unit tests (no need to run `make bootstrap`):
 
 ```console
-$ godep go test ./... -short
+$ go test ./... -short
 ```
