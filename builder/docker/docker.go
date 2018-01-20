@@ -105,6 +105,10 @@ func (b *Builder) build(ctx context.Context, w io.Writer, opts builder.BuildOpti
 			Hostname:     hostname,
 			Env:          env,
 		},
+		HostConfig: &docker.HostConfig{
+			Privileged:  true,
+			VolumesFrom: []string{b.dataVolume()},
+		},
 	})
 	if err != nil {
 		return fmt.Errorf("create container: %v", err)
@@ -117,10 +121,7 @@ func (b *Builder) build(ctx context.Context, w io.Writer, opts builder.BuildOpti
 
 	reporter.AddContext(ctx, "container_id", c.ID)
 
-	if err := b.client.StartContainer(c.ID, &docker.HostConfig{
-		Privileged:  true,
-		VolumesFrom: []string{b.dataVolume()},
-	}); err != nil {
+	if err := b.client.StartContainer(c.ID, nil); err != nil {
 		return fmt.Errorf("start container: %v", err)
 	}
 

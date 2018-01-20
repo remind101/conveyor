@@ -29,26 +29,30 @@ func TestBuilder_Build(t *testing.T) {
 	ctx := context.Background()
 	w := new(bytes.Buffer)
 
-	c.On("CreateContainer", "remind101-acme-inc-abcd-1234", &docker.Config{
-		Tty:          false,
-		AttachStdout: true,
-		AttachStderr: true,
-		OpenStdin:    true,
-		Image:        DefaultBuilderImage,
-		Hostname:     hostname,
-		Env: []string{
-			"REPOSITORY=remind101/acme-inc",
-			"BRANCH=master",
-			"SHA=abcd",
-			"DRY=",
-			"CACHE=on",
+	c.On("CreateContainer", docker.CreateContainerOptions{
+		Name: "remind101-acme-inc-abcd-1234",
+		Config: &docker.Config{
+			Tty:          false,
+			AttachStdout: true,
+			AttachStderr: true,
+			OpenStdin:    true,
+			Image:        DefaultBuilderImage,
+			Hostname:     hostname,
+			Env: []string{
+				"REPOSITORY=remind101/acme-inc",
+				"BRANCH=master",
+				"SHA=abcd",
+				"DRY=",
+				"CACHE=on",
+			},
+		},
+		HostConfig: &docker.HostConfig{
+			Privileged:  true,
+			VolumesFrom: []string{"data"},
 		},
 	}).Return(&docker.Container{ID: "4321"}, nil)
 
-	c.On("StartContainer", "4321", &docker.HostConfig{
-		Privileged:  true,
-		VolumesFrom: []string{"data"},
-	}).Return(nil)
+	c.On("StartContainer", "4321", (*docker.HostConfig)(nil)).Return(nil)
 
 	c.On("AttachToContainer", docker.AttachToContainerOptions{
 		Container:    "4321",
@@ -86,26 +90,30 @@ func TestBuilder_Build_AttachErr(t *testing.T) {
 	ctx := context.Background()
 	w := new(bytes.Buffer)
 
-	c.On("CreateContainer", "remind101-acme-inc-abcd-1234", &docker.Config{
-		Tty:          false,
-		AttachStdout: true,
-		AttachStderr: true,
-		OpenStdin:    true,
-		Image:        DefaultBuilderImage,
-		Hostname:     hostname,
-		Env: []string{
-			"REPOSITORY=remind101/acme-inc",
-			"BRANCH=master",
-			"SHA=abcd",
-			"DRY=",
-			"CACHE=on",
+	c.On("CreateContainer", docker.CreateContainerOptions{
+		Name: "remind101-acme-inc-abcd-1234",
+		Config: &docker.Config{
+			Tty:          false,
+			AttachStdout: true,
+			AttachStderr: true,
+			OpenStdin:    true,
+			Image:        DefaultBuilderImage,
+			Hostname:     hostname,
+			Env: []string{
+				"REPOSITORY=remind101/acme-inc",
+				"BRANCH=master",
+				"SHA=abcd",
+				"DRY=",
+				"CACHE=on",
+			},
+		},
+		HostConfig: &docker.HostConfig{
+			Privileged:  true,
+			VolumesFrom: []string{"data"},
 		},
 	}).Return(&docker.Container{ID: "4321"}, nil)
 
-	c.On("StartContainer", "4321", &docker.HostConfig{
-		Privileged:  true,
-		VolumesFrom: []string{"data"},
-	}).Return(nil)
+	c.On("StartContainer", "4321", (*docker.HostConfig)(nil)).Return(nil)
 
 	c.On("AttachToContainer", docker.AttachToContainerOptions{
 		Container:    "4321",
@@ -141,26 +149,30 @@ func TestBuilder_Build_NonZeroExit(t *testing.T) {
 	ctx := context.Background()
 	w := new(bytes.Buffer)
 
-	c.On("CreateContainer", "remind101-acme-inc-abcd-1234", &docker.Config{
-		Tty:          false,
-		AttachStdout: true,
-		AttachStderr: true,
-		OpenStdin:    true,
-		Image:        DefaultBuilderImage,
-		Hostname:     hostname,
-		Env: []string{
-			"REPOSITORY=remind101/acme-inc",
-			"BRANCH=master",
-			"SHA=abcd",
-			"DRY=",
-			"CACHE=on",
+	c.On("CreateContainer", docker.CreateContainerOptions{
+		Name: "remind101-acme-inc-abcd-1234",
+		Config: &docker.Config{
+			Tty:          false,
+			AttachStdout: true,
+			AttachStderr: true,
+			OpenStdin:    true,
+			Image:        DefaultBuilderImage,
+			Hostname:     hostname,
+			Env: []string{
+				"REPOSITORY=remind101/acme-inc",
+				"BRANCH=master",
+				"SHA=abcd",
+				"DRY=",
+				"CACHE=on",
+			},
+		},
+		HostConfig: &docker.HostConfig{
+			Privileged:  true,
+			VolumesFrom: []string{"data"},
 		},
 	}).Return(&docker.Container{ID: "4321"}, nil)
 
-	c.On("StartContainer", "4321", &docker.HostConfig{
-		Privileged:  true,
-		VolumesFrom: []string{"data"},
-	}).Return(nil)
+	c.On("StartContainer", "4321", (*docker.HostConfig)(nil)).Return(nil)
 
 	c.On("AttachToContainer", docker.AttachToContainerOptions{
 		Container:    "4321",
@@ -200,26 +212,30 @@ func TestBuilder_Build_Cancel(t *testing.T) {
 
 	cancel()
 
-	c.On("CreateContainer", "remind101-acme-inc-abcd-1234", &docker.Config{
-		Tty:          false,
-		AttachStdout: true,
-		AttachStderr: true,
-		OpenStdin:    true,
-		Image:        DefaultBuilderImage,
-		Hostname:     hostname,
-		Env: []string{
-			"REPOSITORY=remind101/acme-inc",
-			"BRANCH=master",
-			"SHA=abcd",
-			"DRY=",
-			"CACHE=on",
+	c.On("CreateContainer", docker.CreateContainerOptions{
+		Name: "remind101-acme-inc-abcd-1234",
+		Config: &docker.Config{
+			Tty:          false,
+			AttachStdout: true,
+			AttachStderr: true,
+			OpenStdin:    true,
+			Image:        DefaultBuilderImage,
+			Hostname:     hostname,
+			Env: []string{
+				"REPOSITORY=remind101/acme-inc",
+				"BRANCH=master",
+				"SHA=abcd",
+				"DRY=",
+				"CACHE=on",
+			},
+		},
+		HostConfig: &docker.HostConfig{
+			Privileged:  true,
+			VolumesFrom: []string{"data"},
 		},
 	}).Return(&docker.Container{ID: "4321"}, nil)
 
-	c.On("StartContainer", "4321", &docker.HostConfig{
-		Privileged:  true,
-		VolumesFrom: []string{"data"},
-	}).Return(nil)
+	c.On("StartContainer", "4321", (*docker.HostConfig)(nil)).Return(nil)
 
 	stopped := make(chan time.Time)
 	c.On("AttachToContainer", docker.AttachToContainerOptions{
@@ -259,7 +275,7 @@ type mockDockerClient struct {
 }
 
 func (c *mockDockerClient) CreateContainer(options docker.CreateContainerOptions) (*docker.Container, error) {
-	args := c.Called(options.Name, options.Config)
+	args := c.Called(options)
 	return args.Get(0).(*docker.Container), args.Error(1)
 }
 
