@@ -19,7 +19,7 @@ import (
 
 const (
 	// Context is used for the commit status context.
-	Context = "container/docker"
+	Context = "container/docker/test-ignore"
 )
 
 var (
