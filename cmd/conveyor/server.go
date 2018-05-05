@@ -25,12 +25,6 @@ var serverFlags = []cli.Flag{
 		EnvVar: "GITHUB_SECRET",
 	},
 	cli.StringFlag{
-		Name:   "slack.token",
-		Value:  "",
-		Usage:  "Secret shared with Slack to verify slash command webhooks",
-		EnvVar: "SLACK_TOKEN",
-	},
-	cli.StringFlag{
 		Name:   "auth",
 		Value:  "",
 		Usage:  "Basic auth credentials for the API. Should be in the form `user:pass`.",

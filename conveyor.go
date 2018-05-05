@@ -4,7 +4,6 @@ import (
 	"io"
 	"strings"
 
-	"github.com/google/go-github/github"
 	"github.com/jmoiron/sqlx"
 	"github.com/remind101/conveyor/builder"
 	"github.com/remind101/conveyor/logs"
@@ -18,9 +17,6 @@ var newID = uuid.New
 
 // Conveyor provides the primary api for triggering builds.
 type Conveyor struct {
-	// Hook is the webhook configuration for Conveyor.
-	Hook *github.Hook
-
 	// BuildQueue is used to enqueue a build.
 	BuildQueue
 
@@ -206,12 +202,6 @@ func (c *Conveyor) BuildFailed(ctx context.Context, buildID string, err error) e
 	}
 
 	return tx.Commit()
-}
-
-// EnableRepo installs the webhook on the repo.
-func (c *Conveyor) EnableRepo(ctx context.Context, fullRepo string) error {
-	owner, repo := splitRepo(fullRepo)
-	return c.GitHub.InstallHook(owner, repo, c.Hook)
 }
 
 func insert(tx *sqlx.Tx, sql string, v interface{}, returns ...interface{}) error {

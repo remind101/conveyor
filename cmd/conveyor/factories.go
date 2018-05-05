@@ -6,7 +6,6 @@ import (
 	"net/url"
 	"os"
 	"strings"
-	"text/template"
 
 	"golang.org/x/oauth2"
 
@@ -14,7 +13,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/defaults"
 	"github.com/codegangsta/cli"
 	"github.com/codegangsta/negroni"
-	"github.com/ejholmes/slash"
 	"github.com/goji/httpauth"
 	"github.com/google/go-github/github"
 	"github.com/gorilla/mux"
@@ -27,7 +25,6 @@ import (
 	"github.com/remind101/conveyor/logs/cloudwatch"
 	"github.com/remind101/conveyor/logs/s3"
 	"github.com/remind101/conveyor/server"
-	"github.com/remind101/conveyor/slack"
 	"github.com/remind101/conveyor/worker"
 	"github.com/remind101/pkg/reporter"
 	"github.com/remind101/pkg/reporter/hb2"
@@ -48,7 +45,6 @@ func newConveyor(c *cli.Context) *conveyor.Conveyor {
 	cy.BuildQueue = newBuildQueue(c)
 	cy.Logger = newLogger(c)
 	cy.GitHub = conveyor.NewGitHub(newGitHubClient(c))
-	cy.Hook = conveyor.NewHook(c.String("url"), c.String("github.secret"))
 	return cy
 }
 
@@ -90,11 +86,6 @@ func newServer(cy *conveyor.Conveyor, c *cli.Context) http.Handler {
 		GitHubSecret: c.String("github.secret"),
 	})
 
-	// Slack webhooks
-	if c.String("slack.token") != "" {
-		r.Handle("/slack", newSlackServer(cy, c))
-	}
-
 	n := negroni.Classic()
 	n.UseHandler(r)
 
@@ -108,13 +99,6 @@ func newGitHubClient(c *cli.Context) *github.Client {
 	tc := oauth2.NewClient(oauth2.NoContext, ts)
 
 	return github.NewClient(tc)
-}
-
-// newSlackServer returns an http handler for handling Slack slash commands at <url>/slack.
-func newSlackServer(cy *conveyor.Conveyor, c *cli.Context) http.Handler {
-	s := slack.New(cy)
-	s.URLTemplate = template.Must(template.New("url").Parse(fmt.Sprintf(logsURLTemplate, c.String("url"))))
-	return slash.NewServer(slash.ValidateToken(s, c.String("slack.token")))
 }
 
 func newBuilder(c *cli.Context) builder.Builder {
