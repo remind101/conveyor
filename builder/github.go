@@ -1,13 +1,15 @@
 package builder
 
 import (
+	"context"
+
 	"github.com/google/go-github/github"
 	"golang.org/x/oauth2"
 )
 
 // GitHubClient represents a client that can create github commit statuses.
 type GitHubClient interface {
-	CreateStatus(owner, repo, ref string, status *github.RepoStatus) (*github.RepoStatus, *github.Response, error)
+	CreateStatus(context context.Context, owner, repo, ref string, status *github.RepoStatus) (*github.RepoStatus, *github.Response, error)
 }
 
 // NewGitHubClient returns a new GitHubClient instance. If token is an empty
@@ -26,6 +28,6 @@ func NewGitHubClient(token string) GitHubClient {
 // nothing.
 type nullGitHubClient struct{}
 
-func (c *nullGitHubClient) CreateStatus(owner, repo, ref string, status *github.RepoStatus) (*github.RepoStatus, *github.Response, error) {
+func (c *nullGitHubClient) CreateStatus(ctx context.Context, owner, repo, ref string, status *github.RepoStatus) (*github.RepoStatus, *github.Response, error) {
 	return nil, nil, nil
 }

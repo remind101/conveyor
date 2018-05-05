@@ -31,6 +31,12 @@
 			"revisionTime": "2018-01-18T19:02:33Z"
 		},
 		{
+			"checksumSHA1": "rtmn5nDvK7zftyEEHm2DwPGvbFI=",
+			"path": "github.com/google/go-github/github",
+			"revision": "eafdb6578137f78fe186e486a4bc633e1434cc89",
+			"revisionTime": "2018-05-04T00:51:46Z"
+		},
+		{
 			"checksumSHA1": "0qnQjgA5bzmJEsmwYy6ChCXeJPQ=",
 			"path": "github.com/mattn/go-runewidth",
 			"revision": "14207d285c6c197daabb5c9793d63e7af9ab2d50",

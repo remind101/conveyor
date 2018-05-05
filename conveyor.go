@@ -53,7 +53,7 @@ func (c *Conveyor) Build(ctx context.Context, req BuildRequest) (*Build, error) 
 	// branch to the sha of HEAD of the branch.
 	if req.Sha == "" && req.Branch != "" {
 		owner, repo := splitRepo(req.Repository)
-		sha, err := c.GitHub.ResolveBranch(owner, repo, req.Branch)
+		sha, err := c.GitHub.ResolveBranch(ctx, owner, repo, req.Branch)
 		if err != nil {
 			return nil, err
 		}

@@ -6,6 +6,7 @@
 package github
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -14,7 +15,7 @@ import (
 )
 
 func TestUsersService_ListEmails(t *testing.T) {
-	setup()
+	client, mux, _, teardown := setup()
 	defer teardown()
 
 	mux.HandleFunc("/user/emails", func(w http.ResponseWriter, r *http.Request) {
@@ -28,41 +29,41 @@ func TestUsersService_ListEmails(t *testing.T) {
 	})
 
 	opt := &ListOptions{Page: 2}
-	emails, _, err := client.Users.ListEmails(opt)
+	emails, _, err := client.Users.ListEmails(context.Background(), opt)
 	if err != nil {
 		t.Errorf("Users.ListEmails returned error: %v", err)
 	}
 
-	want := []UserEmail{{Email: String("user@example.com"), Verified: Bool(false), Primary: Bool(true)}}
+	want := []*UserEmail{{Email: String("user@example.com"), Verified: Bool(false), Primary: Bool(true)}}
 	if !reflect.DeepEqual(emails, want) {
 		t.Errorf("Users.ListEmails returned %+v, want %+v", emails, want)
 	}
 }
 
 func TestUsersService_AddEmails(t *testing.T) {
-	setup()
+	client, mux, _, teardown := setup()
 	defer teardown()
 
 	input := []string{"new@example.com"}
 
 	mux.HandleFunc("/user/emails", func(w http.ResponseWriter, r *http.Request) {
-		v := new([]string)
-		json.NewDecoder(r.Body).Decode(v)
+		var v []string
+		json.NewDecoder(r.Body).Decode(&v)
 
 		testMethod(t, r, "POST")
-		if !reflect.DeepEqual(*v, input) {
-			t.Errorf("Request body = %+v, want %+v", *v, input)
+		if !reflect.DeepEqual(v, input) {
+			t.Errorf("Request body = %+v, want %+v", v, input)
 		}
 
 		fmt.Fprint(w, `[{"email":"old@example.com"}, {"email":"new@example.com"}]`)
 	})
 
-	emails, _, err := client.Users.AddEmails(input)
+	emails, _, err := client.Users.AddEmails(context.Background(), input)
 	if err != nil {
 		t.Errorf("Users.AddEmails returned error: %v", err)
 	}
 
-	want := []UserEmail{
+	want := []*UserEmail{
 		{Email: String("old@example.com")},
 		{Email: String("new@example.com")},
 	}
@@ -72,22 +73,22 @@ func TestUsersService_AddEmails(t *testing.T) {
 }
 
 func TestUsersService_DeleteEmails(t *testing.T) {
-	setup()
+	client, mux, _, teardown := setup()
 	defer teardown()
 
 	input := []string{"user@example.com"}
 
 	mux.HandleFunc("/user/emails", func(w http.ResponseWriter, r *http.Request) {
-		v := new([]string)
-		json.NewDecoder(r.Body).Decode(v)
+		var v []string
+		json.NewDecoder(r.Body).Decode(&v)
 
 		testMethod(t, r, "DELETE")
-		if !reflect.DeepEqual(*v, input) {
-			t.Errorf("Request body = %+v, want %+v", *v, input)
+		if !reflect.DeepEqual(v, input) {
+			t.Errorf("Request body = %+v, want %+v", v, input)
 		}
 	})
 
-	_, err := client.Users.DeleteEmails(input)
+	_, err := client.Users.DeleteEmails(context.Background(), input)
 	if err != nil {
 		t.Errorf("Users.DeleteEmails returned error: %v", err)
 	}

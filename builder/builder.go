@@ -116,10 +116,10 @@ func (b *statusUpdaterBuilder) Build(ctx context.Context, w io.Writer, opts Buil
 			status = "failure"
 			description = err.Error()
 		}
-		b.updateStatus(w, opts, status, description)
+		b.updateStatus(ctx, w, opts, status, description)
 	}()
 
-	if err = b.updateStatus(w, opts, "pending", "Image building."); err != nil {
+	if err = b.updateStatus(ctx, w, opts, "pending", "Image building."); err != nil {
 		return
 	}
 
@@ -128,7 +128,7 @@ func (b *statusUpdaterBuilder) Build(ctx context.Context, w io.Writer, opts Buil
 }
 
 // updateStatus updates the given commit with a new status.
-func (b *statusUpdaterBuilder) updateStatus(w io.Writer, opts BuildOptions, status string, description string) error {
+func (b *statusUpdaterBuilder) updateStatus(ctx context.Context, w io.Writer, opts BuildOptions, status string, description string) error {
 	context := Context
 	parts := strings.SplitN(opts.Repository, "/", 2)
 
@@ -142,7 +142,7 @@ func (b *statusUpdaterBuilder) updateStatus(w io.Writer, opts BuildOptions, stat
 		return err
 	}
 
-	_, _, err = b.github.CreateStatus(parts[0], parts[1], opts.Sha, &github.RepoStatus{
+	_, _, err = b.github.CreateStatus(ctx, parts[0], parts[1], opts.Sha, &github.RepoStatus{
 		State:       &status,
 		Context:     &context,
 		Description: desc,

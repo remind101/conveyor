@@ -1,6 +1,7 @@
 package conveyor
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -9,7 +10,7 @@ import (
 
 // GitHubAPI represents an interface for performing Git operations.
 type GitHubAPI interface {
-	ResolveBranch(owner, repo, branch string) (sha string, err error)
+	ResolveBranch(ctx context.Context, owner, repo, branch string) (sha string, err error)
 }
 
 func NewGitHub(c *github.Client) *GitHub {
@@ -24,8 +25,8 @@ type GitHub struct {
 	Git *github.GitService
 }
 
-func (g *GitHub) ResolveBranch(owner, repo, branch string) (string, error) {
-	ref, _, err := g.Git.GetRef(owner, repo, fmt.Sprintf("refs/heads/%s", branch))
+func (g *GitHub) ResolveBranch(ctx context.Context, owner, repo, branch string) (string, error) {
+	ref, _, err := g.Git.GetRef(ctx, owner, repo, fmt.Sprintf("refs/heads/%s", branch))
 	if err != nil {
 		return "", err
 	}
