@@ -7,8 +7,6 @@ import (
 	"os"
 	"strings"
 
-	"golang.org/x/oauth2"
-
 	"github.com/DataDog/datadog-go/statsd"
 	"github.com/aws/aws-sdk-go/aws/defaults"
 	"github.com/codegangsta/cli"
@@ -21,6 +19,7 @@ import (
 	"github.com/remind101/conveyor/builder"
 	"github.com/remind101/conveyor/builder/datadog"
 	"github.com/remind101/conveyor/builder/docker"
+	"github.com/remind101/conveyor/internal/ghinstallation"
 	"github.com/remind101/conveyor/logs"
 	"github.com/remind101/conveyor/logs/cloudwatch"
 	"github.com/remind101/conveyor/logs/s3"
@@ -93,12 +92,12 @@ func newServer(cy *conveyor.Conveyor, c *cli.Context) http.Handler {
 }
 
 func newGitHubClient(c *cli.Context) *github.Client {
-	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: c.String("github.token")},
-	)
-	tc := oauth2.NewClient(oauth2.NoContext, ts)
+	t, err := ghinstallation.New(http.DefaultTransport, c.Int("github.app_id"), c.Int("github.installation_id"), []byte(c.String("github.private_key")))
+	if err != nil {
+		panic(err)
+	}
 
-	return github.NewClient(tc)
+	return github.NewClient(&http.Client{Transport: t})
 }
 
 func newBuilder(c *cli.Context) builder.Builder {
@@ -109,7 +108,7 @@ func newBuilder(c *cli.Context) builder.Builder {
 	db.DryRun = c.Bool("dry")
 	db.Image = c.String("builder.image")
 
-	g := builder.NewGitHubClient(c.String("github.token"))
+	g := builder.NewGitHubClient(newGitHubClient(c))
 
 	var backend builder.Builder = builder.UpdateGitHubCommitStatus(db, g, fmt.Sprintf(logsURLTemplate, c.String("url")))
 
