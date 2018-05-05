@@ -63,7 +63,7 @@ func (s BuildState) String() string {
 	case StateSucceeded:
 		return "succeeded"
 	default:
-		panic(fmt.Sprintf("unknown build state: %v", s))
+		panic(fmt.Sprintf("unknown build state: %s", string(s)))
 	}
 }
 

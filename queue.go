@@ -182,7 +182,7 @@ func (q *SQSBuildQueue) context() context.Context {
 
 func (q *SQSBuildQueue) handleError(err error) {
 	if q.ErrHandler == nil {
-		log.Println("sqs error: %v", err)
+		log.Printf("sqs error: %v", err)
 	}
 
 	q.ErrHandler(err)
