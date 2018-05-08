@@ -52,12 +52,6 @@ var workerFlags = []cli.Flag{
 		Usage:  "Number of workers in goroutines to start.",
 		EnvVar: "WORKERS",
 	},
-	cli.StringFlag{
-		Name:   "stats",
-		Value:  "",
-		Usage:  "If provided, defines where build metrics are sent. Available options are dogstatsd://<host>",
-		EnvVar: "STATS",
-	},
 }
 
 var cmdWorker = cli.Command{

@@ -7,7 +7,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/DataDog/datadog-go/statsd"
 	"github.com/aws/aws-sdk-go/aws/defaults"
 	"github.com/codegangsta/cli"
 	"github.com/codegangsta/negroni"
@@ -17,7 +16,6 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/remind101/conveyor"
 	"github.com/remind101/conveyor/builder"
-	"github.com/remind101/conveyor/builder/datadog"
 	"github.com/remind101/conveyor/builder/docker"
 	"github.com/remind101/conveyor/internal/ghinstallation"
 	"github.com/remind101/conveyor/logs"
@@ -111,23 +109,6 @@ func newBuilder(c *cli.Context) builder.Builder {
 	g := builder.NewGitHubClient(newGitHubClient(c))
 
 	var backend builder.Builder = builder.UpdateGitHubCommitStatus(db, g, fmt.Sprintf(logsURLTemplate, c.String("url")))
-
-	if uri := c.String("stats"); uri != "" {
-		u := urlParse(uri)
-
-		switch u.Scheme {
-		case "dogstatsd":
-			c, err := statsd.New(u.Host)
-			must(err)
-
-			backend = datadog.WithStats(
-				backend,
-				c,
-			)
-		default:
-			must(fmt.Errorf("Unknown stats backend: %v", u.Scheme))
-		}
-	}
 
 	b := worker.NewBuilder(backend)
 	b.Reporter = newReporter(c)
