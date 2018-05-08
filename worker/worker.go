@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"sync"
@@ -8,6 +9,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	"github.com/DataDog/dd-trace-go/tracer"
 	"github.com/remind101/conveyor"
 	"github.com/remind101/conveyor/builder"
 )
@@ -143,6 +145,17 @@ func (w *Worker) Start() error {
 
 // build performs a build.
 func (w *Worker) build(ctx context.Context, options builder.BuildOptions) (err error) {
+	span := tracer.NewRootSpan("Build", "conveyor.worker", options.Repository)
+	defer func() { span.FinishWithErr(err) }()
+
+	span.SetMeta("id", options.ID)
+	span.SetMeta("repository", options.Repository)
+	span.SetMeta("branch", options.Branch)
+	span.SetMeta("sha", options.Sha)
+	span.SetMeta("no_cache", fmt.Sprintf("%t", options.NoCache))
+
+	ctx = span.Context(ctx)
+
 	buildID := options.ID
 
 	err = w.BuildStarted(ctx, buildID)

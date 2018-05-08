@@ -6,6 +6,7 @@ import (
 	"runtime"
 	"syscall"
 
+	"github.com/DataDog/dd-trace-go/tracer"
 	"github.com/codegangsta/cli"
 	"github.com/remind101/conveyor"
 	"github.com/remind101/conveyor/builder/docker"
@@ -73,6 +74,11 @@ func runWorker(cy *conveyor.Conveyor, c *cli.Context) error {
 	numWorkers := c.Int("workers")
 
 	info("Starting %d workers\n", numWorkers)
+
+	host := os.Getenv("DATADOG_PORT_8126_TCP_ADDR")
+	port := os.Getenv("DATADOG_PORT_8126_TCP_PORT")
+	trace := tracer.NewTracerTransport(tracer.NewTransport(host, port))
+	tracer.DefaultTracer = trace
 
 	ch := make(chan conveyor.BuildContext)
 	cy.BuildQueue.Subscribe(ch)
