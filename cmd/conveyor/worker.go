@@ -14,11 +14,20 @@ import (
 
 // flags for the worker.
 var workerFlags = []cli.Flag{
+	cli.IntFlag{
+		Name:   "github.app_id",
+		Usage:  "GitHub App ID. See https://developer.github.com/apps/building-github-apps/authentication-options-for-github-apps/",
+		EnvVar: "GITHUB_APP_ID",
+	},
+	cli.IntFlag{
+		Name:   "github.installation_id",
+		Usage:  "GitHub Installation ID. See https://developer.github.com/apps/building-github-apps/authentication-options-for-github-apps/",
+		EnvVar: "GITHUB_INSTALLATION_ID",
+	},
 	cli.StringFlag{
-		Name:   "github.token",
-		Value:  "",
-		Usage:  "GitHub API token to use when updating commit statuses and setting up webhooks on repositories.",
-		EnvVar: "GITHUB_TOKEN",
+		Name:   "github.private_key",
+		Usage:  "Private key for the GitHub App. See https://developer.github.com/apps/building-github-apps/authentication-options-for-github-apps/",
+		EnvVar: "GITHUB_PRIVATE_KEY",
 	},
 	cli.BoolFlag{
 		Name:   "dry",
