@@ -1,6 +1,0 @@
-#!/bin/bash
-
-echo "Starting ansible"
-sudo PYTHONUNBUFFERED=1 ANSIBLE_FORCE_COLOR=true ansible-playbook \
-  -c local \
-  /etc/ansible/playbook/site.yml
